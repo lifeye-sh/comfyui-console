@@ -1,0 +1,487 @@
+{
+  "1": {
+    "inputs": {
+      "shift": 8,
+      "model": [
+        "23",
+        0
+      ]
+    },
+    "class_type": "ModelSamplingSD3",
+    "_meta": {
+      "title": "采样算法（SD3）"
+    }
+  },
+  "2": {
+    "inputs": {
+      "shift": 8,
+      "model": [
+        "24",
+        0
+      ]
+    },
+    "class_type": "ModelSamplingSD3",
+    "_meta": {
+      "title": "采样算法（SD3）"
+    }
+  },
+  "4": {
+    "inputs": {
+      "value": 8
+    },
+    "class_type": "INTConstant",
+    "_meta": {
+      "title": "3、秒数"
+    }
+  },
+  "5": {
+    "inputs": {
+      "value": 16
+    },
+    "class_type": "FloatConstant",
+    "_meta": {
+      "title": "4、帧率"
+    }
+  },
+  "6": {
+    "inputs": {
+      "value": "a*b+1",
+      "a": [
+        "4",
+        0
+      ],
+      "b": [
+        "5",
+        0
+      ]
+    },
+    "class_type": "SimpleMath+",
+    "_meta": {
+      "title": "🔧 Simple Math"
+    }
+  },
+  "7": {
+    "inputs": {
+      "purge_cache": true,
+      "purge_models": true,
+      "anything": [
+        "11",
+        0
+      ]
+    },
+    "class_type": "LayerUtility: PurgeVRAM V2",
+    "_meta": {
+      "title": "图层工具：清除VRAM V2"
+    }
+  },
+  "8": {
+    "inputs": {
+      "samples": [
+        "7",
+        0
+      ],
+      "vae": [
+        "16",
+        0
+      ]
+    },
+    "class_type": "VAEDecode",
+    "_meta": {
+      "title": "VAE解码"
+    }
+  },
+  "10": {
+    "inputs": {
+      "text": "色调艳丽，过曝，静态，细节模糊不清，字幕，风格，作品，画作，画面，静止，整体发灰，最差质量，低质量，JPEG压缩残留，丑陋的，残缺的，多余的手指，画得不好的手部，画得不好的脸部，畸形的，毁容的，形态畸形的肢体，手指融合，静止不动的画面，杂乱的背景，三条腿，背景人很多，倒着走",
+      "clip": [
+        "17",
+        0
+      ]
+    },
+    "class_type": "CLIPTextEncode",
+    "_meta": {
+      "title": "Negative"
+    }
+  },
+  "11": {
+    "inputs": {
+      "add_noise": "disable",
+      "noise_seed": 0,
+      "steps": 6,
+      "cfg": 1,
+      "sampler_name": "euler",
+      "scheduler": "simple",
+      "start_at_step": 3,
+      "end_at_step": 10000,
+      "return_with_leftover_noise": "disable",
+      "model": [
+        "2",
+        0
+      ],
+      "positive": [
+        "101",
+        0
+      ],
+      "negative": [
+        "101",
+        2
+      ],
+      "latent_image": [
+        "12",
+        0
+      ]
+    },
+    "class_type": "KSamplerAdvanced",
+    "_meta": {
+      "title": "K采样器（高级）"
+    }
+  },
+  "12": {
+    "inputs": {
+      "add_noise": "enable",
+      "noise_seed": 407111695483038,
+      "steps": 6,
+      "cfg": 1,
+      "sampler_name": "euler",
+      "scheduler": "simple",
+      "start_at_step": 0,
+      "end_at_step": 3,
+      "return_with_leftover_noise": "enable",
+      "model": [
+        "1",
+        0
+      ],
+      "positive": [
+        "101",
+        0
+      ],
+      "negative": [
+        "101",
+        2
+      ],
+      "latent_image": [
+        "101",
+        3
+      ]
+    },
+    "class_type": "KSamplerAdvanced",
+    "_meta": {
+      "title": "K采样器（高级）"
+    }
+  },
+  "14": {
+    "inputs": {
+      "PowerLoraLoaderHeaderWidget": {
+        "type": "PowerLoraLoaderHeaderWidget"
+      },
+      "lora_1": {
+        "on": true,
+        "lora": "万相lora\\Wan_2_2_I2V_A14B_HIGH_lightx2v_4step_lora_260412_rank_256_fp16.safetensors",
+        "strength": 0.75
+      },
+      "lora_2": {
+        "on": false,
+        "lora": "None",
+        "strength": 1
+      },
+      "lora_3": {
+        "on": false,
+        "lora": "None",
+        "strength": 1
+      },
+      "➕ Add Lora": "",
+      "model": [
+        "19",
+        0
+      ]
+    },
+    "class_type": "Power Lora Loader (rgthree)",
+    "_meta": {
+      "title": "Power Lora Loader (rgthree)"
+    }
+  },
+  "16": {
+    "inputs": {
+      "vae_name": "万相KJ\\wan_2.1_vae.safetensors"
+    },
+    "class_type": "VAELoader",
+    "_meta": {
+      "title": "加载VAE"
+    }
+  },
+  "17": {
+    "inputs": {
+      "clip_name": "通义\\umt5_xxl_fp8_e4m3fn_scaled.safetensors",
+      "type": "wan",
+      "device": "default"
+    },
+    "class_type": "CLIPLoader",
+    "_meta": {
+      "title": "加载CLIP"
+    }
+  },
+  "18": {
+    "inputs": {
+      "image": "0 (25).jpg"
+    },
+    "class_type": "LoadImage",
+    "_meta": {
+      "title": "2、图片"
+    }
+  },
+  "19": {
+    "inputs": {
+      "unet_name": "WAN2.2\\DasiwaWAN22I2V14BLightspeed_boundbiteHighV10(1).safetensors",
+      "weight_dtype": "default"
+    },
+    "class_type": "UNETLoader",
+    "_meta": {
+      "title": "UNet加载器"
+    }
+  },
+  "20": {
+    "inputs": {
+      "unet_name": "WAN2.2\\DasiwaWAN22I2V14BLightspeed_boundbiteLowV10(1).safetensors",
+      "weight_dtype": "default"
+    },
+    "class_type": "UNETLoader",
+    "_meta": {
+      "title": "UNet加载器"
+    }
+  },
+  "22": {
+    "inputs": {
+      "text": [
+        "98",
+        0
+      ],
+      "clip": [
+        "17",
+        0
+      ]
+    },
+    "class_type": "CLIPTextEncode",
+    "_meta": {
+      "title": "Positive"
+    }
+  },
+  "23": {
+    "inputs": {
+      "sage_attention": "auto",
+      "allow_compile": false,
+      "model": [
+        "14",
+        0
+      ]
+    },
+    "class_type": "PathchSageAttentionKJ",
+    "_meta": {
+      "title": "Patch Sage Attention KJ"
+    }
+  },
+  "24": {
+    "inputs": {
+      "sage_attention": "auto",
+      "allow_compile": false,
+      "model": [
+        "28",
+        0
+      ]
+    },
+    "class_type": "PathchSageAttentionKJ",
+    "_meta": {
+      "title": "Patch Sage Attention KJ"
+    }
+  },
+  "26": {
+    "inputs": {
+      "frame_rate": [
+        "5",
+        0
+      ],
+      "loop_count": 0,
+      "filename_prefix": "Video/Remix-20260812225428",
+      "format": "video/h264-mp4",
+      "pix_fmt": "yuv420p",
+      "crf": 19,
+      "save_metadata": true,
+      "trim_to_audio": false,
+      "pingpong": false,
+      "save_output": true,
+      "images": [
+        "8",
+        0
+      ]
+    },
+    "class_type": "VHS_VideoCombine",
+    "_meta": {
+      "title": "Video Combine 🎥🅥🅗🅢"
+    }
+  },
+  "28": {
+    "inputs": {
+      "PowerLoraLoaderHeaderWidget": {
+        "type": "PowerLoraLoaderHeaderWidget"
+      },
+      "lora_1": {
+        "on": true,
+        "lora": "万相lora\\Wan_2_2_I2V_A14B_LOW_lightx2v_4step_lora_260412_rank_256_fp16.safetensors",
+        "strength": 0.6
+      },
+      "lora_2": {
+        "on": false,
+        "lora": "None",
+        "strength": 1
+      },
+      "lora_3": {
+        "on": false,
+        "lora": "None",
+        "strength": 1
+      },
+      "➕ Add Lora": "",
+      "model": [
+        "20",
+        0
+      ]
+    },
+    "class_type": "Power Lora Loader (rgthree)",
+    "_meta": {
+      "title": "Power Lora Loader (rgthree)"
+    }
+  },
+  "95": {
+    "inputs": {
+      "aspect_ratio": "original",
+      "proportional_width": 1,
+      "proportional_height": 1,
+      "fit": "letterbox",
+      "method": "lanczos",
+      "round_to_multiple": "8",
+      "scale_to_side": "longest",
+      "scale_to_length": [
+        "100",
+        0
+      ],
+      "background_color": "#000000",
+      "image": [
+        "18",
+        0
+      ]
+    },
+    "class_type": "LayerUtility: ImageScaleByAspectRatio V2",
+    "_meta": {
+      "title": "图层工具：按宽高比缩放 V2"
+    }
+  },
+  "98": {
+    "inputs": {
+      "value": ""
+    },
+    "class_type": "PrimitiveStringMultiline",
+    "_meta": {
+      "title": "1、提示词"
+    }
+  },
+  "100": {
+    "inputs": {
+      "value": 1024
+    },
+    "class_type": "easy int",
+    "_meta": {
+      "title": "5、最长边"
+    }
+  },
+  "101": {
+    "inputs": {
+      "width": [
+        "95",
+        3
+      ],
+      "height": [
+        "95",
+        4
+      ],
+      "length": [
+        "6",
+        0
+      ],
+      "batch_size": 1,
+      "mode": "NORMAL",
+      "middle_frame_ratio": 0.5,
+      "video_frame_offset": 1,
+      "long_video_mode": "AUTO_CONTINUE",
+      "continue_frames_count": 1,
+      "high_noise_start_strength": 0,
+      "high_noise_mid_strength": 0,
+      "low_noise_start_strength": 0.95,
+      "low_noise_mid_strength": 0,
+      "low_noise_end_strength": 1,
+      "structural_repulsion_boost": 1.05,
+      "enable_start_frame": true,
+      "enable_middle_frame": true,
+      "enable_end_frame": true,
+      "svi_motion_strength": 1,
+      "positive": [
+        "22",
+        0
+      ],
+      "negative": [
+        "10",
+        0
+      ],
+      "vae": [
+        "16",
+        0
+      ],
+      "start_image": [
+        "95",
+        0
+      ],
+      "end_image": [
+        "103",
+        0
+      ],
+      "motion_frames": [
+        "95",
+        0
+      ]
+    },
+    "class_type": "WanAdvancedI2V",
+    "_meta": {
+      "title": "Wan Advanced I2V (Ultimate)"
+    }
+  },
+  "102": {
+    "inputs": {
+      "image": "0 (27).jpg"
+    },
+    "class_type": "LoadImage",
+    "_meta": {
+      "title": "7、图片"
+    }
+  },
+  "103": {
+    "inputs": {
+      "aspect_ratio": "original",
+      "proportional_width": 1,
+      "proportional_height": 1,
+      "fit": "letterbox",
+      "method": "lanczos",
+      "round_to_multiple": "8",
+      "scale_to_side": "longest",
+      "scale_to_length": [
+        "100",
+        0
+      ],
+      "background_color": "#000000",
+      "image": [
+        "102",
+        0
+      ]
+    },
+    "class_type": "LayerUtility: ImageScaleByAspectRatio V2",
+    "_meta": {
+      "title": "图层工具：按宽高比缩放 V2"
+    }
+  }
+}
