@@ -1,0 +1,1 @@
+"""WebSocket 网关：/ws/events。CC-08 实现。"""

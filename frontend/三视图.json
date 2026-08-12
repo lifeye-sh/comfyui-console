@@ -1,0 +1,286 @@
+{
+  "311": {
+    "inputs": {
+      "prompt": "保持人物面部特征，生成人物二视图，图片上半部分是人物正面头部特写和人物从头到胸部的半身特写，图片下半部分人物侧面头部特写和人物从头到胸部的半身特写，纯白色背景，一致的照明和风格，没有背景噪音，没有阴影\n\n保持人物面部特征，生成人物三视图，包含任务正面全身像，侧面全身像和背面全身像，从头到脚和鞋子，纯白色背景，一致的照明和风格，没有背景噪音，没有阴影，所有视图保持同一个人、同一张脸、同一发型、同一套服装。"
+    },
+    "class_type": "CR Prompt Text",
+    "_meta": {
+      "title": "人物角色图 - LTX  select=2"
+    }
+  },
+  "319": {
+    "inputs": {
+      "filename_prefix": "三视图\\model_20260811_",
+      "images": [
+        "341",
+        0
+      ]
+    },
+    "class_type": "SaveImage",
+    "_meta": {
+      "title": "保存图像"
+    }
+  },
+  "320": {
+    "inputs": {
+      "image": "Gemini_Generated_Image_fma6xjfma6xjfma6.png"
+    },
+    "class_type": "LoadImage",
+    "_meta": {
+      "title": "上传图片"
+    }
+  },
+  "323": {
+    "inputs": {
+      "conditioning": [
+        "329",
+        0
+      ]
+    },
+    "class_type": "ConditioningZeroOut",
+    "_meta": {
+      "title": "条件零化"
+    }
+  },
+  "325": {
+    "inputs": {
+      "clip_name": "Qwen\\qwen_2.5_vl_7b_fp8_scaled.safetensors",
+      "type": "qwen_image",
+      "device": "default"
+    },
+    "class_type": "CLIPLoader",
+    "_meta": {
+      "title": "加载CLIP"
+    }
+  },
+  "326": {
+    "inputs": {
+      "vae_name": "Qwen\\qwen_image_vae.safetensors"
+    },
+    "class_type": "VAELoader",
+    "_meta": {
+      "title": "加载VAE"
+    }
+  },
+  "329": {
+    "inputs": {
+      "prompt": [
+        "332",
+        0
+      ],
+      "clip": [
+        "325",
+        0
+      ],
+      "vae": [
+        "326",
+        0
+      ],
+      "image1": [
+        "358",
+        0
+      ]
+    },
+    "class_type": "TextEncodeQwenImageEditPlus",
+    "_meta": {
+      "title": "文本编码（QwenImageEditPlus）"
+    }
+  },
+  "330": {
+    "inputs": {
+      "purge_cache": true,
+      "purge_models": true,
+      "anything": [
+        "349",
+        0
+      ]
+    },
+    "class_type": "LayerUtility: PurgeVRAM",
+    "_meta": {
+      "title": "图层工具：清除VRAM"
+    }
+  },
+  "332": {
+    "inputs": {
+      "string": [
+        "335",
+        0
+      ]
+    },
+    "class_type": "JDCN_StringToList",
+    "_meta": {
+      "title": "JDCN_StringToList"
+    }
+  },
+  "335": {
+    "inputs": {
+      "input_string": [
+        "311",
+        0
+      ],
+      "option": "去空行"
+    },
+    "class_type": "ProcessString",
+    "_meta": {
+      "title": "常规处理字符🐠meeeyo.com"
+    }
+  },
+  "336": {
+    "inputs": {
+      "images": [
+        "348",
+        0
+      ]
+    },
+    "class_type": "ImageListToImageBatch",
+    "_meta": {
+      "title": "图像列表到图像批次"
+    }
+  },
+  "341": {
+    "inputs": {
+      "mode": "horizontal",
+      "images": [
+        "336",
+        0
+      ]
+    },
+    "class_type": "easy joinImageBatch",
+    "_meta": {
+      "title": "合并图像批次"
+    }
+  },
+  "342": {
+    "inputs": {
+      "pixels": [
+        "358",
+        0
+      ],
+      "vae": [
+        "326",
+        0
+      ]
+    },
+    "class_type": "VAEEncode",
+    "_meta": {
+      "title": "VAE编码"
+    }
+  },
+  "348": {
+    "inputs": {
+      "anything": [
+        "349",
+        0
+      ]
+    },
+    "class_type": "easy cleanGpuUsed",
+    "_meta": {
+      "title": "清理显存占用"
+    }
+  },
+  "349": {
+    "inputs": {
+      "samples": [
+        "357",
+        0
+      ],
+      "vae": [
+        "326",
+        0
+      ]
+    },
+    "class_type": "VAEDecode",
+    "_meta": {
+      "title": "VAE解码"
+    }
+  },
+  "353": {
+    "inputs": {
+      "unet_name": "qwen\\Qwen-Image-Edit-2509_fp8_e4m3fn.safetensors",
+      "weight_dtype": "default"
+    },
+    "class_type": "UNETLoader",
+    "_meta": {
+      "title": "UNet加载器"
+    }
+  },
+  "354": {
+    "inputs": {
+      "lora_name": "Qwen\\2509\\Qwen-Image-Lightning-8steps-V2.0-bf16.safetensors",
+      "strength_model": 0.6,
+      "model": [
+        "353",
+        0
+      ]
+    },
+    "class_type": "LoraLoaderModelOnly",
+    "_meta": {
+      "title": "LoRA加载器（仅模型）"
+    }
+  },
+  "355": {
+    "inputs": {
+      "lora_name": "Qwen\\2509\\镜头转换.safetensors",
+      "strength_model": 1.0000000000000002,
+      "model": [
+        "354",
+        0
+      ]
+    },
+    "class_type": "LoraLoaderModelOnly",
+    "_meta": {
+      "title": "LoRA加载器（仅模型）"
+    }
+  },
+  "357": {
+    "inputs": {
+      "seed": 1060284769925615,
+      "steps": 8,
+      "cfg": 1,
+      "sampler_name": "res_2m",
+      "scheduler": "sgm_uniform",
+      "denoise": 1,
+      "model": [
+        "355",
+        0
+      ],
+      "positive": [
+        "329",
+        0
+      ],
+      "negative": [
+        "323",
+        0
+      ],
+      "latent_image": [
+        "342",
+        0
+      ]
+    },
+    "class_type": "KSampler",
+    "_meta": {
+      "title": "K采样器"
+    }
+  },
+  "358": {
+    "inputs": {
+      "aspect_ratio": "original",
+      "proportional_width": 1,
+      "proportional_height": 1,
+      "fit": "letterbox",
+      "method": "lanczos",
+      "round_to_multiple": "8",
+      "scale_to_side": "longest",
+      "scale_to_length": 1632,
+      "background_color": "#000000",
+      "image": [
+        "320",
+        0
+      ]
+    },
+    "class_type": "LayerUtility: ImageScaleByAspectRatio V2",
+    "_meta": {
+      "title": "图层工具：按宽高比缩放 V2"
+    }
+  }
+}

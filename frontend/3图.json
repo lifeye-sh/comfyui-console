@@ -1,0 +1,351 @@
+{
+  "1": {
+    "inputs": {
+      "shift": 3.1,
+      "model": [
+        "3",
+        0
+      ]
+    },
+    "class_type": "ModelSamplingAuraFlow",
+    "_meta": {
+      "title": "采样算法（AuraFlow）"
+    }
+  },
+  "2": {
+    "inputs": {
+      "prompt": "",
+      "clip": [
+        "18",
+        0
+      ],
+      "vae": [
+        "19",
+        0
+      ],
+      "image1": [
+        "23",
+        0
+      ],
+      "image2": [
+        "7",
+        0
+      ],
+      "image3": [
+        "21",
+        0
+      ]
+    },
+    "class_type": "TextEncodeQwenImageEditPlus",
+    "_meta": {
+      "title": "文本编码（QwenImageEditPlus）"
+    }
+  },
+  "3": {
+    "inputs": {
+      "switch": [
+        "8",
+        0
+      ],
+      "on_false": [
+        "16",
+        0
+      ],
+      "on_true": [
+        "17",
+        0
+      ]
+    },
+    "class_type": "ComfySwitchNode",
+    "_meta": {
+      "title": "切换"
+    }
+  },
+  "4": {
+    "inputs": {
+      "value": 40
+    },
+    "class_type": "PrimitiveInt",
+    "_meta": {
+      "title": "Steps"
+    }
+  },
+  "5": {
+    "inputs": {
+      "samples": [
+        "14",
+        0
+      ],
+      "vae": [
+        "19",
+        0
+      ]
+    },
+    "class_type": "VAEDecode",
+    "_meta": {
+      "title": "VAE解码"
+    }
+  },
+  "6": {
+    "inputs": {
+      "strength": 1,
+      "pre_cfg": false,
+      "model": [
+        "1",
+        0
+      ]
+    },
+    "class_type": "CFGNorm",
+    "_meta": {
+      "title": "CFG归一化"
+    }
+  },
+  "7": {
+    "inputs": {
+      "image": "pasted/image (18).png"
+    },
+    "class_type": "LoadImage",
+    "_meta": {
+      "title": "图2"
+    }
+  },
+  "8": {
+    "inputs": {
+      "value": true
+    },
+    "class_type": "PrimitiveBoolean",
+    "_meta": {
+      "title": "是否使用加速LoRA"
+    }
+  },
+  "10": {
+    "inputs": {
+      "switch": [
+        "8",
+        0
+      ],
+      "on_false": [
+        "12",
+        0
+      ],
+      "on_true": [
+        "13",
+        0
+      ]
+    },
+    "class_type": "ComfySwitchNode",
+    "_meta": {
+      "title": "切换"
+    }
+  },
+  "11": {
+    "inputs": {
+      "value": 8
+    },
+    "class_type": "PrimitiveInt",
+    "_meta": {
+      "title": "LoRA-Steps"
+    }
+  },
+  "12": {
+    "inputs": {
+      "value": 4
+    },
+    "class_type": "PrimitiveFloat",
+    "_meta": {
+      "title": "CFG"
+    }
+  },
+  "13": {
+    "inputs": {
+      "value": 1
+    },
+    "class_type": "PrimitiveFloat",
+    "_meta": {
+      "title": "LoRA-CFG"
+    }
+  },
+  "14": {
+    "inputs": {
+      "seed": 43,
+      "steps": [
+        "15",
+        0
+      ],
+      "cfg": [
+        "10",
+        0
+      ],
+      "sampler_name": "euler",
+      "scheduler": "simple",
+      "denoise": 1,
+      "model": [
+        "6",
+        0
+      ],
+      "positive": [
+        "24",
+        0
+      ],
+      "negative": [
+        "2",
+        0
+      ],
+      "latent_image": [
+        "25",
+        0
+      ]
+    },
+    "class_type": "KSampler",
+    "_meta": {
+      "title": "K采样器"
+    }
+  },
+  "15": {
+    "inputs": {
+      "switch": [
+        "8",
+        0
+      ],
+      "on_false": [
+        "4",
+        0
+      ],
+      "on_true": [
+        "11",
+        0
+      ]
+    },
+    "class_type": "ComfySwitchNode",
+    "_meta": {
+      "title": "切换"
+    }
+  },
+  "16": {
+    "inputs": {
+      "unet_name": "Qwen\\FireRed-Image-Edit-1.1-transformer.safetensors",
+      "weight_dtype": "default"
+    },
+    "class_type": "UNETLoader",
+    "_meta": {
+      "title": "UNet加载器"
+    }
+  },
+  "17": {
+    "inputs": {
+      "lora_name": "Qwen\\FireRed-Image-Edit-1.0-Lightning-8steps-v1.0.safetensors",
+      "strength_model": 1,
+      "model": [
+        "16",
+        0
+      ]
+    },
+    "class_type": "LoraLoaderModelOnly",
+    "_meta": {
+      "title": "LoRA加载器（仅模型）"
+    }
+  },
+  "18": {
+    "inputs": {
+      "clip_name": "Qwen\\qwen_2.5_vl_7b_fp8_scaled.safetensors",
+      "type": "qwen_image",
+      "device": "default"
+    },
+    "class_type": "CLIPLoader",
+    "_meta": {
+      "title": "加载CLIP"
+    }
+  },
+  "19": {
+    "inputs": {
+      "vae_name": "Qwen\\qwen_image_vae.safetensors"
+    },
+    "class_type": "VAELoader",
+    "_meta": {
+      "title": "加载VAE"
+    }
+  },
+  "20": {
+    "inputs": {
+      "filename_prefix": "Firered_image_edit_1.0/00000",
+      "images": [
+        "5",
+        0
+      ]
+    },
+    "class_type": "SaveImage",
+    "_meta": {
+      "title": "保存图像"
+    }
+  },
+  "21": {
+    "inputs": {
+      "image": "pasted/image (19).png"
+    },
+    "class_type": "LoadImage",
+    "_meta": {
+      "title": "图3"
+    }
+  },
+  "22": {
+    "inputs": {
+      "image": "Krea2_RedPro_00046_ (2).png"
+    },
+    "class_type": "LoadImage",
+    "_meta": {
+      "title": "图1"
+    }
+  },
+  "23": {
+    "inputs": {
+      "image": [
+        "22",
+        0
+      ]
+    },
+    "class_type": "FluxKontextImageScale",
+    "_meta": {
+      "title": "图像缩放为FluxKontext"
+    }
+  },
+  "24": {
+    "inputs": {
+      "prompt": "去掉女人",
+      "clip": [
+        "18",
+        0
+      ],
+      "vae": [
+        "19",
+        0
+      ],
+      "image1": [
+        "23",
+        0
+      ],
+      "image2": [
+        "7",
+        0
+      ],
+      "image3": [
+        "21",
+        0
+      ]
+    },
+    "class_type": "TextEncodeQwenImageEditPlus",
+    "_meta": {
+      "title": "TextEncodeQwenImageEditPlus (Positive)"
+    }
+  },
+  "25": {
+    "inputs": {
+      "width": 512,
+      "height": 512,
+      "batch_size": 1
+    },
+    "class_type": "EmptyLatentImage",
+    "_meta": {
+      "title": "空Latent图像"
+    }
+  }
+}

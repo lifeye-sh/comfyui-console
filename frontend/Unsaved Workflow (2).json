@@ -1,0 +1,260 @@
+{
+  "311": {
+    "inputs": {
+      "prompt": "创建一个特写正视图，纯白色背景上的头部正面特写，一致的照明和风格，没有背景噪音，没有阴影\n\n创建一个正视图，纯白色背景上的半身姿势，从头到胸部，一致的照明和风格，没有背景噪音，没有阴影\n\n创建一个正视图，纯白色背景上的全身姿势，从头到脚，一致的照明和风格，没有背景噪音，没有阴影\n\n创建一个右侧面，纯白色背景上的全身姿势，从头到脚，一致的照明和风格，没有背景噪音，没有阴影\n\n创建一个背面图，纯白色背景上的全身姿势，从头到脚，一致的照明和风格，没有背景噪音，没有阴影\n\n"
+    },
+    "class_type": "CR Prompt Text",
+    "_meta": {
+      "title": "人物角色图 - LTX  select=2"
+    }
+  },
+  "312": {
+    "inputs": {
+      "filename_prefix": "actor_view_",
+      "images": [
+        "348",
+        0
+      ]
+    },
+    "class_type": "SaveImage",
+    "_meta": {
+      "title": "保存图像"
+    }
+  },
+  "320": {
+    "inputs": {
+      "image": "Gemini_Generated_Image_fma6xjfma6xjfma6.png"
+    },
+    "class_type": "LoadImage",
+    "_meta": {
+      "title": "上传图片"
+    }
+  },
+  "323": {
+    "inputs": {
+      "conditioning": [
+        "329",
+        0
+      ]
+    },
+    "class_type": "ConditioningZeroOut",
+    "_meta": {
+      "title": "条件零化"
+    }
+  },
+  "325": {
+    "inputs": {
+      "clip_name": "Qwen\\qwen_2.5_vl_7b_fp8_scaled.safetensors",
+      "type": "qwen_image",
+      "device": "default"
+    },
+    "class_type": "CLIPLoader",
+    "_meta": {
+      "title": "加载CLIP"
+    }
+  },
+  "326": {
+    "inputs": {
+      "vae_name": "Qwen\\qwen_image_vae.safetensors"
+    },
+    "class_type": "VAELoader",
+    "_meta": {
+      "title": "加载VAE"
+    }
+  },
+  "329": {
+    "inputs": {
+      "prompt": [
+        "332",
+        0
+      ],
+      "clip": [
+        "325",
+        0
+      ],
+      "vae": [
+        "326",
+        0
+      ],
+      "image1": [
+        "320",
+        0
+      ]
+    },
+    "class_type": "TextEncodeQwenImageEditPlus",
+    "_meta": {
+      "title": "文本编码（QwenImageEditPlus）"
+    }
+  },
+  "330": {
+    "inputs": {
+      "purge_cache": true,
+      "purge_models": true,
+      "anything": [
+        "349",
+        0
+      ]
+    },
+    "class_type": "LayerUtility: PurgeVRAM",
+    "_meta": {
+      "title": "图层工具：清除VRAM"
+    }
+  },
+  "332": {
+    "inputs": {
+      "string": [
+        "335",
+        0
+      ]
+    },
+    "class_type": "JDCN_StringToList",
+    "_meta": {
+      "title": "JDCN_StringToList"
+    }
+  },
+  "335": {
+    "inputs": {
+      "input_string": [
+        "311",
+        0
+      ],
+      "option": "去空行"
+    },
+    "class_type": "ProcessString",
+    "_meta": {
+      "title": "常规处理字符🐠meeeyo.com"
+    }
+  },
+  "336": {
+    "inputs": {
+      "images": [
+        "348",
+        0
+      ]
+    },
+    "class_type": "ImageListToImageBatch",
+    "_meta": {
+      "title": "图像列表到图像批次"
+    }
+  },
+  "341": {
+    "inputs": {
+      "mode": "horizontal",
+      "images": [
+        "336",
+        0
+      ]
+    },
+    "class_type": "easy joinImageBatch",
+    "_meta": {
+      "title": "合并图像批次"
+    }
+  },
+  "348": {
+    "inputs": {
+      "anything": [
+        "349",
+        0
+      ]
+    },
+    "class_type": "easy cleanGpuUsed",
+    "_meta": {
+      "title": "清理显存占用"
+    }
+  },
+  "349": {
+    "inputs": {
+      "samples": [
+        "357",
+        0
+      ],
+      "vae": [
+        "326",
+        0
+      ]
+    },
+    "class_type": "VAEDecode",
+    "_meta": {
+      "title": "VAE解码"
+    }
+  },
+  "353": {
+    "inputs": {
+      "unet_name": "qwen\\Qwen-Image-Edit-2509_fp8_e4m3fn.safetensors",
+      "weight_dtype": "default"
+    },
+    "class_type": "UNETLoader",
+    "_meta": {
+      "title": "UNet加载器"
+    }
+  },
+  "354": {
+    "inputs": {
+      "lora_name": "Qwen\\2509\\Qwen-Image-Lightning-8steps-V2.0-bf16.safetensors",
+      "strength_model": 0.6,
+      "model": [
+        "353",
+        0
+      ]
+    },
+    "class_type": "LoraLoaderModelOnly",
+    "_meta": {
+      "title": "LoRA加载器（仅模型）"
+    }
+  },
+  "355": {
+    "inputs": {
+      "lora_name": "Qwen\\2509\\镜头转换.safetensors",
+      "strength_model": 1.0000000000000002,
+      "model": [
+        "354",
+        0
+      ]
+    },
+    "class_type": "LoraLoaderModelOnly",
+    "_meta": {
+      "title": "LoRA加载器（仅模型）"
+    }
+  },
+  "357": {
+    "inputs": {
+      "seed": 36275665461942,
+      "steps": 8,
+      "cfg": 1,
+      "sampler_name": "res_2m",
+      "scheduler": "sgm_uniform",
+      "denoise": 1,
+      "model": [
+        "355",
+        0
+      ],
+      "positive": [
+        "329",
+        0
+      ],
+      "negative": [
+        "323",
+        0
+      ],
+      "latent_image": [
+        "359",
+        0
+      ]
+    },
+    "class_type": "KSampler",
+    "_meta": {
+      "title": "K采样器"
+    }
+  },
+  "359": {
+    "inputs": {
+      "width": 1024,
+      "height": 1792,
+      "batch_size": 1
+    },
+    "class_type": "EmptyLatentImage",
+    "_meta": {
+      "title": "空Latent图像"
+    }
+  }
+}

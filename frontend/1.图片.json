@@ -1,0 +1,239 @@
+{
+  "34": {
+    "inputs": {
+      "filename_prefix": "Krea2_RedPro",
+      "images": [
+        "39:18",
+        0
+      ]
+    },
+    "class_type": "SaveImage",
+    "_meta": {
+      "title": "保存图像"
+    }
+  },
+  "35": {
+    "inputs": {
+      "value": "**中文提示词：**\n一张超写实的亲密特写照片，展示了一位美丽的年轻亚洲女性坐在在柔软的沙发上。她留着长长的、有光泽的深棕色秀发，拥有一双大而富有表现力的眼睛，妆容柔和自然。她的皮肤完美无瑕，散发着温暖的光泽。\n\n**风格与美学：**\n*   **媒介：** 超写实摄影，模仿高端电影风格的数字艺术。\n*   **光线：** 自然窗光（丁达尔效应）透过白色蕾丝薄纱窗帘射入，营造出柔和的高光和戏剧性的阴影。光线来自左侧。\n*   **色调：** 以奶油白、柔和肤色和浓郁的巧克力棕为主调的柔和色调。高调布光，辅以冷色阴影。\n*   **质感：** 重点展现薄纱睡袍的透明感、头发的柔软以及床品的织物纹理。\n\n**主体细节：**\n*   **姿势：** 正常坐姿。\n*   **服装:** 穿着一套黑色的透视连体衣或吊带裙。材质看起来是轻薄、透明的黑色薄纱。圆领口，肩带纤细。\n*   **面部：** 直视镜头，眼神温柔而迷人。\n\n**技术参数：**\n*   **镜头：** 85mm半身人像镜头，f/1.8大光圈，浅景深效果。\n*   **分辨率：** 8K，细节极其锐利。\n*   **关键词：** 柔焦，散景，电影级布光，体积光，空灵，性感，精致，照片级真实感，3D渲染，OC渲染，杰作。, "
+    },
+    "class_type": "PrimitiveStringMultiline",
+    "_meta": {
+      "title": "Prompt 提示词"
+    }
+  },
+  "65": {
+    "inputs": {
+      "text": "一个18岁的亚洲美女"
+    },
+    "class_type": "CR Text",
+    "_meta": {
+      "title": "文本"
+    }
+  },
+  "66": {
+    "inputs": {
+      "separator": "，",
+      "text1": [
+        "65",
+        0
+      ],
+      "text2": [
+        "35",
+        0
+      ]
+    },
+    "class_type": "CR Text Concatenate",
+    "_meta": {
+      "title": "文本联结"
+    }
+  },
+  "39:5": {
+    "inputs": {
+      "width": [
+        "39:33",
+        0
+      ],
+      "height": [
+        "39:33",
+        1
+      ],
+      "batch_size": 1
+    },
+    "class_type": "EmptyLatentImage",
+    "_meta": {
+      "title": "空Latent图像"
+    }
+  },
+  "39:13": {
+    "inputs": {
+      "vae_name": "万相KJ\\wan_2.1_vae.safetensors"
+    },
+    "class_type": "VAELoader",
+    "_meta": {
+      "title": "加载VAE"
+    }
+  },
+  "39:20": {
+    "inputs": {
+      "clip_name": "krea2\\qwen3vl_4b_bf16.safetensors",
+      "type": "krea2",
+      "device": "default"
+    },
+    "class_type": "CLIPLoader",
+    "_meta": {
+      "title": "加载CLIP"
+    }
+  },
+  "39:19": {
+    "inputs": {
+      "unet_name": "krea2\\Krea2-MuseByStable_v15Turbo_fp8.safetensors",
+      "weight_dtype": "default"
+    },
+    "class_type": "UNETLoader",
+    "_meta": {
+      "title": "UNet加载器"
+    }
+  },
+  "39:17": {
+    "inputs": {
+      "anything": [
+        "39:15",
+        0
+      ]
+    },
+    "class_type": "easy cleanGpuUsed",
+    "_meta": {
+      "title": "清理显存占用"
+    }
+  },
+  "39:15": {
+    "inputs": {
+      "samples": [
+        "39:16",
+        0
+      ],
+      "vae": [
+        "39:13",
+        0
+      ]
+    },
+    "class_type": "VAEDecode",
+    "_meta": {
+      "title": "VAE解码"
+    }
+  },
+  "39:18": {
+    "inputs": {
+      "clean_file_cache": true,
+      "clean_processes": true,
+      "clean_dlls": true,
+      "retry_times": 3,
+      "anything": [
+        "39:17",
+        0
+      ]
+    },
+    "class_type": "RAMCleanup",
+    "_meta": {
+      "title": "🎈RAM-Cleanup"
+    }
+  },
+  "39:33": {
+    "inputs": {
+      "aspect_ratio": "9:16 (Portrait Widescreen)",
+      "megapixels": 2,
+      "multiple": 16
+    },
+    "class_type": "ResolutionSelector",
+    "_meta": {
+      "title": "Resolution Selector 分辨率设置"
+    }
+  },
+  "39:16": {
+    "inputs": {
+      "seed": 974707877049971,
+      "steps": 8,
+      "cfg": 1,
+      "sampler_name": "euler_ancestral",
+      "scheduler": "ddim_uniform",
+      "denoise": 1,
+      "model": [
+        "39:19",
+        0
+      ],
+      "positive": [
+        "39:76",
+        0
+      ],
+      "negative": [
+        "39:6",
+        0
+      ],
+      "latent_image": [
+        "39:5",
+        0
+      ]
+    },
+    "class_type": "KSampler",
+    "_meta": {
+      "title": "K采样器"
+    }
+  },
+  "39:7": {
+    "inputs": {
+      "text": [
+        "39:36",
+        0
+      ],
+      "clip": [
+        "39:20",
+        0
+      ]
+    },
+    "class_type": "CLIPTextEncode",
+    "_meta": {
+      "title": "CLIP文本编码"
+    }
+  },
+  "39:6": {
+    "inputs": {
+      "conditioning": [
+        "39:7",
+        0
+      ]
+    },
+    "class_type": "ConditioningZeroOut",
+    "_meta": {
+      "title": "条件零化"
+    }
+  },
+  "39:76": {
+    "inputs": {
+      "preset": "balanced",
+      "per_layer_weights": "1.0,1.0,1.0,1.0,1.0,1.0,1.0,2.5,5.0,1.1,4.0,1.0",
+      "multiplier": 1,
+      "renormalize": true,
+      "conditioning": [
+        "39:7",
+        0
+      ]
+    },
+    "class_type": "ConditioningKrea2Rebalance",
+    "_meta": {
+      "title": "🎛️ Krea 2 Conditioning Control"
+    }
+  },
+  "39:36": {
+    "inputs": {
+      "text_0": "一个18岁的亚洲美女，**中文提示词：**\n一张超写实的亲密特写照片，展示了一位美丽的年轻亚洲女性坐在在柔软的沙发上。她留着长长的、有光泽的深棕色秀发，拥有一双大而富有表现力的眼睛，妆容柔和自然。她的皮肤完美无瑕，散发着温暖的光泽。\n\n**风格与美学：**\n*   **媒介：** 超写实摄影，模仿高端电影风格的数字艺术。\n*   **光线：** 自然窗光（丁达尔效应）透过白色蕾丝薄纱窗帘射入，营造出柔和的高光和戏剧性的阴影。光线来自左侧。\n*   **色调：** 以奶油白、柔和肤色和浓郁的巧克力棕为主调的柔和色调。高调布光，辅以冷色阴影。\n*   **质感：** 重点展现薄纱睡袍的透明感、头发的柔软以及床品的织物纹理。\n\n**主体细节：**\n*   **姿势：** 正常坐姿。\n*   **服装:** 穿着一套黑色的透视连体衣或吊带裙。材质看起来是轻薄、透明的黑色薄纱。圆领口，肩带纤细。\n*   **面部：** 直视镜头，眼神温柔而迷人。\n\n**技术参数：**\n*   **镜头：** 85mm半身人像镜头，f/1.8大光圈，浅景深效果。\n*   **分辨率：** 8K，细节极其锐利。\n*   **关键词：** 柔焦，散景，电影级布光，体积光，空灵，性感，精致，照片级真实感，3D渲染，OC渲染，杰作。, ",
+      "text": [
+        "66",
+        0
+      ]
+    },
+    "class_type": "ShowText|pysssss",
+    "_meta": {
+      "title": "Show Text 🐍"
+    }
+  }
+}

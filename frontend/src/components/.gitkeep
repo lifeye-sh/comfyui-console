@@ -1,0 +1,2 @@
+// 通用组件（CC-10 起补全 ParamForm/ResourceSlot/PromptPicker/BatchGrid 等）
+export {}

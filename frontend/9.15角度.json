@@ -1,0 +1,4215 @@
+{
+  "22": {
+    "inputs": {
+      "image": "Krea2_fix_00033_.png"
+    },
+    "class_type": "LoadImage",
+    "_meta": {
+      "title": "加载图像"
+    }
+  },
+  "36": {
+    "inputs": {
+      "filename_prefix": [
+        "100",
+        0
+      ],
+      "images": [
+        "443",
+        0
+      ]
+    },
+    "class_type": "SaveImage",
+    "_meta": {
+      "title": "保存图像"
+    }
+  },
+  "48": {
+    "inputs": {
+      "clip_name": "Qwen\\qwen_2.5_vl_7b_fp8_scaled.safetensors",
+      "type": "qwen_image",
+      "device": "default"
+    },
+    "class_type": "CLIPLoader",
+    "_meta": {
+      "title": "加载CLIP"
+    }
+  },
+  "49": {
+    "inputs": {
+      "vae_name": "Qwen\\qwen_image_vae.safetensors"
+    },
+    "class_type": "VAELoader",
+    "_meta": {
+      "title": "加载VAE"
+    }
+  },
+  "56": {
+    "inputs": {
+      "value": 670290647897057
+    },
+    "class_type": "PrimitiveInt",
+    "_meta": {
+      "title": "随机种子1"
+    }
+  },
+  "58": {
+    "inputs": {
+      "value": "创建一个正视图，全身姿势，一致的照明和风格，没有背景噪音，没有阴影"
+    },
+    "class_type": "PrimitiveStringMultiline",
+    "_meta": {
+      "title": "提示词"
+    }
+  },
+  "66": {
+    "inputs": {
+      "value": -12507398091915
+    },
+    "class_type": "PrimitiveInt",
+    "_meta": {
+      "title": "随机种子2"
+    }
+  },
+  "80": {
+    "inputs": {
+      "filename_prefix": [
+        "100",
+        0
+      ],
+      "images": [
+        "619",
+        0
+      ]
+    },
+    "class_type": "SaveImage",
+    "_meta": {
+      "title": "保存图像"
+    }
+  },
+  "92": {
+    "inputs": {
+      "filename_prefix": [
+        "100",
+        0
+      ],
+      "images": [
+        "665",
+        0
+      ]
+    },
+    "class_type": "SaveImage",
+    "_meta": {
+      "title": "保存图像"
+    }
+  },
+  "93": {
+    "inputs": {
+      "value": -124975185977080
+    },
+    "class_type": "PrimitiveInt",
+    "_meta": {
+      "title": "随机种子3"
+    }
+  },
+  "95": {
+    "inputs": {
+      "value": "Qwen"
+    },
+    "class_type": "PrimitiveString",
+    "_meta": {
+      "title": "图片来源"
+    }
+  },
+  "96": {
+    "inputs": {
+      "string_a": [
+        "97",
+        0
+      ],
+      "string_b": [
+        "105",
+        0
+      ],
+      "delimiter": "/"
+    },
+    "class_type": "StringConcatenate",
+    "_meta": {
+      "title": "连接"
+    }
+  },
+  "97": {
+    "inputs": {
+      "value": "人物一致性"
+    },
+    "class_type": "PrimitiveString",
+    "_meta": {
+      "title": "文件夹名字"
+    }
+  },
+  "100": {
+    "inputs": {
+      "string_a": [
+        "96",
+        0
+      ],
+      "string_b": [
+        "95",
+        0
+      ],
+      "delimiter": "_"
+    },
+    "class_type": "StringConcatenate",
+    "_meta": {
+      "title": "连接"
+    }
+  },
+  "105": {
+    "inputs": {
+      "value": "Name"
+    },
+    "class_type": "PrimitiveString",
+    "_meta": {
+      "title": "图片的名称 保存到“output/人物一致性” 文件夹里面"
+    }
+  },
+  "115": {
+    "inputs": {
+      "filename_prefix": [
+        "100",
+        0
+      ],
+      "images": [
+        "594",
+        0
+      ]
+    },
+    "class_type": "SaveImage",
+    "_meta": {
+      "title": "保存图像"
+    }
+  },
+  "116": {
+    "inputs": {
+      "value": 597187477076243
+    },
+    "class_type": "PrimitiveInt",
+    "_meta": {
+      "title": "随机种子4"
+    }
+  },
+  "130": {
+    "inputs": {
+      "filename_prefix": [
+        "100",
+        0
+      ],
+      "images": [
+        "690",
+        0
+      ]
+    },
+    "class_type": "SaveImage",
+    "_meta": {
+      "title": "保存图像"
+    }
+  },
+  "131": {
+    "inputs": {
+      "value": -692945056339756
+    },
+    "class_type": "PrimitiveInt",
+    "_meta": {
+      "title": "随机种子5"
+    }
+  },
+  "153": {
+    "inputs": {
+      "value": 953339654663335
+    },
+    "class_type": "PrimitiveInt",
+    "_meta": {
+      "title": "随机种子6"
+    }
+  },
+  "155": {
+    "inputs": {
+      "filename_prefix": [
+        "100",
+        0
+      ],
+      "images": [
+        "715",
+        0
+      ]
+    },
+    "class_type": "SaveImage",
+    "_meta": {
+      "title": "保存图像"
+    }
+  },
+  "158": {
+    "inputs": {
+      "value": -630612282691860
+    },
+    "class_type": "PrimitiveInt",
+    "_meta": {
+      "title": "随机种子7"
+    }
+  },
+  "160": {
+    "inputs": {
+      "filename_prefix": [
+        "100",
+        0
+      ],
+      "images": [
+        "761",
+        0
+      ]
+    },
+    "class_type": "SaveImage",
+    "_meta": {
+      "title": "保存图像"
+    }
+  },
+  "172": {
+    "inputs": {
+      "value": 4
+    },
+    "class_type": "PrimitiveInt",
+    "_meta": {
+      "title": "迭代步数"
+    }
+  },
+  "188": {
+    "inputs": {
+      "width": 1024,
+      "height": 1792,
+      "batch_size": 1
+    },
+    "class_type": "EmptyLatentImage",
+    "_meta": {
+      "title": "空Latent图像"
+    }
+  },
+  "202": {
+    "inputs": {
+      "value": "创建一个右侧面视图，全身姿势，一致的照明和风格，没有背景噪音，没有阴影"
+    },
+    "class_type": "PrimitiveStringMultiline",
+    "_meta": {
+      "title": "提示词"
+    }
+  },
+  "211": {
+    "inputs": {
+      "value": "创建一个左侧面，全身姿势，一致的照明和风格，没有背景噪音，没有阴影"
+    },
+    "class_type": "PrimitiveStringMultiline",
+    "_meta": {
+      "title": "提示词"
+    }
+  },
+  "226": {
+    "inputs": {
+      "value": ""
+    },
+    "class_type": "PrimitiveStringMultiline",
+    "_meta": {
+      "title": "提示词（输入穿着）"
+    }
+  },
+  "233": {
+    "inputs": {
+      "upscale_method": "nearest-exact",
+      "megapixels": 1.2,
+      "resolution_steps": 1,
+      "image": [
+        "22",
+        0
+      ]
+    },
+    "class_type": "ImageScaleToTotalPixels",
+    "_meta": {
+      "title": "缩放图像（像素）"
+    }
+  },
+  "236": {
+    "inputs": {
+      "string_a": [
+        "58",
+        0
+      ],
+      "string_b": [
+        "226",
+        0
+      ],
+      "delimiter": "，"
+    },
+    "class_type": "StringConcatenate",
+    "_meta": {
+      "title": "连接"
+    }
+  },
+  "249": {
+    "inputs": {
+      "value": "创建一个正背后视图，全身姿势，一致的照明和风格，没有背景噪音，没有阴影"
+    },
+    "class_type": "PrimitiveStringMultiline",
+    "_meta": {
+      "title": "提示词"
+    }
+  },
+  "259": {
+    "inputs": {
+      "value": "创建一个半身图，近景照，一致的照明和风格，没有背景噪音，没有阴影"
+    },
+    "class_type": "PrimitiveStringMultiline",
+    "_meta": {
+      "title": "提示词"
+    }
+  },
+  "278": {
+    "inputs": {
+      "value": "创建一个右侧面45度，半身姿势，一致的照明和风格，没有背景噪音，没有阴影"
+    },
+    "class_type": "PrimitiveStringMultiline",
+    "_meta": {
+      "title": "提示词"
+    }
+  },
+  "289": {
+    "inputs": {
+      "value": "创建一个左侧面，半身姿势，一致的照明和风格，没有背景噪音，没有阴影"
+    },
+    "class_type": "PrimitiveStringMultiline",
+    "_meta": {
+      "title": "提示词"
+    }
+  },
+  "310": {
+    "inputs": {
+      "value": "创建一个特写正视图，人脸特写，一致的照明和风格，没有背景噪音，没有阴影"
+    },
+    "class_type": "PrimitiveStringMultiline",
+    "_meta": {
+      "title": "提示词"
+    }
+  },
+  "349": {
+    "inputs": {
+      "value": 101757296721007
+    },
+    "class_type": "PrimitiveInt",
+    "_meta": {
+      "title": "随机种子13"
+    }
+  },
+  "350": {
+    "inputs": {
+      "filename_prefix": [
+        "100",
+        0
+      ],
+      "images": [
+        "882",
+        0
+      ]
+    },
+    "class_type": "SaveImage",
+    "_meta": {
+      "title": "保存图像"
+    }
+  },
+  "354": {
+    "inputs": {
+      "value": -884046544951075
+    },
+    "class_type": "PrimitiveInt",
+    "_meta": {
+      "title": "随机种子14"
+    }
+  },
+  "355": {
+    "inputs": {
+      "filename_prefix": [
+        "100",
+        0
+      ],
+      "images": [
+        "900",
+        0
+      ]
+    },
+    "class_type": "SaveImage",
+    "_meta": {
+      "title": "保存图像"
+    }
+  },
+  "360": {
+    "inputs": {
+      "value": -524753990206074
+    },
+    "class_type": "PrimitiveInt",
+    "_meta": {
+      "title": "随机种子8"
+    }
+  },
+  "361": {
+    "inputs": {
+      "value": -304366678631443
+    },
+    "class_type": "PrimitiveInt",
+    "_meta": {
+      "title": "随机种子9"
+    }
+  },
+  "362": {
+    "inputs": {
+      "value": 129329524267656
+    },
+    "class_type": "PrimitiveInt",
+    "_meta": {
+      "title": "随机种子10"
+    }
+  },
+  "365": {
+    "inputs": {
+      "filename_prefix": [
+        "100",
+        0
+      ],
+      "images": [
+        "779",
+        0
+      ]
+    },
+    "class_type": "SaveImage",
+    "_meta": {
+      "title": "保存图像"
+    }
+  },
+  "368": {
+    "inputs": {
+      "filename_prefix": [
+        "100",
+        0
+      ],
+      "images": [
+        "823",
+        0
+      ]
+    },
+    "class_type": "SaveImage",
+    "_meta": {
+      "title": "保存图像"
+    }
+  },
+  "371": {
+    "inputs": {
+      "filename_prefix": [
+        "100",
+        0
+      ],
+      "images": [
+        "844",
+        0
+      ]
+    },
+    "class_type": "SaveImage",
+    "_meta": {
+      "title": "保存图像"
+    }
+  },
+  "384": {
+    "inputs": {
+      "value": 312842954420134
+    },
+    "class_type": "PrimitiveInt",
+    "_meta": {
+      "title": "随机种子11"
+    }
+  },
+  "388": {
+    "inputs": {
+      "filename_prefix": [
+        "100",
+        0
+      ],
+      "images": [
+        "742",
+        0
+      ]
+    },
+    "class_type": "SaveImage",
+    "_meta": {
+      "title": "保存图像"
+    }
+  },
+  "405": {
+    "inputs": {
+      "value": -1069051247982736
+    },
+    "class_type": "PrimitiveInt",
+    "_meta": {
+      "title": "随机种子12"
+    }
+  },
+  "406": {
+    "inputs": {
+      "filename_prefix": [
+        "100",
+        0
+      ],
+      "images": [
+        "863",
+        0
+      ]
+    },
+    "class_type": "SaveImage",
+    "_meta": {
+      "title": "保存图像"
+    }
+  },
+  "441": {
+    "inputs": {
+      "strength": 1,
+      "pre_cfg": false,
+      "model": [
+        "442",
+        0
+      ]
+    },
+    "class_type": "CFGNorm",
+    "_meta": {
+      "title": "CFG归一化"
+    }
+  },
+  "442": {
+    "inputs": {
+      "shift": 3,
+      "model": [
+        "938",
+        0
+      ]
+    },
+    "class_type": "ModelSamplingAuraFlow",
+    "_meta": {
+      "title": "采样算法（AuraFlow）"
+    }
+  },
+  "443": {
+    "inputs": {
+      "samples": [
+        "446",
+        0
+      ],
+      "vae": [
+        "49",
+        0
+      ]
+    },
+    "class_type": "VAEDecode",
+    "_meta": {
+      "title": "VAE解码"
+    }
+  },
+  "446": {
+    "inputs": {
+      "seed": [
+        "56",
+        0
+      ],
+      "steps": [
+        "172",
+        0
+      ],
+      "cfg": 1,
+      "sampler_name": "euler",
+      "scheduler": "simple",
+      "denoise": 1,
+      "model": [
+        "441",
+        0
+      ],
+      "positive": [
+        "584",
+        0
+      ],
+      "negative": [
+        "583",
+        0
+      ],
+      "latent_image": [
+        "448",
+        0
+      ]
+    },
+    "class_type": "KSampler",
+    "_meta": {
+      "title": "K采样器"
+    }
+  },
+  "448": {
+    "inputs": {
+      "any_01": [
+        "188",
+        0
+      ],
+      "any_02": [
+        "585",
+        0
+      ]
+    },
+    "class_type": "Any Switch (rgthree)",
+    "_meta": {
+      "title": "Any Switch (rgthree)"
+    }
+  },
+  "562": {
+    "inputs": {
+      "image": "01.png"
+    },
+    "class_type": "LoadImage",
+    "_meta": {
+      "title": "加载图像"
+    }
+  },
+  "578": {
+    "inputs": {
+      "value": "按图片2的姿势，用图1的人物"
+    },
+    "class_type": "PrimitiveStringMultiline",
+    "_meta": {
+      "title": "提示词"
+    }
+  },
+  "579": {
+    "inputs": {
+      "string_a": [
+        "578",
+        0
+      ],
+      "string_b": [
+        "236",
+        0
+      ],
+      "delimiter": ""
+    },
+    "class_type": "StringConcatenate",
+    "_meta": {
+      "title": "连接"
+    }
+  },
+  "580": {
+    "inputs": {
+      "any_01": [
+        "579",
+        0
+      ],
+      "any_02": [
+        "236",
+        0
+      ]
+    },
+    "class_type": "Any Switch (rgthree)",
+    "_meta": {
+      "title": "Any Switch (rgthree)"
+    }
+  },
+  "583": {
+    "inputs": {
+      "prompt": "",
+      "clip": [
+        "48",
+        0
+      ],
+      "vae": [
+        "49",
+        0
+      ],
+      "image1": [
+        "586",
+        0
+      ],
+      "image2": [
+        "562",
+        0
+      ]
+    },
+    "class_type": "TextEncodeQwenImageEditPlus",
+    "_meta": {
+      "title": "文本编码（QwenImageEditPlus）"
+    }
+  },
+  "584": {
+    "inputs": {
+      "prompt": [
+        "580",
+        0
+      ],
+      "clip": [
+        "48",
+        0
+      ],
+      "vae": [
+        "49",
+        0
+      ],
+      "image1": [
+        "586",
+        0
+      ],
+      "image2": [
+        "562",
+        0
+      ]
+    },
+    "class_type": "TextEncodeQwenImageEditPlus",
+    "_meta": {
+      "title": "文本编码（QwenImageEditPlus）"
+    }
+  },
+  "585": {
+    "inputs": {
+      "pixels": [
+        "233",
+        0
+      ],
+      "vae": [
+        "49",
+        0
+      ]
+    },
+    "class_type": "VAEEncode",
+    "_meta": {
+      "title": "VAE编码"
+    }
+  },
+  "586": {
+    "inputs": {
+      "upscale_method": "nearest-exact",
+      "megapixels": 1,
+      "resolution_steps": 1,
+      "image": [
+        "233",
+        0
+      ]
+    },
+    "class_type": "ImageScaleToTotalPixels",
+    "_meta": {
+      "title": "缩放图像（像素）"
+    }
+  },
+  "593": {
+    "inputs": {
+      "seed": [
+        "116",
+        0
+      ],
+      "steps": [
+        "172",
+        0
+      ],
+      "cfg": 1,
+      "sampler_name": "euler",
+      "scheduler": "simple",
+      "denoise": 1,
+      "model": [
+        "595",
+        0
+      ],
+      "positive": [
+        "601",
+        0
+      ],
+      "negative": [
+        "605",
+        0
+      ],
+      "latent_image": [
+        "616",
+        0
+      ]
+    },
+    "class_type": "KSampler",
+    "_meta": {
+      "title": "K采样器"
+    }
+  },
+  "594": {
+    "inputs": {
+      "samples": [
+        "593",
+        0
+      ],
+      "vae": [
+        "49",
+        0
+      ]
+    },
+    "class_type": "VAEDecode",
+    "_meta": {
+      "title": "VAE解码"
+    }
+  },
+  "595": {
+    "inputs": {
+      "strength": 1,
+      "pre_cfg": false,
+      "model": [
+        "613",
+        0
+      ]
+    },
+    "class_type": "CFGNorm",
+    "_meta": {
+      "title": "CFG归一化"
+    }
+  },
+  "598": {
+    "inputs": {
+      "string_a": [
+        "600",
+        0
+      ],
+      "string_b": [
+        "599",
+        0
+      ],
+      "delimiter": ""
+    },
+    "class_type": "StringConcatenate",
+    "_meta": {
+      "title": "连接"
+    }
+  },
+  "599": {
+    "inputs": {
+      "string_a": [
+        "249",
+        0
+      ],
+      "string_b": [
+        "226",
+        0
+      ],
+      "delimiter": "，"
+    },
+    "class_type": "StringConcatenate",
+    "_meta": {
+      "title": "连接"
+    }
+  },
+  "600": {
+    "inputs": {
+      "value": "按图片2的姿势，用图1的人物"
+    },
+    "class_type": "PrimitiveStringMultiline",
+    "_meta": {
+      "title": "提示词"
+    }
+  },
+  "601": {
+    "inputs": {
+      "prompt": [
+        "606",
+        0
+      ],
+      "clip": [
+        "48",
+        0
+      ],
+      "vae": [
+        "49",
+        0
+      ],
+      "image1": [
+        "603",
+        0
+      ],
+      "image2": [
+        "608",
+        0
+      ]
+    },
+    "class_type": "TextEncodeQwenImageEditPlus",
+    "_meta": {
+      "title": "文本编码（QwenImageEditPlus）"
+    }
+  },
+  "603": {
+    "inputs": {
+      "upscale_method": "nearest-exact",
+      "megapixels": 1,
+      "resolution_steps": 1,
+      "image": [
+        "233",
+        0
+      ]
+    },
+    "class_type": "ImageScaleToTotalPixels",
+    "_meta": {
+      "title": "缩放图像（像素）"
+    }
+  },
+  "605": {
+    "inputs": {
+      "prompt": "",
+      "clip": [
+        "48",
+        0
+      ],
+      "vae": [
+        "49",
+        0
+      ],
+      "image1": [
+        "603",
+        0
+      ],
+      "image2": [
+        "608",
+        0
+      ]
+    },
+    "class_type": "TextEncodeQwenImageEditPlus",
+    "_meta": {
+      "title": "文本编码（QwenImageEditPlus）"
+    }
+  },
+  "606": {
+    "inputs": {
+      "any_01": [
+        "598",
+        0
+      ],
+      "any_02": [
+        "599",
+        0
+      ]
+    },
+    "class_type": "Any Switch (rgthree)",
+    "_meta": {
+      "title": "Any Switch (rgthree)"
+    }
+  },
+  "607": {
+    "inputs": {
+      "pixels": [
+        "233",
+        0
+      ],
+      "vae": [
+        "49",
+        0
+      ]
+    },
+    "class_type": "VAEEncode",
+    "_meta": {
+      "title": "VAE编码"
+    }
+  },
+  "608": {
+    "inputs": {
+      "image": "10.png"
+    },
+    "class_type": "LoadImage",
+    "_meta": {
+      "title": "加载图像"
+    }
+  },
+  "613": {
+    "inputs": {
+      "shift": 3,
+      "model": [
+        "938",
+        0
+      ]
+    },
+    "class_type": "ModelSamplingAuraFlow",
+    "_meta": {
+      "title": "采样算法（AuraFlow）"
+    }
+  },
+  "616": {
+    "inputs": {
+      "any_01": [
+        "188",
+        0
+      ],
+      "any_02": [
+        "607",
+        0
+      ]
+    },
+    "class_type": "Any Switch (rgthree)",
+    "_meta": {
+      "title": "Any Switch (rgthree)"
+    }
+  },
+  "618": {
+    "inputs": {
+      "seed": [
+        "66",
+        0
+      ],
+      "steps": [
+        "172",
+        0
+      ],
+      "cfg": 1,
+      "sampler_name": "euler",
+      "scheduler": "simple",
+      "denoise": 1,
+      "model": [
+        "620",
+        0
+      ],
+      "positive": [
+        "626",
+        0
+      ],
+      "negative": [
+        "630",
+        0
+      ],
+      "latent_image": [
+        "641",
+        0
+      ]
+    },
+    "class_type": "KSampler",
+    "_meta": {
+      "title": "K采样器"
+    }
+  },
+  "619": {
+    "inputs": {
+      "samples": [
+        "618",
+        0
+      ],
+      "vae": [
+        "49",
+        0
+      ]
+    },
+    "class_type": "VAEDecode",
+    "_meta": {
+      "title": "VAE解码"
+    }
+  },
+  "620": {
+    "inputs": {
+      "strength": 1,
+      "pre_cfg": false,
+      "model": [
+        "638",
+        0
+      ]
+    },
+    "class_type": "CFGNorm",
+    "_meta": {
+      "title": "CFG归一化"
+    }
+  },
+  "623": {
+    "inputs": {
+      "string_a": [
+        "625",
+        0
+      ],
+      "string_b": [
+        "624",
+        0
+      ],
+      "delimiter": ""
+    },
+    "class_type": "StringConcatenate",
+    "_meta": {
+      "title": "连接"
+    }
+  },
+  "624": {
+    "inputs": {
+      "string_a": [
+        "202",
+        0
+      ],
+      "string_b": [
+        "226",
+        0
+      ],
+      "delimiter": "，"
+    },
+    "class_type": "StringConcatenate",
+    "_meta": {
+      "title": "连接"
+    }
+  },
+  "625": {
+    "inputs": {
+      "value": "按图片2的姿势，用图1的人物"
+    },
+    "class_type": "PrimitiveStringMultiline",
+    "_meta": {
+      "title": "提示词"
+    }
+  },
+  "626": {
+    "inputs": {
+      "prompt": [
+        "631",
+        0
+      ],
+      "clip": [
+        "48",
+        0
+      ],
+      "vae": [
+        "49",
+        0
+      ],
+      "image1": [
+        "628",
+        0
+      ],
+      "image2": [
+        "633",
+        0
+      ]
+    },
+    "class_type": "TextEncodeQwenImageEditPlus",
+    "_meta": {
+      "title": "文本编码（QwenImageEditPlus）"
+    }
+  },
+  "628": {
+    "inputs": {
+      "upscale_method": "nearest-exact",
+      "megapixels": 1,
+      "resolution_steps": 1,
+      "image": [
+        "233",
+        0
+      ]
+    },
+    "class_type": "ImageScaleToTotalPixels",
+    "_meta": {
+      "title": "缩放图像（像素）"
+    }
+  },
+  "630": {
+    "inputs": {
+      "prompt": "",
+      "clip": [
+        "48",
+        0
+      ],
+      "vae": [
+        "49",
+        0
+      ],
+      "image1": [
+        "628",
+        0
+      ],
+      "image2": [
+        "633",
+        0
+      ]
+    },
+    "class_type": "TextEncodeQwenImageEditPlus",
+    "_meta": {
+      "title": "文本编码（QwenImageEditPlus）"
+    }
+  },
+  "631": {
+    "inputs": {
+      "any_01": [
+        "623",
+        0
+      ],
+      "any_02": [
+        "624",
+        0
+      ]
+    },
+    "class_type": "Any Switch (rgthree)",
+    "_meta": {
+      "title": "Any Switch (rgthree)"
+    }
+  },
+  "632": {
+    "inputs": {
+      "pixels": [
+        "233",
+        0
+      ],
+      "vae": [
+        "49",
+        0
+      ]
+    },
+    "class_type": "VAEEncode",
+    "_meta": {
+      "title": "VAE编码"
+    }
+  },
+  "633": {
+    "inputs": {
+      "image": "04.png"
+    },
+    "class_type": "LoadImage",
+    "_meta": {
+      "title": "加载图像"
+    }
+  },
+  "638": {
+    "inputs": {
+      "shift": 3,
+      "model": [
+        "938",
+        0
+      ]
+    },
+    "class_type": "ModelSamplingAuraFlow",
+    "_meta": {
+      "title": "采样算法（AuraFlow）"
+    }
+  },
+  "641": {
+    "inputs": {
+      "any_01": [
+        "188",
+        0
+      ],
+      "any_02": [
+        "632",
+        0
+      ]
+    },
+    "class_type": "Any Switch (rgthree)",
+    "_meta": {
+      "title": "Any Switch (rgthree)"
+    }
+  },
+  "643": {
+    "inputs": {
+      "seed": [
+        "93",
+        0
+      ],
+      "steps": [
+        "172",
+        0
+      ],
+      "cfg": 1,
+      "sampler_name": "euler",
+      "scheduler": "simple",
+      "denoise": 1,
+      "model": [
+        "644",
+        0
+      ],
+      "positive": [
+        "648",
+        0
+      ],
+      "negative": [
+        "652",
+        0
+      ],
+      "latent_image": [
+        "663",
+        0
+      ]
+    },
+    "class_type": "KSampler",
+    "_meta": {
+      "title": "K采样器"
+    }
+  },
+  "644": {
+    "inputs": {
+      "strength": 1,
+      "pre_cfg": false,
+      "model": [
+        "660",
+        0
+      ]
+    },
+    "class_type": "CFGNorm",
+    "_meta": {
+      "title": "CFG归一化"
+    }
+  },
+  "645": {
+    "inputs": {
+      "string_a": [
+        "647",
+        0
+      ],
+      "string_b": [
+        "646",
+        0
+      ],
+      "delimiter": ""
+    },
+    "class_type": "StringConcatenate",
+    "_meta": {
+      "title": "连接"
+    }
+  },
+  "646": {
+    "inputs": {
+      "string_a": [
+        "211",
+        0
+      ],
+      "string_b": [
+        "226",
+        0
+      ],
+      "delimiter": "，"
+    },
+    "class_type": "StringConcatenate",
+    "_meta": {
+      "title": "连接"
+    }
+  },
+  "647": {
+    "inputs": {
+      "value": "按图片2的姿势，用图1的人物"
+    },
+    "class_type": "PrimitiveStringMultiline",
+    "_meta": {
+      "title": "提示词"
+    }
+  },
+  "648": {
+    "inputs": {
+      "prompt": [
+        "653",
+        0
+      ],
+      "clip": [
+        "48",
+        0
+      ],
+      "vae": [
+        "49",
+        0
+      ],
+      "image1": [
+        "650",
+        0
+      ],
+      "image2": [
+        "655",
+        0
+      ]
+    },
+    "class_type": "TextEncodeQwenImageEditPlus",
+    "_meta": {
+      "title": "文本编码（QwenImageEditPlus）"
+    }
+  },
+  "650": {
+    "inputs": {
+      "upscale_method": "nearest-exact",
+      "megapixels": 1,
+      "resolution_steps": 1,
+      "image": [
+        "233",
+        0
+      ]
+    },
+    "class_type": "ImageScaleToTotalPixels",
+    "_meta": {
+      "title": "缩放图像（像素）"
+    }
+  },
+  "652": {
+    "inputs": {
+      "prompt": "",
+      "clip": [
+        "48",
+        0
+      ],
+      "vae": [
+        "49",
+        0
+      ],
+      "image1": [
+        "650",
+        0
+      ],
+      "image2": [
+        "655",
+        0
+      ]
+    },
+    "class_type": "TextEncodeQwenImageEditPlus",
+    "_meta": {
+      "title": "文本编码（QwenImageEditPlus）"
+    }
+  },
+  "653": {
+    "inputs": {
+      "any_01": [
+        "645",
+        0
+      ],
+      "any_02": [
+        "646",
+        0
+      ]
+    },
+    "class_type": "Any Switch (rgthree)",
+    "_meta": {
+      "title": "Any Switch (rgthree)"
+    }
+  },
+  "654": {
+    "inputs": {
+      "pixels": [
+        "233",
+        0
+      ],
+      "vae": [
+        "49",
+        0
+      ]
+    },
+    "class_type": "VAEEncode",
+    "_meta": {
+      "title": "VAE编码"
+    }
+  },
+  "655": {
+    "inputs": {
+      "image": "07.png"
+    },
+    "class_type": "LoadImage",
+    "_meta": {
+      "title": "加载图像"
+    }
+  },
+  "660": {
+    "inputs": {
+      "shift": 3,
+      "model": [
+        "938",
+        0
+      ]
+    },
+    "class_type": "ModelSamplingAuraFlow",
+    "_meta": {
+      "title": "采样算法（AuraFlow）"
+    }
+  },
+  "663": {
+    "inputs": {
+      "any_01": [
+        "188",
+        0
+      ],
+      "any_02": [
+        "654",
+        0
+      ]
+    },
+    "class_type": "Any Switch (rgthree)",
+    "_meta": {
+      "title": "Any Switch (rgthree)"
+    }
+  },
+  "665": {
+    "inputs": {
+      "samples": [
+        "643",
+        0
+      ],
+      "vae": [
+        "49",
+        0
+      ]
+    },
+    "class_type": "VAEDecode",
+    "_meta": {
+      "title": "VAE解码"
+    }
+  },
+  "668": {
+    "inputs": {
+      "seed": [
+        "131",
+        0
+      ],
+      "steps": [
+        "172",
+        0
+      ],
+      "cfg": 1,
+      "sampler_name": "euler",
+      "scheduler": "simple",
+      "denoise": 1,
+      "model": [
+        "669",
+        0
+      ],
+      "positive": [
+        "673",
+        0
+      ],
+      "negative": [
+        "677",
+        0
+      ],
+      "latent_image": [
+        "688",
+        0
+      ]
+    },
+    "class_type": "KSampler",
+    "_meta": {
+      "title": "K采样器"
+    }
+  },
+  "669": {
+    "inputs": {
+      "strength": 1,
+      "pre_cfg": false,
+      "model": [
+        "685",
+        0
+      ]
+    },
+    "class_type": "CFGNorm",
+    "_meta": {
+      "title": "CFG归一化"
+    }
+  },
+  "673": {
+    "inputs": {
+      "prompt": [
+        "917",
+        0
+      ],
+      "clip": [
+        "48",
+        0
+      ],
+      "vae": [
+        "49",
+        0
+      ],
+      "image1": [
+        "675",
+        0
+      ],
+      "image2": [
+        "680",
+        0
+      ]
+    },
+    "class_type": "TextEncodeQwenImageEditPlus",
+    "_meta": {
+      "title": "文本编码（QwenImageEditPlus）"
+    }
+  },
+  "675": {
+    "inputs": {
+      "upscale_method": "nearest-exact",
+      "megapixels": 1,
+      "resolution_steps": 1,
+      "image": [
+        "233",
+        0
+      ]
+    },
+    "class_type": "ImageScaleToTotalPixels",
+    "_meta": {
+      "title": "缩放图像（像素）"
+    }
+  },
+  "677": {
+    "inputs": {
+      "prompt": "",
+      "clip": [
+        "48",
+        0
+      ],
+      "vae": [
+        "49",
+        0
+      ],
+      "image1": [
+        "675",
+        0
+      ],
+      "image2": [
+        "680",
+        0
+      ]
+    },
+    "class_type": "TextEncodeQwenImageEditPlus",
+    "_meta": {
+      "title": "文本编码（QwenImageEditPlus）"
+    }
+  },
+  "679": {
+    "inputs": {
+      "pixels": [
+        "233",
+        0
+      ],
+      "vae": [
+        "49",
+        0
+      ]
+    },
+    "class_type": "VAEEncode",
+    "_meta": {
+      "title": "VAE编码"
+    }
+  },
+  "680": {
+    "inputs": {
+      "image": "02.png"
+    },
+    "class_type": "LoadImage",
+    "_meta": {
+      "title": "加载图像"
+    }
+  },
+  "685": {
+    "inputs": {
+      "shift": 3,
+      "model": [
+        "938",
+        0
+      ]
+    },
+    "class_type": "ModelSamplingAuraFlow",
+    "_meta": {
+      "title": "采样算法（AuraFlow）"
+    }
+  },
+  "688": {
+    "inputs": {
+      "any_01": [
+        "188",
+        0
+      ],
+      "any_02": [
+        "679",
+        0
+      ]
+    },
+    "class_type": "Any Switch (rgthree)",
+    "_meta": {
+      "title": "Any Switch (rgthree)"
+    }
+  },
+  "690": {
+    "inputs": {
+      "samples": [
+        "668",
+        0
+      ],
+      "vae": [
+        "49",
+        0
+      ]
+    },
+    "class_type": "VAEDecode",
+    "_meta": {
+      "title": "VAE解码"
+    }
+  },
+  "693": {
+    "inputs": {
+      "seed": [
+        "153",
+        0
+      ],
+      "steps": [
+        "172",
+        0
+      ],
+      "cfg": 1,
+      "sampler_name": "euler",
+      "scheduler": "simple",
+      "denoise": 1,
+      "model": [
+        "694",
+        0
+      ],
+      "positive": [
+        "698",
+        0
+      ],
+      "negative": [
+        "702",
+        0
+      ],
+      "latent_image": [
+        "713",
+        0
+      ]
+    },
+    "class_type": "KSampler",
+    "_meta": {
+      "title": "K采样器"
+    }
+  },
+  "694": {
+    "inputs": {
+      "strength": 1,
+      "pre_cfg": false,
+      "model": [
+        "710",
+        0
+      ]
+    },
+    "class_type": "CFGNorm",
+    "_meta": {
+      "title": "CFG归一化"
+    }
+  },
+  "698": {
+    "inputs": {
+      "prompt": [
+        "914",
+        0
+      ],
+      "clip": [
+        "48",
+        0
+      ],
+      "vae": [
+        "49",
+        0
+      ],
+      "image1": [
+        "700",
+        0
+      ],
+      "image2": [
+        "705",
+        0
+      ]
+    },
+    "class_type": "TextEncodeQwenImageEditPlus",
+    "_meta": {
+      "title": "文本编码（QwenImageEditPlus）"
+    }
+  },
+  "700": {
+    "inputs": {
+      "upscale_method": "nearest-exact",
+      "megapixels": 1,
+      "resolution_steps": 1,
+      "image": [
+        "233",
+        0
+      ]
+    },
+    "class_type": "ImageScaleToTotalPixels",
+    "_meta": {
+      "title": "缩放图像（像素）"
+    }
+  },
+  "702": {
+    "inputs": {
+      "prompt": "",
+      "clip": [
+        "48",
+        0
+      ],
+      "vae": [
+        "49",
+        0
+      ],
+      "image1": [
+        "700",
+        0
+      ],
+      "image2": [
+        "705",
+        0
+      ]
+    },
+    "class_type": "TextEncodeQwenImageEditPlus",
+    "_meta": {
+      "title": "文本编码（QwenImageEditPlus）"
+    }
+  },
+  "704": {
+    "inputs": {
+      "pixels": [
+        "233",
+        0
+      ],
+      "vae": [
+        "49",
+        0
+      ]
+    },
+    "class_type": "VAEEncode",
+    "_meta": {
+      "title": "VAE编码"
+    }
+  },
+  "705": {
+    "inputs": {
+      "image": "05.png"
+    },
+    "class_type": "LoadImage",
+    "_meta": {
+      "title": "加载图像"
+    }
+  },
+  "710": {
+    "inputs": {
+      "shift": 3,
+      "model": [
+        "938",
+        0
+      ]
+    },
+    "class_type": "ModelSamplingAuraFlow",
+    "_meta": {
+      "title": "采样算法（AuraFlow）"
+    }
+  },
+  "713": {
+    "inputs": {
+      "any_01": [
+        "188",
+        0
+      ],
+      "any_02": [
+        "704",
+        0
+      ]
+    },
+    "class_type": "Any Switch (rgthree)",
+    "_meta": {
+      "title": "Any Switch (rgthree)"
+    }
+  },
+  "715": {
+    "inputs": {
+      "samples": [
+        "693",
+        0
+      ],
+      "vae": [
+        "49",
+        0
+      ]
+    },
+    "class_type": "VAEDecode",
+    "_meta": {
+      "title": "VAE解码"
+    }
+  },
+  "718": {
+    "inputs": {
+      "seed": [
+        "360",
+        0
+      ],
+      "steps": [
+        "172",
+        0
+      ],
+      "cfg": 1,
+      "sampler_name": "euler",
+      "scheduler": "simple",
+      "denoise": 1,
+      "model": [
+        "719",
+        0
+      ],
+      "positive": [
+        "723",
+        0
+      ],
+      "negative": [
+        "727",
+        0
+      ],
+      "latent_image": [
+        "738",
+        0
+      ]
+    },
+    "class_type": "KSampler",
+    "_meta": {
+      "title": "K采样器"
+    }
+  },
+  "719": {
+    "inputs": {
+      "strength": 1,
+      "pre_cfg": false,
+      "model": [
+        "735",
+        0
+      ]
+    },
+    "class_type": "CFGNorm",
+    "_meta": {
+      "title": "CFG归一化"
+    }
+  },
+  "723": {
+    "inputs": {
+      "prompt": [
+        "908",
+        0
+      ],
+      "clip": [
+        "48",
+        0
+      ],
+      "vae": [
+        "49",
+        0
+      ],
+      "image1": [
+        "725",
+        0
+      ],
+      "image2": [
+        "730",
+        0
+      ]
+    },
+    "class_type": "TextEncodeQwenImageEditPlus",
+    "_meta": {
+      "title": "文本编码（QwenImageEditPlus）"
+    }
+  },
+  "725": {
+    "inputs": {
+      "upscale_method": "nearest-exact",
+      "megapixels": 1,
+      "resolution_steps": 1,
+      "image": [
+        "233",
+        0
+      ]
+    },
+    "class_type": "ImageScaleToTotalPixels",
+    "_meta": {
+      "title": "缩放图像（像素）"
+    }
+  },
+  "727": {
+    "inputs": {
+      "prompt": "",
+      "clip": [
+        "48",
+        0
+      ],
+      "vae": [
+        "49",
+        0
+      ],
+      "image1": [
+        "725",
+        0
+      ],
+      "image2": [
+        "730",
+        0
+      ]
+    },
+    "class_type": "TextEncodeQwenImageEditPlus",
+    "_meta": {
+      "title": "文本编码（QwenImageEditPlus）"
+    }
+  },
+  "729": {
+    "inputs": {
+      "pixels": [
+        "233",
+        0
+      ],
+      "vae": [
+        "49",
+        0
+      ]
+    },
+    "class_type": "VAEEncode",
+    "_meta": {
+      "title": "VAE编码"
+    }
+  },
+  "730": {
+    "inputs": {
+      "image": "11.png"
+    },
+    "class_type": "LoadImage",
+    "_meta": {
+      "title": "加载图像"
+    }
+  },
+  "735": {
+    "inputs": {
+      "shift": 3,
+      "model": [
+        "938",
+        0
+      ]
+    },
+    "class_type": "ModelSamplingAuraFlow",
+    "_meta": {
+      "title": "采样算法（AuraFlow）"
+    }
+  },
+  "738": {
+    "inputs": {
+      "any_01": [
+        "188",
+        0
+      ],
+      "any_02": [
+        "729",
+        0
+      ]
+    },
+    "class_type": "Any Switch (rgthree)",
+    "_meta": {
+      "title": "Any Switch (rgthree)"
+    }
+  },
+  "742": {
+    "inputs": {
+      "samples": [
+        "718",
+        0
+      ],
+      "vae": [
+        "49",
+        0
+      ]
+    },
+    "class_type": "VAEDecode",
+    "_meta": {
+      "title": "VAE解码"
+    }
+  },
+  "743": {
+    "inputs": {
+      "seed": [
+        "158",
+        0
+      ],
+      "steps": [
+        "172",
+        0
+      ],
+      "cfg": 1,
+      "sampler_name": "euler",
+      "scheduler": "simple",
+      "denoise": 1,
+      "model": [
+        "744",
+        0
+      ],
+      "positive": [
+        "745",
+        0
+      ],
+      "negative": [
+        "748",
+        0
+      ],
+      "latent_image": [
+        "758",
+        0
+      ]
+    },
+    "class_type": "KSampler",
+    "_meta": {
+      "title": "K采样器"
+    }
+  },
+  "744": {
+    "inputs": {
+      "strength": 1,
+      "pre_cfg": false,
+      "model": [
+        "755",
+        0
+      ]
+    },
+    "class_type": "CFGNorm",
+    "_meta": {
+      "title": "CFG归一化"
+    }
+  },
+  "745": {
+    "inputs": {
+      "prompt": [
+        "911",
+        0
+      ],
+      "clip": [
+        "48",
+        0
+      ],
+      "vae": [
+        "49",
+        0
+      ],
+      "image1": [
+        "747",
+        0
+      ],
+      "image2": [
+        "750",
+        0
+      ]
+    },
+    "class_type": "TextEncodeQwenImageEditPlus",
+    "_meta": {
+      "title": "文本编码（QwenImageEditPlus）"
+    }
+  },
+  "747": {
+    "inputs": {
+      "upscale_method": "nearest-exact",
+      "megapixels": 1,
+      "resolution_steps": 1,
+      "image": [
+        "233",
+        0
+      ]
+    },
+    "class_type": "ImageScaleToTotalPixels",
+    "_meta": {
+      "title": "缩放图像（像素）"
+    }
+  },
+  "748": {
+    "inputs": {
+      "prompt": "",
+      "clip": [
+        "48",
+        0
+      ],
+      "vae": [
+        "49",
+        0
+      ],
+      "image1": [
+        "747",
+        0
+      ],
+      "image2": [
+        "750",
+        0
+      ]
+    },
+    "class_type": "TextEncodeQwenImageEditPlus",
+    "_meta": {
+      "title": "文本编码（QwenImageEditPlus）"
+    }
+  },
+  "749": {
+    "inputs": {
+      "pixels": [
+        "233",
+        0
+      ],
+      "vae": [
+        "49",
+        0
+      ]
+    },
+    "class_type": "VAEEncode",
+    "_meta": {
+      "title": "VAE编码"
+    }
+  },
+  "750": {
+    "inputs": {
+      "image": "08.png"
+    },
+    "class_type": "LoadImage",
+    "_meta": {
+      "title": "加载图像"
+    }
+  },
+  "755": {
+    "inputs": {
+      "shift": 3,
+      "model": [
+        "938",
+        0
+      ]
+    },
+    "class_type": "ModelSamplingAuraFlow",
+    "_meta": {
+      "title": "采样算法（AuraFlow）"
+    }
+  },
+  "758": {
+    "inputs": {
+      "any_01": [
+        "188",
+        0
+      ],
+      "any_02": [
+        "749",
+        0
+      ]
+    },
+    "class_type": "Any Switch (rgthree)",
+    "_meta": {
+      "title": "Any Switch (rgthree)"
+    }
+  },
+  "760": {
+    "inputs": {
+      "value": "创建一个右侧面，半身姿势，一致的照明和风格，没有背景噪音，没有阴影"
+    },
+    "class_type": "PrimitiveStringMultiline",
+    "_meta": {
+      "title": "提示词"
+    }
+  },
+  "761": {
+    "inputs": {
+      "samples": [
+        "743",
+        0
+      ],
+      "vae": [
+        "49",
+        0
+      ]
+    },
+    "class_type": "VAEDecode",
+    "_meta": {
+      "title": "VAE解码"
+    }
+  },
+  "763": {
+    "inputs": {
+      "seed": [
+        "361",
+        0
+      ],
+      "steps": [
+        "172",
+        0
+      ],
+      "cfg": 1,
+      "sampler_name": "euler",
+      "scheduler": "simple",
+      "denoise": 1,
+      "model": [
+        "764",
+        0
+      ],
+      "positive": [
+        "765",
+        0
+      ],
+      "negative": [
+        "768",
+        0
+      ],
+      "latent_image": [
+        "778",
+        0
+      ]
+    },
+    "class_type": "KSampler",
+    "_meta": {
+      "title": "K采样器"
+    }
+  },
+  "764": {
+    "inputs": {
+      "strength": 1,
+      "pre_cfg": false,
+      "model": [
+        "775",
+        0
+      ]
+    },
+    "class_type": "CFGNorm",
+    "_meta": {
+      "title": "CFG归一化"
+    }
+  },
+  "765": {
+    "inputs": {
+      "prompt": [
+        "905",
+        0
+      ],
+      "clip": [
+        "48",
+        0
+      ],
+      "vae": [
+        "49",
+        0
+      ],
+      "image1": [
+        "767",
+        0
+      ],
+      "image2": [
+        "770",
+        0
+      ]
+    },
+    "class_type": "TextEncodeQwenImageEditPlus",
+    "_meta": {
+      "title": "文本编码（QwenImageEditPlus）"
+    }
+  },
+  "767": {
+    "inputs": {
+      "upscale_method": "nearest-exact",
+      "megapixels": 1,
+      "resolution_steps": 1,
+      "image": [
+        "233",
+        0
+      ]
+    },
+    "class_type": "ImageScaleToTotalPixels",
+    "_meta": {
+      "title": "缩放图像（像素）"
+    }
+  },
+  "768": {
+    "inputs": {
+      "prompt": "",
+      "clip": [
+        "48",
+        0
+      ],
+      "vae": [
+        "49",
+        0
+      ],
+      "image1": [
+        "767",
+        0
+      ],
+      "image2": [
+        "770",
+        0
+      ]
+    },
+    "class_type": "TextEncodeQwenImageEditPlus",
+    "_meta": {
+      "title": "文本编码（QwenImageEditPlus）"
+    }
+  },
+  "769": {
+    "inputs": {
+      "pixels": [
+        "233",
+        0
+      ],
+      "vae": [
+        "49",
+        0
+      ]
+    },
+    "class_type": "VAEEncode",
+    "_meta": {
+      "title": "VAE编码"
+    }
+  },
+  "770": {
+    "inputs": {
+      "image": "14.png"
+    },
+    "class_type": "LoadImage",
+    "_meta": {
+      "title": "加载图像"
+    }
+  },
+  "775": {
+    "inputs": {
+      "shift": 3,
+      "model": [
+        "938",
+        0
+      ]
+    },
+    "class_type": "ModelSamplingAuraFlow",
+    "_meta": {
+      "title": "采样算法（AuraFlow）"
+    }
+  },
+  "778": {
+    "inputs": {
+      "any_01": [
+        "188",
+        0
+      ],
+      "any_02": [
+        "769",
+        0
+      ]
+    },
+    "class_type": "Any Switch (rgthree)",
+    "_meta": {
+      "title": "Any Switch (rgthree)"
+    }
+  },
+  "779": {
+    "inputs": {
+      "samples": [
+        "763",
+        0
+      ],
+      "vae": [
+        "49",
+        0
+      ]
+    },
+    "class_type": "VAEDecode",
+    "_meta": {
+      "title": "VAE解码"
+    }
+  },
+  "780": {
+    "inputs": {
+      "value": "创建一个左侧面45度，半身姿势，一致的照明和风格，没有背景噪音，没有阴影"
+    },
+    "class_type": "PrimitiveStringMultiline",
+    "_meta": {
+      "title": "提示词"
+    }
+  },
+  "785": {
+    "inputs": {
+      "filename_prefix": [
+        "100",
+        0
+      ],
+      "images": [
+        "802",
+        0
+      ]
+    },
+    "class_type": "SaveImage",
+    "_meta": {
+      "title": "保存图像"
+    }
+  },
+  "786": {
+    "inputs": {
+      "value": -801313037302623
+    },
+    "class_type": "PrimitiveInt",
+    "_meta": {
+      "title": "随机种子0"
+    }
+  },
+  "787": {
+    "inputs": {
+      "seed": [
+        "786",
+        0
+      ],
+      "steps": [
+        "172",
+        0
+      ],
+      "cfg": 1,
+      "sampler_name": "euler",
+      "scheduler": "simple",
+      "denoise": 1,
+      "model": [
+        "788",
+        0
+      ],
+      "positive": [
+        "789",
+        0
+      ],
+      "negative": [
+        "792",
+        0
+      ],
+      "latent_image": [
+        "801",
+        0
+      ]
+    },
+    "class_type": "KSampler",
+    "_meta": {
+      "title": "K采样器"
+    }
+  },
+  "788": {
+    "inputs": {
+      "strength": 1,
+      "pre_cfg": false,
+      "model": [
+        "798",
+        0
+      ]
+    },
+    "class_type": "CFGNorm",
+    "_meta": {
+      "title": "CFG归一化"
+    }
+  },
+  "789": {
+    "inputs": {
+      "prompt": [
+        "902",
+        0
+      ],
+      "clip": [
+        "48",
+        0
+      ],
+      "vae": [
+        "49",
+        0
+      ],
+      "image1": [
+        "791",
+        0
+      ],
+      "image2": [
+        "804",
+        0
+      ]
+    },
+    "class_type": "TextEncodeQwenImageEditPlus",
+    "_meta": {
+      "title": "文本编码（QwenImageEditPlus）"
+    }
+  },
+  "791": {
+    "inputs": {
+      "upscale_method": "nearest-exact",
+      "megapixels": 1,
+      "resolution_steps": 1,
+      "image": [
+        "233",
+        0
+      ]
+    },
+    "class_type": "ImageScaleToTotalPixels",
+    "_meta": {
+      "title": "缩放图像（像素）"
+    }
+  },
+  "792": {
+    "inputs": {
+      "prompt": "",
+      "clip": [
+        "48",
+        0
+      ],
+      "vae": [
+        "49",
+        0
+      ],
+      "image1": [
+        "791",
+        0
+      ],
+      "image2": [
+        "804",
+        0
+      ]
+    },
+    "class_type": "TextEncodeQwenImageEditPlus",
+    "_meta": {
+      "title": "文本编码（QwenImageEditPlus）"
+    }
+  },
+  "793": {
+    "inputs": {
+      "pixels": [
+        "233",
+        0
+      ],
+      "vae": [
+        "49",
+        0
+      ]
+    },
+    "class_type": "VAEEncode",
+    "_meta": {
+      "title": "VAE编码"
+    }
+  },
+  "798": {
+    "inputs": {
+      "shift": 3,
+      "model": [
+        "938",
+        0
+      ]
+    },
+    "class_type": "ModelSamplingAuraFlow",
+    "_meta": {
+      "title": "采样算法（AuraFlow）"
+    }
+  },
+  "801": {
+    "inputs": {
+      "any_01": [
+        "188",
+        0
+      ],
+      "any_02": [
+        "793",
+        0
+      ]
+    },
+    "class_type": "Any Switch (rgthree)",
+    "_meta": {
+      "title": "Any Switch (rgthree)"
+    }
+  },
+  "802": {
+    "inputs": {
+      "samples": [
+        "787",
+        0
+      ],
+      "vae": [
+        "49",
+        0
+      ]
+    },
+    "class_type": "VAEDecode",
+    "_meta": {
+      "title": "VAE解码"
+    }
+  },
+  "804": {
+    "inputs": {
+      "image": "13.png"
+    },
+    "class_type": "LoadImage",
+    "_meta": {
+      "title": "加载图像"
+    }
+  },
+  "805": {
+    "inputs": {
+      "value": "创建一个背面图，半身姿势，一致的照明和风格，没有背景噪音，没有阴影"
+    },
+    "class_type": "PrimitiveStringMultiline",
+    "_meta": {
+      "title": "提示词"
+    }
+  },
+  "807": {
+    "inputs": {
+      "seed": [
+        "362",
+        0
+      ],
+      "steps": [
+        "172",
+        0
+      ],
+      "cfg": 1,
+      "sampler_name": "euler",
+      "scheduler": "simple",
+      "denoise": 1,
+      "model": [
+        "808",
+        0
+      ],
+      "positive": [
+        "809",
+        0
+      ],
+      "negative": [
+        "812",
+        0
+      ],
+      "latent_image": [
+        "822",
+        0
+      ]
+    },
+    "class_type": "KSampler",
+    "_meta": {
+      "title": "K采样器"
+    }
+  },
+  "808": {
+    "inputs": {
+      "strength": 1,
+      "pre_cfg": false,
+      "model": [
+        "819",
+        0
+      ]
+    },
+    "class_type": "CFGNorm",
+    "_meta": {
+      "title": "CFG归一化"
+    }
+  },
+  "809": {
+    "inputs": {
+      "prompt": [
+        "929",
+        0
+      ],
+      "clip": [
+        "48",
+        0
+      ],
+      "vae": [
+        "49",
+        0
+      ],
+      "image1": [
+        "811",
+        0
+      ],
+      "image2": [
+        "814",
+        0
+      ]
+    },
+    "class_type": "TextEncodeQwenImageEditPlus",
+    "_meta": {
+      "title": "文本编码（QwenImageEditPlus）"
+    }
+  },
+  "811": {
+    "inputs": {
+      "upscale_method": "nearest-exact",
+      "megapixels": 1,
+      "resolution_steps": 1,
+      "image": [
+        "233",
+        0
+      ]
+    },
+    "class_type": "ImageScaleToTotalPixels",
+    "_meta": {
+      "title": "缩放图像（像素）"
+    }
+  },
+  "812": {
+    "inputs": {
+      "prompt": "",
+      "clip": [
+        "48",
+        0
+      ],
+      "vae": [
+        "49",
+        0
+      ],
+      "image1": [
+        "811",
+        0
+      ],
+      "image2": [
+        "814",
+        0
+      ]
+    },
+    "class_type": "TextEncodeQwenImageEditPlus",
+    "_meta": {
+      "title": "文本编码（QwenImageEditPlus）"
+    }
+  },
+  "813": {
+    "inputs": {
+      "pixels": [
+        "233",
+        0
+      ],
+      "vae": [
+        "49",
+        0
+      ]
+    },
+    "class_type": "VAEEncode",
+    "_meta": {
+      "title": "VAE编码"
+    }
+  },
+  "814": {
+    "inputs": {
+      "image": "03.png"
+    },
+    "class_type": "LoadImage",
+    "_meta": {
+      "title": "加载图像"
+    }
+  },
+  "819": {
+    "inputs": {
+      "shift": 3,
+      "model": [
+        "938",
+        0
+      ]
+    },
+    "class_type": "ModelSamplingAuraFlow",
+    "_meta": {
+      "title": "采样算法（AuraFlow）"
+    }
+  },
+  "822": {
+    "inputs": {
+      "any_01": [
+        "188",
+        0
+      ],
+      "any_02": [
+        "813",
+        0
+      ]
+    },
+    "class_type": "Any Switch (rgthree)",
+    "_meta": {
+      "title": "Any Switch (rgthree)"
+    }
+  },
+  "823": {
+    "inputs": {
+      "samples": [
+        "807",
+        0
+      ],
+      "vae": [
+        "49",
+        0
+      ]
+    },
+    "class_type": "VAEDecode",
+    "_meta": {
+      "title": "VAE解码"
+    }
+  },
+  "826": {
+    "inputs": {
+      "seed": [
+        "384",
+        0
+      ],
+      "steps": [
+        "172",
+        0
+      ],
+      "cfg": 1,
+      "sampler_name": "euler",
+      "scheduler": "simple",
+      "denoise": 1,
+      "model": [
+        "827",
+        0
+      ],
+      "positive": [
+        "828",
+        0
+      ],
+      "negative": [
+        "831",
+        0
+      ],
+      "latent_image": [
+        "841",
+        0
+      ]
+    },
+    "class_type": "KSampler",
+    "_meta": {
+      "title": "K采样器"
+    }
+  },
+  "827": {
+    "inputs": {
+      "strength": 1,
+      "pre_cfg": false,
+      "model": [
+        "838",
+        0
+      ]
+    },
+    "class_type": "CFGNorm",
+    "_meta": {
+      "title": "CFG归一化"
+    }
+  },
+  "828": {
+    "inputs": {
+      "prompt": [
+        "932",
+        0
+      ],
+      "clip": [
+        "48",
+        0
+      ],
+      "vae": [
+        "49",
+        0
+      ],
+      "image1": [
+        "830",
+        0
+      ],
+      "image2": [
+        "833",
+        0
+      ]
+    },
+    "class_type": "TextEncodeQwenImageEditPlus",
+    "_meta": {
+      "title": "文本编码（QwenImageEditPlus）"
+    }
+  },
+  "830": {
+    "inputs": {
+      "upscale_method": "nearest-exact",
+      "megapixels": 1,
+      "resolution_steps": 1,
+      "image": [
+        "233",
+        0
+      ]
+    },
+    "class_type": "ImageScaleToTotalPixels",
+    "_meta": {
+      "title": "缩放图像（像素）"
+    }
+  },
+  "831": {
+    "inputs": {
+      "prompt": "",
+      "clip": [
+        "48",
+        0
+      ],
+      "vae": [
+        "49",
+        0
+      ],
+      "image1": [
+        "830",
+        0
+      ],
+      "image2": [
+        "833",
+        0
+      ]
+    },
+    "class_type": "TextEncodeQwenImageEditPlus",
+    "_meta": {
+      "title": "文本编码（QwenImageEditPlus）"
+    }
+  },
+  "832": {
+    "inputs": {
+      "pixels": [
+        "233",
+        0
+      ],
+      "vae": [
+        "49",
+        0
+      ]
+    },
+    "class_type": "VAEEncode",
+    "_meta": {
+      "title": "VAE编码"
+    }
+  },
+  "833": {
+    "inputs": {
+      "image": "06.png"
+    },
+    "class_type": "LoadImage",
+    "_meta": {
+      "title": "加载图像"
+    }
+  },
+  "838": {
+    "inputs": {
+      "shift": 3,
+      "model": [
+        "938",
+        0
+      ]
+    },
+    "class_type": "ModelSamplingAuraFlow",
+    "_meta": {
+      "title": "采样算法（AuraFlow）"
+    }
+  },
+  "841": {
+    "inputs": {
+      "any_01": [
+        "188",
+        0
+      ],
+      "any_02": [
+        "832",
+        0
+      ]
+    },
+    "class_type": "Any Switch (rgthree)",
+    "_meta": {
+      "title": "Any Switch (rgthree)"
+    }
+  },
+  "843": {
+    "inputs": {
+      "value": "创建一个特写右侧图。人脸特写，一致的照明和风格，没有背景噪音，没有阴影"
+    },
+    "class_type": "PrimitiveStringMultiline",
+    "_meta": {
+      "title": "提示词"
+    }
+  },
+  "844": {
+    "inputs": {
+      "samples": [
+        "826",
+        0
+      ],
+      "vae": [
+        "49",
+        0
+      ]
+    },
+    "class_type": "VAEDecode",
+    "_meta": {
+      "title": "VAE解码"
+    }
+  },
+  "845": {
+    "inputs": {
+      "seed": [
+        "405",
+        0
+      ],
+      "steps": [
+        "172",
+        0
+      ],
+      "cfg": 1,
+      "sampler_name": "euler",
+      "scheduler": "simple",
+      "denoise": 1,
+      "model": [
+        "846",
+        0
+      ],
+      "positive": [
+        "847",
+        0
+      ],
+      "negative": [
+        "850",
+        0
+      ],
+      "latent_image": [
+        "860",
+        0
+      ]
+    },
+    "class_type": "KSampler",
+    "_meta": {
+      "title": "K采样器"
+    }
+  },
+  "846": {
+    "inputs": {
+      "strength": 1,
+      "pre_cfg": false,
+      "model": [
+        "857",
+        0
+      ]
+    },
+    "class_type": "CFGNorm",
+    "_meta": {
+      "title": "CFG归一化"
+    }
+  },
+  "847": {
+    "inputs": {
+      "prompt": [
+        "920",
+        0
+      ],
+      "clip": [
+        "48",
+        0
+      ],
+      "vae": [
+        "49",
+        0
+      ],
+      "image1": [
+        "849",
+        0
+      ],
+      "image2": [
+        "852",
+        0
+      ]
+    },
+    "class_type": "TextEncodeQwenImageEditPlus",
+    "_meta": {
+      "title": "文本编码（QwenImageEditPlus）"
+    }
+  },
+  "849": {
+    "inputs": {
+      "upscale_method": "nearest-exact",
+      "megapixels": 1,
+      "resolution_steps": 1,
+      "image": [
+        "233",
+        0
+      ]
+    },
+    "class_type": "ImageScaleToTotalPixels",
+    "_meta": {
+      "title": "缩放图像（像素）"
+    }
+  },
+  "850": {
+    "inputs": {
+      "prompt": "",
+      "clip": [
+        "48",
+        0
+      ],
+      "vae": [
+        "49",
+        0
+      ],
+      "image1": [
+        "849",
+        0
+      ],
+      "image2": [
+        "852",
+        0
+      ]
+    },
+    "class_type": "TextEncodeQwenImageEditPlus",
+    "_meta": {
+      "title": "文本编码（QwenImageEditPlus）"
+    }
+  },
+  "851": {
+    "inputs": {
+      "pixels": [
+        "233",
+        0
+      ],
+      "vae": [
+        "49",
+        0
+      ]
+    },
+    "class_type": "VAEEncode",
+    "_meta": {
+      "title": "VAE编码"
+    }
+  },
+  "852": {
+    "inputs": {
+      "image": "09.png"
+    },
+    "class_type": "LoadImage",
+    "_meta": {
+      "title": "加载图像"
+    }
+  },
+  "857": {
+    "inputs": {
+      "shift": 3,
+      "model": [
+        "938",
+        0
+      ]
+    },
+    "class_type": "ModelSamplingAuraFlow",
+    "_meta": {
+      "title": "采样算法（AuraFlow）"
+    }
+  },
+  "860": {
+    "inputs": {
+      "any_01": [
+        "188",
+        0
+      ],
+      "any_02": [
+        "851",
+        0
+      ]
+    },
+    "class_type": "Any Switch (rgthree)",
+    "_meta": {
+      "title": "Any Switch (rgthree)"
+    }
+  },
+  "861": {
+    "inputs": {
+      "value": "创建一个特写左侧图。人脸特写，一致的照明和风格，没有背景噪音，没有阴影"
+    },
+    "class_type": "PrimitiveStringMultiline",
+    "_meta": {
+      "title": "提示词"
+    }
+  },
+  "863": {
+    "inputs": {
+      "samples": [
+        "845",
+        0
+      ],
+      "vae": [
+        "49",
+        0
+      ]
+    },
+    "class_type": "VAEDecode",
+    "_meta": {
+      "title": "VAE解码"
+    }
+  },
+  "864": {
+    "inputs": {
+      "seed": [
+        "349",
+        0
+      ],
+      "steps": [
+        "172",
+        0
+      ],
+      "cfg": 1,
+      "sampler_name": "euler",
+      "scheduler": "simple",
+      "denoise": 1,
+      "model": [
+        "865",
+        0
+      ],
+      "positive": [
+        "866",
+        0
+      ],
+      "negative": [
+        "869",
+        0
+      ],
+      "latent_image": [
+        "879",
+        0
+      ]
+    },
+    "class_type": "KSampler",
+    "_meta": {
+      "title": "K采样器"
+    }
+  },
+  "865": {
+    "inputs": {
+      "strength": 1,
+      "pre_cfg": false,
+      "model": [
+        "876",
+        0
+      ]
+    },
+    "class_type": "CFGNorm",
+    "_meta": {
+      "title": "CFG归一化"
+    }
+  },
+  "866": {
+    "inputs": {
+      "prompt": [
+        "923",
+        0
+      ],
+      "clip": [
+        "48",
+        0
+      ],
+      "vae": [
+        "49",
+        0
+      ],
+      "image1": [
+        "868",
+        0
+      ],
+      "image2": [
+        "871",
+        0
+      ]
+    },
+    "class_type": "TextEncodeQwenImageEditPlus",
+    "_meta": {
+      "title": "文本编码（QwenImageEditPlus）"
+    }
+  },
+  "868": {
+    "inputs": {
+      "upscale_method": "nearest-exact",
+      "megapixels": 1,
+      "resolution_steps": 1,
+      "image": [
+        "233",
+        0
+      ]
+    },
+    "class_type": "ImageScaleToTotalPixels",
+    "_meta": {
+      "title": "缩放图像（像素）"
+    }
+  },
+  "869": {
+    "inputs": {
+      "prompt": "",
+      "clip": [
+        "48",
+        0
+      ],
+      "vae": [
+        "49",
+        0
+      ],
+      "image1": [
+        "868",
+        0
+      ],
+      "image2": [
+        "871",
+        0
+      ]
+    },
+    "class_type": "TextEncodeQwenImageEditPlus",
+    "_meta": {
+      "title": "文本编码（QwenImageEditPlus）"
+    }
+  },
+  "870": {
+    "inputs": {
+      "pixels": [
+        "233",
+        0
+      ],
+      "vae": [
+        "49",
+        0
+      ]
+    },
+    "class_type": "VAEEncode",
+    "_meta": {
+      "title": "VAE编码"
+    }
+  },
+  "871": {
+    "inputs": {
+      "image": "12.png"
+    },
+    "class_type": "LoadImage",
+    "_meta": {
+      "title": "加载图像"
+    }
+  },
+  "876": {
+    "inputs": {
+      "shift": 3,
+      "model": [
+        "938",
+        0
+      ]
+    },
+    "class_type": "ModelSamplingAuraFlow",
+    "_meta": {
+      "title": "采样算法（AuraFlow）"
+    }
+  },
+  "879": {
+    "inputs": {
+      "any_01": [
+        "188",
+        0
+      ],
+      "any_02": [
+        "870",
+        0
+      ]
+    },
+    "class_type": "Any Switch (rgthree)",
+    "_meta": {
+      "title": "Any Switch (rgthree)"
+    }
+  },
+  "880": {
+    "inputs": {
+      "value": "创建一个右侧过肩视图。角色的背对着镜头。请将头部和身体保持在同一水平线上"
+    },
+    "class_type": "PrimitiveStringMultiline",
+    "_meta": {
+      "title": "提示词"
+    }
+  },
+  "882": {
+    "inputs": {
+      "samples": [
+        "864",
+        0
+      ],
+      "vae": [
+        "49",
+        0
+      ]
+    },
+    "class_type": "VAEDecode",
+    "_meta": {
+      "title": "VAE解码"
+    }
+  },
+  "883": {
+    "inputs": {
+      "seed": [
+        "354",
+        0
+      ],
+      "steps": [
+        "172",
+        0
+      ],
+      "cfg": 1,
+      "sampler_name": "euler",
+      "scheduler": "simple",
+      "denoise": 1,
+      "model": [
+        "884",
+        0
+      ],
+      "positive": [
+        "885",
+        0
+      ],
+      "negative": [
+        "888",
+        0
+      ],
+      "latent_image": [
+        "898",
+        0
+      ]
+    },
+    "class_type": "KSampler",
+    "_meta": {
+      "title": "K采样器"
+    }
+  },
+  "884": {
+    "inputs": {
+      "strength": 1,
+      "pre_cfg": false,
+      "model": [
+        "895",
+        0
+      ]
+    },
+    "class_type": "CFGNorm",
+    "_meta": {
+      "title": "CFG归一化"
+    }
+  },
+  "885": {
+    "inputs": {
+      "prompt": [
+        "926",
+        0
+      ],
+      "clip": [
+        "48",
+        0
+      ],
+      "vae": [
+        "49",
+        0
+      ],
+      "image1": [
+        "887",
+        0
+      ],
+      "image2": [
+        "890",
+        0
+      ]
+    },
+    "class_type": "TextEncodeQwenImageEditPlus",
+    "_meta": {
+      "title": "文本编码（QwenImageEditPlus）"
+    }
+  },
+  "887": {
+    "inputs": {
+      "upscale_method": "nearest-exact",
+      "megapixels": 1,
+      "resolution_steps": 1,
+      "image": [
+        "233",
+        0
+      ]
+    },
+    "class_type": "ImageScaleToTotalPixels",
+    "_meta": {
+      "title": "缩放图像（像素）"
+    }
+  },
+  "888": {
+    "inputs": {
+      "prompt": "",
+      "clip": [
+        "48",
+        0
+      ],
+      "vae": [
+        "49",
+        0
+      ],
+      "image1": [
+        "887",
+        0
+      ],
+      "image2": [
+        "890",
+        0
+      ]
+    },
+    "class_type": "TextEncodeQwenImageEditPlus",
+    "_meta": {
+      "title": "文本编码（QwenImageEditPlus）"
+    }
+  },
+  "889": {
+    "inputs": {
+      "pixels": [
+        "233",
+        0
+      ],
+      "vae": [
+        "49",
+        0
+      ]
+    },
+    "class_type": "VAEEncode",
+    "_meta": {
+      "title": "VAE编码"
+    }
+  },
+  "890": {
+    "inputs": {
+      "image": "15.png"
+    },
+    "class_type": "LoadImage",
+    "_meta": {
+      "title": "加载图像"
+    }
+  },
+  "895": {
+    "inputs": {
+      "shift": 3,
+      "model": [
+        "938",
+        0
+      ]
+    },
+    "class_type": "ModelSamplingAuraFlow",
+    "_meta": {
+      "title": "采样算法（AuraFlow）"
+    }
+  },
+  "898": {
+    "inputs": {
+      "any_01": [
+        "188",
+        0
+      ],
+      "any_02": [
+        "889",
+        0
+      ]
+    },
+    "class_type": "Any Switch (rgthree)",
+    "_meta": {
+      "title": "Any Switch (rgthree)"
+    }
+  },
+  "900": {
+    "inputs": {
+      "samples": [
+        "883",
+        0
+      ],
+      "vae": [
+        "49",
+        0
+      ]
+    },
+    "class_type": "VAEDecode",
+    "_meta": {
+      "title": "VAE解码"
+    }
+  },
+  "901": {
+    "inputs": {
+      "value": "创建一个右侧过肩视图。角色的背对着镜头。请将头部和身体保持在同一水平线上"
+    },
+    "class_type": "PrimitiveStringMultiline",
+    "_meta": {
+      "title": "提示词"
+    }
+  },
+  "902": {
+    "inputs": {
+      "any_01": [
+        "904",
+        0
+      ],
+      "any_02": [
+        "805",
+        0
+      ]
+    },
+    "class_type": "Any Switch (rgthree)",
+    "_meta": {
+      "title": "Any Switch (rgthree)"
+    }
+  },
+  "903": {
+    "inputs": {
+      "value": "按图片2的姿势，用图1的人物"
+    },
+    "class_type": "PrimitiveStringMultiline",
+    "_meta": {
+      "title": "提示词"
+    }
+  },
+  "904": {
+    "inputs": {
+      "string_a": [
+        "903",
+        0
+      ],
+      "string_b": [
+        "805",
+        0
+      ],
+      "delimiter": ""
+    },
+    "class_type": "StringConcatenate",
+    "_meta": {
+      "title": "连接"
+    }
+  },
+  "905": {
+    "inputs": {
+      "any_01": [
+        "907",
+        0
+      ],
+      "any_02": [
+        "780",
+        0
+      ]
+    },
+    "class_type": "Any Switch (rgthree)",
+    "_meta": {
+      "title": "Any Switch (rgthree)"
+    }
+  },
+  "906": {
+    "inputs": {
+      "value": "按图片2的姿势，用图1的人物"
+    },
+    "class_type": "PrimitiveStringMultiline",
+    "_meta": {
+      "title": "提示词"
+    }
+  },
+  "907": {
+    "inputs": {
+      "string_a": [
+        "906",
+        0
+      ],
+      "string_b": [
+        "780",
+        0
+      ],
+      "delimiter": ""
+    },
+    "class_type": "StringConcatenate",
+    "_meta": {
+      "title": "连接"
+    }
+  },
+  "908": {
+    "inputs": {
+      "any_01": [
+        "910",
+        0
+      ],
+      "any_02": [
+        "289",
+        0
+      ]
+    },
+    "class_type": "Any Switch (rgthree)",
+    "_meta": {
+      "title": "Any Switch (rgthree)"
+    }
+  },
+  "909": {
+    "inputs": {
+      "value": "按图片2的姿势，用图1的人物"
+    },
+    "class_type": "PrimitiveStringMultiline",
+    "_meta": {
+      "title": "提示词"
+    }
+  },
+  "910": {
+    "inputs": {
+      "string_a": [
+        "909",
+        0
+      ],
+      "string_b": [
+        "289",
+        0
+      ],
+      "delimiter": ""
+    },
+    "class_type": "StringConcatenate",
+    "_meta": {
+      "title": "连接"
+    }
+  },
+  "911": {
+    "inputs": {
+      "any_01": [
+        "913",
+        0
+      ],
+      "any_02": [
+        "760",
+        0
+      ]
+    },
+    "class_type": "Any Switch (rgthree)",
+    "_meta": {
+      "title": "Any Switch (rgthree)"
+    }
+  },
+  "912": {
+    "inputs": {
+      "value": "按图片2的姿势，用图1的人物"
+    },
+    "class_type": "PrimitiveStringMultiline",
+    "_meta": {
+      "title": "提示词"
+    }
+  },
+  "913": {
+    "inputs": {
+      "string_a": [
+        "912",
+        0
+      ],
+      "string_b": [
+        "760",
+        0
+      ],
+      "delimiter": ""
+    },
+    "class_type": "StringConcatenate",
+    "_meta": {
+      "title": "连接"
+    }
+  },
+  "914": {
+    "inputs": {
+      "any_01": [
+        "916",
+        0
+      ],
+      "any_02": [
+        "278",
+        0
+      ]
+    },
+    "class_type": "Any Switch (rgthree)",
+    "_meta": {
+      "title": "Any Switch (rgthree)"
+    }
+  },
+  "915": {
+    "inputs": {
+      "value": "按图片2的姿势，用图1的人物"
+    },
+    "class_type": "PrimitiveStringMultiline",
+    "_meta": {
+      "title": "提示词"
+    }
+  },
+  "916": {
+    "inputs": {
+      "string_a": [
+        "915",
+        0
+      ],
+      "string_b": [
+        "278",
+        0
+      ],
+      "delimiter": ""
+    },
+    "class_type": "StringConcatenate",
+    "_meta": {
+      "title": "连接"
+    }
+  },
+  "917": {
+    "inputs": {
+      "any_01": [
+        "919",
+        0
+      ],
+      "any_02": [
+        "259",
+        0
+      ]
+    },
+    "class_type": "Any Switch (rgthree)",
+    "_meta": {
+      "title": "Any Switch (rgthree)"
+    }
+  },
+  "918": {
+    "inputs": {
+      "value": "按图片2的姿势，用图1的人物"
+    },
+    "class_type": "PrimitiveStringMultiline",
+    "_meta": {
+      "title": "提示词"
+    }
+  },
+  "919": {
+    "inputs": {
+      "string_a": [
+        "918",
+        0
+      ],
+      "string_b": [
+        "259",
+        0
+      ],
+      "delimiter": ""
+    },
+    "class_type": "StringConcatenate",
+    "_meta": {
+      "title": "连接"
+    }
+  },
+  "920": {
+    "inputs": {
+      "any_01": [
+        "922",
+        0
+      ],
+      "any_02": [
+        "861",
+        0
+      ]
+    },
+    "class_type": "Any Switch (rgthree)",
+    "_meta": {
+      "title": "Any Switch (rgthree)"
+    }
+  },
+  "921": {
+    "inputs": {
+      "value": "按图片2的姿势，用图1的人物"
+    },
+    "class_type": "PrimitiveStringMultiline",
+    "_meta": {
+      "title": "提示词"
+    }
+  },
+  "922": {
+    "inputs": {
+      "string_a": [
+        "921",
+        0
+      ],
+      "string_b": [
+        "861",
+        0
+      ],
+      "delimiter": ","
+    },
+    "class_type": "StringConcatenate",
+    "_meta": {
+      "title": "连接"
+    }
+  },
+  "923": {
+    "inputs": {
+      "any_01": [
+        "925",
+        0
+      ],
+      "any_02": [
+        "880",
+        0
+      ]
+    },
+    "class_type": "Any Switch (rgthree)",
+    "_meta": {
+      "title": "Any Switch (rgthree)"
+    }
+  },
+  "924": {
+    "inputs": {
+      "value": "按图片2的姿势，用图1的人物"
+    },
+    "class_type": "PrimitiveStringMultiline",
+    "_meta": {
+      "title": "提示词"
+    }
+  },
+  "925": {
+    "inputs": {
+      "string_a": [
+        "924",
+        0
+      ],
+      "string_b": [
+        "880",
+        0
+      ],
+      "delimiter": ","
+    },
+    "class_type": "StringConcatenate",
+    "_meta": {
+      "title": "连接"
+    }
+  },
+  "926": {
+    "inputs": {
+      "any_01": [
+        "928",
+        0
+      ],
+      "any_02": [
+        "901",
+        0
+      ]
+    },
+    "class_type": "Any Switch (rgthree)",
+    "_meta": {
+      "title": "Any Switch (rgthree)"
+    }
+  },
+  "927": {
+    "inputs": {
+      "value": "按图片2的姿势，用图1的人物"
+    },
+    "class_type": "PrimitiveStringMultiline",
+    "_meta": {
+      "title": "提示词"
+    }
+  },
+  "928": {
+    "inputs": {
+      "string_a": [
+        "927",
+        0
+      ],
+      "string_b": [
+        "901",
+        0
+      ],
+      "delimiter": ","
+    },
+    "class_type": "StringConcatenate",
+    "_meta": {
+      "title": "连接"
+    }
+  },
+  "929": {
+    "inputs": {
+      "any_01": [
+        "931",
+        0
+      ],
+      "any_02": [
+        "310",
+        0
+      ]
+    },
+    "class_type": "Any Switch (rgthree)",
+    "_meta": {
+      "title": "Any Switch (rgthree)"
+    }
+  },
+  "930": {
+    "inputs": {
+      "value": "按图片2的姿势，用图1的人物"
+    },
+    "class_type": "PrimitiveStringMultiline",
+    "_meta": {
+      "title": "提示词"
+    }
+  },
+  "931": {
+    "inputs": {
+      "string_a": [
+        "930",
+        0
+      ],
+      "string_b": [
+        "310",
+        0
+      ],
+      "delimiter": ","
+    },
+    "class_type": "StringConcatenate",
+    "_meta": {
+      "title": "连接"
+    }
+  },
+  "932": {
+    "inputs": {
+      "any_01": [
+        "934",
+        0
+      ],
+      "any_02": [
+        "843",
+        0
+      ]
+    },
+    "class_type": "Any Switch (rgthree)",
+    "_meta": {
+      "title": "Any Switch (rgthree)"
+    }
+  },
+  "933": {
+    "inputs": {
+      "value": "按图片2的姿势，用图1的人物"
+    },
+    "class_type": "PrimitiveStringMultiline",
+    "_meta": {
+      "title": "提示词"
+    }
+  },
+  "934": {
+    "inputs": {
+      "string_a": [
+        "933",
+        0
+      ],
+      "string_b": [
+        "843",
+        0
+      ],
+      "delimiter": ","
+    },
+    "class_type": "StringConcatenate",
+    "_meta": {
+      "title": "连接"
+    }
+  },
+  "937": {
+    "inputs": {
+      "sage_attention": "auto",
+      "allow_compile": false,
+      "model": [
+        "943",
+        0
+      ]
+    },
+    "class_type": "PathchSageAttentionKJ",
+    "_meta": {
+      "title": "Patch Sage Attention KJ"
+    }
+  },
+  "938": {
+    "inputs": {
+      "enable_fp16_accumulation": false,
+      "model": [
+        "937",
+        0
+      ]
+    },
+    "class_type": "ModelPatchTorchSettings",
+    "_meta": {
+      "title": "Model Patch Torch Settings"
+    }
+  },
+  "942": {
+    "inputs": {
+      "unet_name": "qwen\\Qwen-Image-Edit-2509_fp8_e4m3fn.safetensors",
+      "weight_dtype": "default"
+    },
+    "class_type": "UNETLoader",
+    "_meta": {
+      "title": "UNet加载器"
+    }
+  },
+  "943": {
+    "inputs": {
+      "lora_name": "Qwen\\2509\\Qwen-Image-Lightning-8steps-V2.0-bf16.safetensors",
+      "strength_model": 1,
+      "model": [
+        "942",
+        0
+      ]
+    },
+    "class_type": "LoraLoaderModelOnly",
+    "_meta": {
+      "title": "LoRA加载器（仅模型）"
+    }
+  }
+}

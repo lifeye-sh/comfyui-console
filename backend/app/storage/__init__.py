@@ -1,0 +1,1 @@
+"""对象存储抽象与本地实现。CC-04 实现 StorageProvider + local_fs。"""

@@ -1,0 +1,313 @@
+{
+  "1": {
+    "inputs": {
+      "prompt": [
+        "28",
+        0
+      ],
+      "width": [
+        "18",
+        0
+      ],
+      "height": [
+        "18",
+        1
+      ],
+      "length": [
+        "6",
+        1
+      ],
+      "clip": [
+        "17",
+        0
+      ],
+      "vae": [
+        "15",
+        0
+      ]
+    },
+    "class_type": "MiniMaxH3ImageToVideo",
+    "_meta": {
+      "title": "MiniMax H3 Image to Video"
+    }
+  },
+  "2": {
+    "inputs": {
+      "sampler_name": "res_multistep"
+    },
+    "class_type": "KSamplerSelect",
+    "_meta": {
+      "title": "K采样器选择"
+    }
+  },
+  "3": {
+    "inputs": {
+      "model": [
+        "24",
+        0
+      ],
+      "conditioning": [
+        "1",
+        0
+      ]
+    },
+    "class_type": "BasicGuider",
+    "_meta": {
+      "title": "基本引导器"
+    }
+  },
+  "4": {
+    "inputs": {
+      "samples": [
+        "10",
+        0
+      ],
+      "vae": [
+        "15",
+        0
+      ]
+    },
+    "class_type": "VAEDecode",
+    "_meta": {
+      "title": "VAE解码"
+    }
+  },
+  "5": {
+    "inputs": {
+      "samples": [
+        "10",
+        0
+      ],
+      "vae": [
+        "14",
+        0
+      ]
+    },
+    "class_type": "VAEDecodeAudio",
+    "_meta": {
+      "title": "VAE解码（音频）"
+    }
+  },
+  "6": {
+    "inputs": {
+      "expression": "max(5, round(a * 24)) + (5 - (max(5, round(a * 24)) % 17)) % 17",
+      "values.a": [
+        "11",
+        0
+      ]
+    },
+    "class_type": "ComfyMathExpression",
+    "_meta": {
+      "title": "数学表达式"
+    }
+  },
+  "10": {
+    "inputs": {
+      "noise": [
+        "21",
+        0
+      ],
+      "guider": [
+        "3",
+        0
+      ],
+      "sampler": [
+        "2",
+        0
+      ],
+      "sigmas": [
+        "16",
+        0
+      ],
+      "latent_image": [
+        "1",
+        1
+      ]
+    },
+    "class_type": "SamplerCustomAdvanced",
+    "_meta": {
+      "title": "自定义采样器（高级）"
+    }
+  },
+  "11": {
+    "inputs": {
+      "value": 15
+    },
+    "class_type": "PrimitiveFloat",
+    "_meta": {
+      "title": "Float (duration)"
+    }
+  },
+  "12": {
+    "inputs": {
+      "fps": 24,
+      "bit_depth": 8,
+      "images": [
+        "4",
+        0
+      ],
+      "audio": [
+        "5",
+        0
+      ]
+    },
+    "class_type": "CreateVideo",
+    "_meta": {
+      "title": "创建视频"
+    }
+  },
+  "14": {
+    "inputs": {
+      "vae_name": "minimax\\minimax_h3_audio_vae_fp32.safetensors"
+    },
+    "class_type": "VAELoader",
+    "_meta": {
+      "title": "加载VAE"
+    }
+  },
+  "15": {
+    "inputs": {
+      "vae_name": "minimax\\minimax_h3_video_vae_fp16.safetensors"
+    },
+    "class_type": "VAELoader",
+    "_meta": {
+      "title": "加载VAE"
+    }
+  },
+  "16": {
+    "inputs": {
+      "scheduler": "simple",
+      "steps": 6,
+      "denoise": 1,
+      "model": [
+        "22",
+        0
+      ]
+    },
+    "class_type": "BasicScheduler",
+    "_meta": {
+      "title": "基本调度器"
+    }
+  },
+  "17": {
+    "inputs": {
+      "clip_name": "minimax\\qwen3vl_32b_minimax_h3_int8_convrot.safetensors",
+      "type": "minimax",
+      "device": "default"
+    },
+    "class_type": "CLIPLoader",
+    "_meta": {
+      "title": "加载CLIP"
+    }
+  },
+  "18": {
+    "inputs": {
+      "aspect_ratio": "9:16 (Portrait Widescreen)",
+      "megapixels": 0.7,
+      "multiple": 32
+    },
+    "class_type": "ResolutionSelector",
+    "_meta": {
+      "title": "分辨率选择器"
+    }
+  },
+  "19": {
+    "inputs": {
+      "offload_model": true,
+      "offload_cache": true,
+      "anything": [
+        "12",
+        0
+      ]
+    },
+    "class_type": "VRAMCleanup",
+    "_meta": {
+      "title": "🎈VRAM-Cleanup"
+    }
+  },
+  "20": {
+    "inputs": {
+      "clean_file_cache": true,
+      "clean_processes": true,
+      "clean_dlls": true,
+      "retry_times": 3,
+      "anything": [
+        "19",
+        0
+      ]
+    },
+    "class_type": "RAMCleanup",
+    "_meta": {
+      "title": "🎈RAM-Cleanup"
+    }
+  },
+  "21": {
+    "inputs": {
+      "noise_seed": 9527
+    },
+    "class_type": "RandomNoise",
+    "_meta": {
+      "title": "随机噪波"
+    }
+  },
+  "22": {
+    "inputs": {
+      "unet_name": "minimax\\minimax_h3_fl2va_int8_convrot.safetensors",
+      "weight_dtype": "default"
+    },
+    "class_type": "UNETLoader",
+    "_meta": {
+      "title": "UNet加载器"
+    }
+  },
+  "23": {
+    "inputs": {
+      "lora_name": "minimax\\minimax_h3_fl2v_lightx2v_turbo_4step_v0.1_comfy.safetensors",
+      "strength_model": 0.6,
+      "model": [
+        "22",
+        0
+      ]
+    },
+    "class_type": "LoraLoaderModelOnly",
+    "_meta": {
+      "title": "LoRA加载器（仅模型）"
+    }
+  },
+  "24": {
+    "inputs": {
+      "model": [
+        "23",
+        0
+      ]
+    },
+    "class_type": "MiniMaxH3MemoryEfficientSageAttentionPatch",
+    "_meta": {
+      "title": "MiniMax H3 Mem Eff Sage Attention Patch"
+    }
+  },
+  "25": {
+    "inputs": {
+      "filename_prefix": "video/MiniMax_H3",
+      "format": "auto",
+      "codec": "auto",
+      "video": [
+        "12",
+        0
+      ]
+    },
+    "class_type": "SaveVideo",
+    "_meta": {
+      "title": "保存视频"
+    }
+  },
+  "28": {
+    "inputs": {
+      "text": "How the reference pictures align with the target video — Picture 1 (from Shot 1) aligns with the 0.00-second mark of the target video; Picture 2 (from Shot 1) aligns with the 15.00-second mark of the target video.\n\nintegrated_multimodal_description: [Shot 1] Cinematic, live-action, the scene opens from the underwater framing and pose established by Picture 1, showing a young Asian woman suspended vertically beneath the surface of a sunlit swimming pool, wearing a fitted light blue swimsuit with a delicate silver necklace at her collarbone, both arms reaching straight up toward the bright surface, her palms pressed together back-to-back, light blooming between her fingers, and her long dark hair trailing loosely downward in the water. The camera holds a slow, drifting underwater shot as she begins to transition out of the vertical reach: her hands separate and sweep outward in a wide, fluid arc through the water, palms turning to face forward, while her shoulders roll gently backward and her torso tilts forward into a horizontal posture. Her legs, which had been trailing behind her in a long vertical line, swing forward together and extend straight behind her as her body rotates into a head-first swimming position. Streams of small bubbles trail from her moving hands, shoulders, and hair as she reorients, and her hair fans out softly behind her head. She begins a smooth, continuous forward underwater breaststroke: she extends both arms outward in a wide arc and pulls them back toward her hips while her legs bend and kick together in a gentle whip motion, propelling her directly toward the camera. The camera reframes with her into the frontal underwater composition established by Picture 2, where she now glides directly toward the lens with arms extended outward and slightly forward, palms relaxed, bubbles streaming upward around her arms and shoulders, settling into the exact pose, framing, lighting, and composition established by Picture 2 at the end of the shot.\n\noverall_soundscape: A continuous muffled, hushed underwater ambience surrounds the scene throughout. Soft water displacement hisses gently as her arms sweep downward and her body rotates into the swimming posture. Small bubble streams rise and pop softly throughout the motion, with rhythmic water displacement from each arm pull and leg kick. The pool water produces a faint low rumble from distant filtration. No surface sounds or voices are audible.\n\nnon_diegetic_music: A slow, ethereal ambient pad at a relaxed tempo, featuring soft synth chords, sustained low strings, and gentle high-register piano tones that swell faintly during the rotation and sustain through the final forward glide."
+    },
+    "class_type": "CR Text",
+    "_meta": {
+      "title": "文本"
+    }
+  }
+}
