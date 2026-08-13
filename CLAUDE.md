@@ -10,7 +10,6 @@ comfyui-console 是面向本地或远程 ComfyUI 实例的统一管理平台：�
 - `docs/feature-list.md` v0.2 — 功能清单与菜单结构
 - `docs/feature-specification.md` v0.3 — 功能详细规格（页面/字段/校验/验收）
 - `docs/development-plan.md` v1.0 — 任务卡 CC-00 ~ CC-36
-- `docs/reference/existing-system-analysis.md` — 现有系统参考
 
 ## 技术栈
 

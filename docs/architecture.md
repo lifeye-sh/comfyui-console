@@ -1,7 +1,7 @@
 # comfyui-console 架构设计文档
 
 > 版本：v0.2　日期：2026-08-05　状态：待评审
-> 配套文档：[功能清单 v0.2](feature-list.md)、[功能详细规格 v0.3](feature-specification.md)、[现有系统分析](reference/existing-system-analysis.md)
+> 配套文档：[功能清单 v0.2](feature-list.md)、[功能详细规格 v0.3](feature-specification.md)
 
 ## 0. v0.1 → v0.2 变更记录
 
@@ -376,5 +376,4 @@ services:
 | 并发撑爆显存 | 节点级 `max_concurrent` 默认 1，平台硬限流 |
 | DB 队列瓶颈 | QueueProvider 抽象，切换 Redis 业务零改动 |
 | 音频/视频大文件上传体验差 | 分片上传 + 前端压缩 + 上传进度；服务端 MIME 与内容双校验 |
-
 

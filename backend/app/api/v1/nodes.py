@@ -47,5 +47,5 @@ async def probe_node(node_id: int, admin: AdminUser, db: DBSession) -> dict:
         node_service.mark_seen(db, node, "online")
         return {"ok": True, "info": info}
     except Exception as e:  # noqa: BLE001
-        node_service.mark_seen(db, node, "offline")
+        node_service.mark_probe_failed(db, node, str(e), offline_after=1)
         raise HTTPException(status.HTTP_502_BAD_GATEWAY, f"节点探测失败：{e}")

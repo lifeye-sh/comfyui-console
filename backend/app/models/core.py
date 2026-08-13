@@ -33,6 +33,9 @@ class Node(Base, TimestampMixin):
     status: Mapped[str] = mapped_column(String(16), default="offline", nullable=False)
     max_concurrent: Mapped[int] = mapped_column(Integer, default=1, nullable=False)
     last_seen_at: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
+    last_probe_at: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
+    consecutive_failures: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
+    health_error: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
 
 
 class Setting(Base):

@@ -6,6 +6,7 @@ from app.models.core import Node, Setting, User
 from app.models.production import (
     Batch,
     GenerationType,
+    GenerationTypeConfigVersion,
     Resource,
     ResourceFolder,
     Task,
@@ -24,6 +25,7 @@ __all__ = [
     "Node",
     "Setting",
     "GenerationType",
+    "GenerationTypeConfigVersion",
     "Workflow",
     "WorkflowVersion",
     "Batch",

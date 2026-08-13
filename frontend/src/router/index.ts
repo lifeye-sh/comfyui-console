@@ -1,5 +1,8 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import { getAccessToken } from '@/api/client'
+import { useAuthStore } from '@/stores/auth'
+import { isV2Enabled } from '@/v2/app/featureFlags'
+import { v2Routes } from '@/v2/routes'
 
 const router = createRouter({
   history: createWebHistory(),
@@ -32,12 +35,21 @@ const router = createRouter({
       name: 'share',
       component: () => import('@/views/ShareView.vue'),
     },
+    v2Routes,
   ],
 })
 
-router.beforeEach((to) => {
+router.beforeEach(async (to) => {
   if (to.name === 'login') return true
   if (!getAccessToken()) return { name: 'login' }
+  if (to.matched.some((record) => record.meta.requiresV2) && !isV2Enabled()) {
+    return { name: 'home' }
+  }
+  if (to.matched.some((record) => record.meta.adminOnly) && getAccessToken()) {
+    const auth = useAuthStore()
+    if (!auth.user) await auth.fetchMe()
+    if (auth.user?.role !== 'admin') return { name: 'v2-home' }
+  }
   return true
 })
 

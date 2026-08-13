@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 
 import pytest
 from sqlalchemy import create_engine
@@ -64,19 +64,56 @@ def test_list_tasks_filters_creation_time_and_generation_type() -> None:
         assert items[0].status == "DRAFT"
 
 
-def test_only_draft_task_can_be_deleted() -> None:
+def test_list_tasks_converts_aware_local_day_boundaries_to_naive_utc() -> None:
+    with _session() as db:
+        batch, generation_type = _create_batch_and_type(db)
+        db.add_all([
+            Task(batch_id=batch.id, generation_type_id=generation_type.id, status="DRAFT", created_at=datetime(2026, 8, 12, 15, 59, 59)),
+            Task(batch_id=batch.id, generation_type_id=generation_type.id, status="SUCCESS", created_at=datetime(2026, 8, 12, 16, 0, 0)),
+        ])
+        db.commit()
+        china = timezone(timedelta(hours=8))
+        items, total = task_service.list_tasks(
+            db,
+            created_from=datetime(2026, 8, 13, 0, 0, tzinfo=china),
+            created_to=datetime(2026, 8, 14, 0, 0, tzinfo=china),
+        )
+        assert total == 1
+        assert items[0].status == "SUCCESS"
+
+
+def test_list_tasks_can_be_scoped_to_current_user() -> None:
+    with _session() as db:
+        batch, generation_type = _create_batch_and_type(db)
+        db.add_all([
+            Task(batch_id=batch.id, user_id=11, generation_type_id=generation_type.id, status="DRAFT"),
+            Task(batch_id=batch.id, user_id=22, generation_type_id=generation_type.id, status="DRAFT"),
+        ])
+        db.commit()
+
+        items, total = task_service.list_tasks(db, user_id=11)
+
+        assert total == 1
+        assert items[0].user_id == 11
+
+
+def test_inactive_tasks_can_be_deleted_but_running_task_cannot() -> None:
     with _session() as db:
         batch, generation_type = _create_batch_and_type(db)
         draft = Task(batch_id=batch.id, generation_type_id=generation_type.id, status="DRAFT")
         success = Task(batch_id=batch.id, generation_type_id=generation_type.id, status="SUCCESS")
-        db.add_all([draft, success])
+        running = Task(batch_id=batch.id, generation_type_id=generation_type.id, status="RUNNING")
+        db.add_all([draft, success, running])
         db.commit()
         draft_id = draft.id
+        success_id = success.id
 
-        task_service.delete_draft(db, draft)
+        task_service.delete_task(db, draft)
+        task_service.delete_task(db, success)
         assert db.get(Task, draft_id) is None
-        with pytest.raises(ValueError, match="仅草稿任务可以删除"):
-            task_service.delete_draft(db, success)
+        assert db.get(Task, success_id) is None
+        with pytest.raises(ValueError, match="执行中的任务不能删除"):
+            task_service.delete_task(db, running)
 
 
 def test_success_or_failed_task_can_be_regenerated_without_overwriting_source() -> None:

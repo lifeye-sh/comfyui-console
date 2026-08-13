@@ -49,5 +49,18 @@ async def probe_node(node: Node) -> dict:
 
 def mark_seen(db: Session, node: Node, status: str = "online") -> None:
     node.status = status
-    node.last_seen_at = datetime.now(timezone.utc)
+    now = datetime.now(timezone.utc)
+    node.last_probe_at = now
+    if status == "online":
+        node.last_seen_at = now
+        node.consecutive_failures = 0
+        node.health_error = None
+    db.commit()
+
+
+def mark_probe_failed(db: Session, node: Node, error: str, offline_after: int = 3) -> None:
+    node.last_probe_at = datetime.now(timezone.utc)
+    node.consecutive_failures = (node.consecutive_failures or 0) + 1
+    node.health_error = error[:500]
+    node.status = "offline" if node.consecutive_failures >= offline_after else "degraded"
     db.commit()

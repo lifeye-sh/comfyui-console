@@ -7,7 +7,7 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import Session
 
 from app.db import Base
-from app.models import Resource, User
+from app.models import Batch, GenerationType, Resource, ResourceFolder, Task, TaskResource, User
 from app.services import resource_folder_service
 
 
@@ -38,13 +38,16 @@ def test_unlimited_folder_tree_and_cycle_guard() -> None:
         db.close()
 
 
-def test_generated_folder_uses_date_and_task_name() -> None:
+def test_generated_folder_stops_at_date_level() -> None:
     db, owner_id = _db()
     try:
         folder = resource_folder_service.ensure_task_result_folder(db, owner_id, 29, "动作迁移", datetime(2026, 8, 12, 10, 30))
         db.commit()
-        assert folder.name == "29-动作迁移"
-        assert folder.system_key == "task_results:2026-08-12:task:29"
+        assert folder.name == "2026-08-12"
+        assert folder.system_key == "task_results:2026-08-12"
+        month_folder = db.get(ResourceFolder, folder.parent_id)
+        assert month_folder.name == "2026-08"
+        assert month_folder.system_key == "task_results:2026-08"
     finally:
         db.close()
 
@@ -57,7 +60,29 @@ def test_generated_folder_does_not_require_system_tzdata(monkeypatch) -> None:
         folder = resource_folder_service.ensure_task_result_folder(db, owner_id, 30, "文生图")
         db.commit()
         assert folder.system_key.startswith("task_results:")
-        assert folder.system_key.endswith(":task:30")
+        assert folder.system_key.count(":") == 1
+    finally:
+        db.close()
+
+
+def test_archive_existing_moves_legacy_task_output_to_date_folder() -> None:
+    db, owner_id = _db()
+    try:
+        generation_type = GenerationType(media_type="image", code="folder-test", name="文生图", param_template=[])
+        batch = Batch(name="测试", generation_type=generation_type)
+        db.add(batch); db.flush()
+        task = Task(batch=batch, user_id=owner_id, generation_type_id=generation_type.id, status="SUCCESS", finished_at=datetime(2026, 8, 13, 12))
+        db.add(task); db.flush()
+        date_folder = resource_folder_service.ensure_task_result_folder(db, owner_id, task.id, "文生图", task.finished_at)
+        legacy = ResourceFolder(owner_id=owner_id, parent_id=date_folder.id, name=f"{task.id}-文生图", folder_type="task", system_key=f"task_results:2026-08-13:task:{task.id}")
+        db.add(legacy); db.flush()
+        resource = Resource(owner_id=owner_id, folder_id=legacy.id, media_type="image", direction="output", filename="result.png", storage_key="result.png")
+        db.add(resource); db.flush(); db.add(TaskResource(task_id=task.id, resource_id=resource.id, role="output")); db.commit()
+
+        assert resource_folder_service.archive_existing(db) == 1
+        db.refresh(resource); db.refresh(legacy)
+        assert resource.folder_id == date_folder.id
+        assert legacy.deleted_at is not None
     finally:
         db.close()
 

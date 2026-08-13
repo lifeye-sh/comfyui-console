@@ -59,6 +59,10 @@ class NodeOut(NodeBase):
     model_config = ConfigDict(from_attributes=True)
     id: int
     status: str
+    last_seen_at: Optional[datetime] = None
+    last_probe_at: Optional[datetime] = None
+    consecutive_failures: int = 0
+    health_error: Optional[str] = None
 
 # ---- workflows ----
 class WorkflowVersionIn(BaseModel):
@@ -107,6 +111,7 @@ class GenerationTypeOut(BaseModel):
     param_template: list
     menu_order: int
     enabled: bool
+    published_config_version_id: Optional[int] = None
 
 class DefaultWorkflowIn(BaseModel):
     workflow_version_id: int
@@ -152,6 +157,7 @@ class TaskOut(BaseModel):
     row_no: int
     generation_type_id: Optional[int]
     workflow_version_id: Optional[int]
+    config_version_id: Optional[int] = None
     params: dict
     status: str
     priority: int
@@ -165,6 +171,17 @@ class TaskOut(BaseModel):
 
 class TaskExecuteIn(BaseModel):
     params: dict = Field(default_factory=dict)
+
+class TaskBulkIn(BaseModel):
+    task_ids: list[int] = Field(min_length=1, max_length=500)
+    action: str
+
+class TaskBulkOut(BaseModel):
+    action: str
+    requested: int
+    succeeded: int
+    failed: list[dict] = Field(default_factory=list)
+    created_task_ids: list[int] = Field(default_factory=list)
 
 class TaskEventOut(BaseModel):
     model_config = ConfigDict(from_attributes=True)

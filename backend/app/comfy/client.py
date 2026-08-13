@@ -51,6 +51,11 @@ class ComfyUIClient:
         r.raise_for_status()
         return r.json()  # {prompt_id: {...}}
 
+    async def get_queue(self) -> dict[str, Any]:
+        r = await self._http.get("/queue")
+        r.raise_for_status()
+        return r.json()
+
     async def get_view_bytes(self, filename: str, subfolder: str = "", type_: str = "output") -> bytes:
         params = {"filename": filename, "subfolder": subfolder, "type": type_}
         r = await self._http.get("/view", params=params)

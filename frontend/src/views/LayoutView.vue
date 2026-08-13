@@ -4,10 +4,12 @@ import { useRoute, useRouter, RouterView } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import { disconnectWs } from '@/ws/client'
 import { genTypeApi } from '@/api/modules'
+import { isV2Enabled } from '@/v2/app/featureFlags'
 
 const route = useRoute()
 const router = useRouter()
 const auth = useAuthStore()
+const v2Enabled = isV2Enabled()
 
 const menuTree = ref<Record<string, any[]>>({})
 const expanded = ref<Record<string, boolean>>({ image: true, video: true, audio: true })
@@ -129,7 +131,10 @@ function goMobile(key: string) {
         </div>
       </nav>
       <div class="sider-footer">
-        <span class="user">{{ auth.user?.username }}（{{ auth.user?.role }}）</span>
+        <div>
+          <span class="user">{{ auth.user?.username }}（{{ auth.user?.role }}）</span>
+          <button v-if="v2Enabled" class="v2-entry" @click="router.push('/v2')">体验 V2</button>
+        </div>
         <button class="logout" @click="logout">退出</button>
       </div>
     </aside>
@@ -140,7 +145,10 @@ function goMobile(key: string) {
 
   <!-- 移动端：顶部标题 + 底部 Tab -->
   <div class="mobile-layout">
-    <div class="mobile-header">{{ activeLabel }}</div>
+    <div class="mobile-header">
+      <span>{{ activeLabel }}</span>
+      <button v-if="v2Enabled" class="v2-entry mobile" @click="router.push('/v2')">V2</button>
+    </div>
     <div class="mobile-content">
       <RouterView />
     </div>
@@ -234,9 +242,21 @@ function goMobile(key: string) {
   align-items: center;
 }
 .user {
+  display: block;
   font-size: 12px;
   color: #6b7280;
 }
+.v2-entry {
+  display: block;
+  margin-top: 5px;
+  padding: 0;
+  color: #4f46e5;
+  background: none;
+  border: none;
+  font-size: 12px;
+  cursor: pointer;
+}
+.v2-entry.mobile { margin: 0; padding: 4px 8px; border: 1px solid #c7d2fe; border-radius: 8px; }
 .logout {
   font-size: 12px;
   color: #ef4444;
@@ -272,6 +292,9 @@ function goMobile(key: string) {
     border-bottom: 1px solid #e5e7eb;
     font-weight: 700;
     background: #fff;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
   }
   .mobile-content {
     flex: 1;

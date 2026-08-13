@@ -27,7 +27,10 @@ def parse_json(user: CurrentUser, body: dict, db: DBSession) -> dict:
     if gt_code:
         # 以生成类型参数模板为基准
         from app.services.generation_type_service import PARAM_TEMPLATES, get_all_select_options
-        template = PARAM_TEMPLATES.get(gt_code, [])
+        # V2 配置编辑器传入当前草稿参数，匹配必须以用户正在设计的参数为准；
+        # 未传入时继续兼容 V1 固定模板调用方。
+        supplied_parameters = body.get("parameters")
+        template = supplied_parameters if isinstance(supplied_parameters, list) else PARAM_TEMPLATES.get(gt_code, [])
         select_options = get_all_select_options(db)
         # 解析节点列表
         from app.comfy.formats import parse_api_json, NODE_TYPE_RULES, match_input_field, title_matches_parameter
@@ -36,7 +39,12 @@ def parse_json(user: CurrentUser, body: dict, db: DBSession) -> dict:
         params = []
         used_media_nodes: set[str] = set()
         for p in template:
+            if not isinstance(p, dict) or not p.get("key") or not p.get("type"):
+                continue
             item = dict(p)
+            # 页面联动等配置不属于工作流参数映射，避免写入版本快照。
+            item.pop("visible_when", None)
+            item.pop("help", None)
             # select 类型补上 options
             if item.get("options_from"):
                 item["options"] = select_options.get(item["options_from"], [])

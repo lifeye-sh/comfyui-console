@@ -4,7 +4,7 @@ from __future__ import annotations
 from fastapi import APIRouter, HTTPException, status
 from pydantic import BaseModel
 
-from app.core.deps import AdminUser, DBSession
+from app.core.deps import AdminUser, CurrentUser, DBSession
 from app.models import Setting
 from app.services import generation_type_service
 
@@ -33,7 +33,7 @@ def patch_settings(body: dict, admin: AdminUser, db: DBSession) -> dict:
 
 # ---- 选择项管理 ----
 @router.get("/select-options")
-def get_select_options(admin: AdminUser, db: DBSession) -> dict:
+def get_select_options(user: CurrentUser, db: DBSession) -> dict:
     """返回所有选择项及其标签。"""
     options = generation_type_service.get_all_select_options(db)
     return {

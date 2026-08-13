@@ -7,7 +7,8 @@ from __future__ import annotations
 import asyncio
 import logging
 import mimetypes
-from datetime import datetime, timezone
+import threading
+from datetime import datetime, timedelta, timezone
 
 from sqlalchemy.orm import Session
 
@@ -17,6 +18,7 @@ from app.core.events import publish_task_event
 from app.db import SessionLocal
 from app.models import GenerationType, Node, Resource, Task, TaskResource, WorkflowVersion
 from app.storage.local_fs import get_storage
+from app.services import node_service
 
 logger = logging.getLogger(__name__)
 
@@ -60,28 +62,75 @@ def resolve_multimedia_target(prompt: dict, spec: dict) -> tuple[dict, str]:
 
 
 class Dispatcher:
-    def __init__(self, session_factory=SessionLocal) -> None:
+    def __init__(
+        self,
+        session_factory=SessionLocal,
+        *,
+        max_submissions_per_tick: int = 2,
+        max_finalizations_per_tick: int = 10,
+        node_probe_interval_seconds: float = 15.0,
+        orphan_timeout_seconds: float = 300.0,
+    ) -> None:
         self._session_factory = session_factory
+        # Keep ticks bounded even though they run outside FastAPI's event loop;
+        # this also prevents one task class from monopolizing the worker.
+        self._max_submissions_per_tick = max(1, max_submissions_per_tick)
+        self._max_finalizations_per_tick = max(1, max_finalizations_per_tick)
+        self._node_probe_interval_seconds = max(1.0, node_probe_interval_seconds)
+        self._orphan_timeout_seconds = max(30.0, orphan_timeout_seconds)
         self._clients: dict[int, ComfyUIClient] = {}
-        self._task: asyncio.Task | None = None
-        self._stopping = False
+        self._thread: threading.Thread | None = None
+        self._stop_event = threading.Event()
+        self._web_loop: asyncio.AbstractEventLoop | None = None
+        self._started_at: datetime | None = None
+        self._last_heartbeat_at: datetime | None = None
+        self._last_tick_at: datetime | None = None
+        self._last_probe_at: datetime | None = None
+        self._last_error: str | None = None
+        self._ticks = self._submitted = self._completed = self._failed = 0
 
     # ---------- 生命周期 ----------
     async def start(self) -> None:
-        self._stopping = False
-        self._task = asyncio.create_task(self._run())
+        if self._thread and self._thread.is_alive():
+            return
+        self._web_loop = asyncio.get_running_loop()
+        self._started_at = datetime.now(timezone.utc)
+        self._stop_event.clear()
+        self._thread = threading.Thread(
+            target=self._thread_main,
+            name="comfyui-dispatcher",
+            daemon=True,
+        )
+        self._thread.start()
 
     async def stop(self) -> None:
-        self._stopping = True
-        if self._task:
-            self._task.cancel()
-            try:
-                await self._task
-            except asyncio.CancelledError:
-                pass
-        for c in self._clients.values():
-            await c.aclose()
-        self._clients.clear()
+        self._stop_event.set()
+        if self._thread and self._thread.is_alive():
+            await asyncio.to_thread(self._thread.join, 10)
+        self._thread = None
+        self._web_loop = None
+
+    def _thread_main(self) -> None:
+        """Run queue I/O on its own event loop so it cannot block the API."""
+        asyncio.run(self._run())
+
+    def status(self) -> dict:
+        db = self._session_factory()
+        try:
+            counts = {state: db.query(Task).filter(Task.status == state).count() for state in (
+                "PENDING", "DISPATCHING", "QUEUED", "RUNNING", "FAILED"
+            )}
+        finally:
+            db.close()
+        thread = self._thread
+        return {
+            "running": bool(thread and thread.is_alive()), "thread_name": thread.name if thread else None,
+            "started_at": self._started_at, "last_heartbeat_at": self._last_heartbeat_at,
+            "last_tick_at": self._last_tick_at, "last_probe_at": self._last_probe_at,
+            "last_error": self._last_error,
+            "counters": {"ticks": self._ticks, "submitted": self._submitted, "completed": self._completed, "failed": self._failed},
+            "tasks": counts,
+        }
 
     def _get_client(self, node: Node) -> ComfyUIClient:
         c = self._clients.get(node.id)
@@ -92,25 +141,60 @@ class Dispatcher:
 
     # ---------- 主循环 ----------
     async def _run(self) -> None:
-        while not self._stopping:
-            try:
-                await self._tick()
-            except Exception as e:  # noqa: BLE001
-                logger.exception("调度循环异常: %s", e)
-            await asyncio.sleep(1.0)
+        try:
+            while not self._stop_event.is_set():
+                self._last_heartbeat_at = datetime.now(timezone.utc)
+                try:
+                    await self._tick()
+                    self._last_error = None
+                except Exception as e:  # noqa: BLE001
+                    self._last_error = str(e)
+                    logger.exception("调度循环异常: %s", e)
+                await asyncio.sleep(1.0)
+        finally:
+            for client in self._clients.values():
+                await client.aclose()
+            self._clients.clear()
+
+    async def _publish(self, task_id: int, event_type: str, progress: int, payload: dict) -> None:
+        """Publish websocket events on FastAPI's loop from the worker thread."""
+        web_loop = self._web_loop
+        if web_loop and web_loop.is_running() and asyncio.get_running_loop() is not web_loop:
+            future = asyncio.run_coroutine_threadsafe(
+                publish_task_event(task_id, event_type, progress, payload),
+                web_loop,
+            )
+            await asyncio.wrap_future(future)
+            return
+        await publish_task_event(task_id, event_type, progress, payload)
 
     async def _tick(self) -> None:
         db = self._session_factory()
         try:
+            now = datetime.now(timezone.utc)
+            if not self._last_probe_at or (now - self._last_probe_at).total_seconds() >= self._node_probe_interval_seconds:
+                await self._probe_nodes(db)
+                self._last_probe_at = now
             await self._finalize_completed(db)
             await self._submit_pending(db)
+            self._ticks += 1
+            self._last_tick_at = datetime.now(timezone.utc)
         finally:
             db.close()
+
+    async def _probe_nodes(self, db: Session) -> None:
+        for node in db.query(Node).order_by(Node.id).all():
+            try:
+                await self._get_client(node).probe()
+                node_service.mark_seen(db, node, "online")
+            except Exception as exc:  # noqa: BLE001
+                node_service.mark_probe_failed(db, node, str(exc))
+            await asyncio.sleep(0)
 
     # ---------- 提交 ----------
     async def _submit_pending(self, db: Session) -> None:
         """取 PENDING 任务，按打分选最优节点提交。"""
-        while True:
+        for _ in range(self._max_submissions_per_tick):
             t = (
                 db.query(Task)
                 .filter(Task.status == "PENDING")
@@ -118,11 +202,15 @@ class Dispatcher:
                 .first()
             )
             if not t:
-                break
+                return
             node = self._pick_node(db, t)
             if not node:
-                break  # 无可用节点，等下一轮
+                return  # 无可用节点，等下一轮
             await self._dispatch(db, t, node)
+            self._submitted += 1
+            # Some local ComfyUI calls finish immediately. Explicitly give the
+            # web server a chance to service pending HTTP requests between jobs.
+            await asyncio.sleep(0)
 
     def _pick_node(self, db: Session, t: Task) -> Node | None:
         """按标签匹配 + 加权打分选最优节点。返回 None 表示无可用节点。"""
@@ -156,7 +244,7 @@ class Dispatcher:
         t.status = "DISPATCHING"
         t.node_id = node.id
         db.commit()
-        await publish_task_event(t.id, "status", 0, {"status": "DISPATCHING"})
+        await self._publish(t.id, "status", 0, {"status": "DISPATCHING"})
 
         try:
             wv = db.get(WorkflowVersion, t.workflow_version_id)
@@ -170,14 +258,15 @@ class Dispatcher:
             t.status = "QUEUED"
             t.started_at = datetime.now(timezone.utc)
             db.commit()
-            await publish_task_event(t.id, "status", 0, {"status": "QUEUED", "prompt_id": resp["prompt_id"]})
+            await self._publish(t.id, "status", 0, {"status": "QUEUED", "prompt_id": resp["prompt_id"]})
         except Exception as e:  # noqa: BLE001
             db.rollback()
             t.status = "FAILED"
             t.error = str(e)
             t.retries += 1
             db.commit()
-            await publish_task_event(t.id, "failed", 0, {"error": str(e)})
+            await self._publish(t.id, "failed", 0, {"error": str(e)})
+            self._failed += 1
             logger.warning("任务 %s 提交失败: %s", t.id, e)
 
     async def _upload_inputs(
@@ -194,7 +283,9 @@ class Dispatcher:
                 raise RuntimeError(f"输入素材不存在: #{rid}")
             if r.media_type != spec.get("type"):
                 raise RuntimeError(f"输入素材 #{rid} 类型与参数 {spec['key']} 不匹配")
-            data = get_storage().read(r.storage_key)
+            # Reading large image/video/audio inputs is blocking file I/O and
+            # must not freeze FastAPI's event loop.
+            data = await asyncio.to_thread(get_storage().read, r.storage_key)
             up = await client.upload_image(data, r.filename)
             fname = up.get("name", r.filename)
             subfolder = str(up.get("subfolder") or "").strip("/\\")
@@ -208,7 +299,13 @@ class Dispatcher:
 
     # ---------- 完成回收 ----------
     async def _finalize_completed(self, db: Session) -> None:
-        in_flight = db.query(Task).filter(Task.status.in_(["QUEUED", "RUNNING"])).all()
+        in_flight = (
+            db.query(Task)
+            .filter(Task.status.in_(["QUEUED", "RUNNING"]))
+            .order_by(Task.id)
+            .limit(self._max_finalizations_per_tick)
+            .all()
+        )
         for t in in_flight:
             if not t.prompt_id or not t.node_id:
                 continue
@@ -223,6 +320,7 @@ class Dispatcher:
                 continue
             entry = hist.get(t.prompt_id)
             if not entry:
+                await self._recover_orphan(db, t, client)
                 continue
             status_info = entry.get("status", {}) or {}
             if status_info.get("completed"):
@@ -231,20 +329,53 @@ class Dispatcher:
                     t.status = "SUCCESS"
                     t.finished_at = datetime.now(timezone.utc)
                     db.commit()
-                    await publish_task_event(t.id, "completed", 100, {})
+                    await self._publish(t.id, "completed", 100, {})
+                    self._completed += 1
                 except Exception as e:  # noqa: BLE001
                     db.rollback()
                     t.status = "FAILED"
                     t.error = f"输出回收失败: {e}"
                     t.finished_at = datetime.now(timezone.utc)
                     db.commit()
-                    await publish_task_event(t.id, "failed", 0, {"error": str(e)})
+                    await self._publish(t.id, "failed", 0, {"error": str(e)})
+                    self._failed += 1
             elif status_info.get("status_str") == "error":
                 t.status = "FAILED"
                 t.error = str(status_info.get("messages"))[:500]
                 t.finished_at = datetime.now(timezone.utc)
                 db.commit()
-                await publish_task_event(t.id, "failed", 0, {"error": t.error})
+                await self._publish(t.id, "failed", 0, {"error": t.error})
+                self._failed += 1
+            # History may be served from a local cache without yielding. Keep
+            # the API responsive even while many completed jobs are collected.
+            await asyncio.sleep(0)
+
+    async def _recover_orphan(self, db: Session, task: Task, client: ComfyUIClient) -> None:
+        if not task.started_at:
+            return
+        started = task.started_at.replace(tzinfo=timezone.utc) if task.started_at.tzinfo is None else task.started_at
+        now = datetime.now(timezone.utc)
+        if now - started < timedelta(seconds=self._orphan_timeout_seconds):
+            return
+        try:
+            queue = await client.get_queue()
+        except Exception:
+            return
+        prompt_ids: set[str] = set()
+        for key in ("queue_running", "queue_pending"):
+            for item in queue.get(key, []) or []:
+                if isinstance(item, (list, tuple)) and len(item) > 1:
+                    prompt_ids.add(str(item[1]))
+                elif isinstance(item, dict) and item.get("prompt_id"):
+                    prompt_ids.add(str(item["prompt_id"]))
+        if task.prompt_id in prompt_ids:
+            return
+        task.status = "FAILED"
+        task.error = "ComfyUI 已丢失该任务记录，请使用重新生成功能"
+        task.finished_at = now
+        db.commit()
+        self._failed += 1
+        await self._publish(task.id, "failed", 0, {"error": task.error, "recovered": True})
 
     async def _collect_outputs(self, db: Session, t: Task, client: ComfyUIClient, outputs: dict) -> None:
         seen: set[tuple[str, str, str]] = set()
@@ -269,7 +400,7 @@ class Dispatcher:
 
     async def _save_output(self, db: Session, t: Task, client: ComfyUIClient, item: dict, media_type: str, ext_key: str) -> None:
         from app.models import Resource
-        from app.services.resource_service import build_image_thumbnail, infer_media_type, thumbnail_storage_key
+        from app.services.resource_service import build_image_thumbnail, infer_media_type, probe_media_metadata, thumbnail_storage_key
         from app.services.resource_folder_service import ensure_task_result_folder
 
         fname = item.get("filename", "output")
@@ -289,7 +420,7 @@ class Dispatcher:
         }.get(media_type, "application/octet-stream")
         media_type = infer_media_type(fname, mime, media_type)
         thumb_key = None
-        width = height = None
+        width = height = duration = None
         if media_type == "image":
             try:
                 thumb_data, width, height = build_image_thumbnail(data)
@@ -297,6 +428,11 @@ class Dispatcher:
                 storage.save_bytes(thumb_data, thumb_key)
             except Exception as exc:  # noqa: BLE001
                 logger.warning("输出图片缩略图生成失败 task=%s file=%s: %s", t.id, fname, exc)
+        elif media_type in ("video", "audio"):
+            try:
+                width, height, duration = probe_media_metadata(storage.abs_path(key))
+            except Exception as exc:  # noqa: BLE001
+                logger.warning("输出媒体元数据读取失败 task=%s file=%s: %s", t.id, fname, exc)
         generation_type = db.get(GenerationType, t.generation_type_id) if t.generation_type_id else None
         r = Resource(
             owner_id=t.user_id,
@@ -313,6 +449,7 @@ class Dispatcher:
             thumb_key=thumb_key,
             width=width,
             height=height,
+            duration=duration,
             visibility="private",
         )
         db.add(r)

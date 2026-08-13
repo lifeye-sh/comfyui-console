@@ -77,7 +77,9 @@ from app.api.v1 import (  # noqa: E402
     shares as _shares,
     audit_logs as _audit,
     dashboard as _dashboard,
+    runtime as _runtime,
 )
+from app.api.v2 import generation_type_configs as _v2_generation_type_configs  # noqa: E402
 
 api_prefix = "/api/v1"
 app.include_router(_auth.router, prefix=api_prefix)
@@ -96,6 +98,8 @@ app.include_router(_shares.router, prefix=api_prefix)
 app.include_router(_shares.public_router)
 app.include_router(_audit.router, prefix=api_prefix)
 app.include_router(_dashboard.router, prefix=api_prefix)
+app.include_router(_runtime.router, prefix=api_prefix)
+app.include_router(_v2_generation_type_configs.router, prefix="/api/v2")
 
 
 @app.get("/health", tags=["meta"])

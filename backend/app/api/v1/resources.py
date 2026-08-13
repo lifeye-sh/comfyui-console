@@ -150,6 +150,7 @@ def get_one(rid: int, user: CurrentUser, db: DBSession) -> ResourceOut:
     r = resource_service.get(db, rid)
     if not r or r.deleted_at or (r.owner_id is not None and r.owner_id != getattr(user, "id", None)):
         raise HTTPException(status.HTTP_404_NOT_FOUND, "资源不存在")
+    resource_service.ensure_media_metadata(db, r)
     return ResourceOut.model_validate(r)
 
 
@@ -165,7 +166,10 @@ def delete(rid: int, user: CurrentUser, db: DBSession) -> None:
 @router.get("/recycle/list", response_model=list[ResourceOut])
 def list_recycle(user: CurrentUser, db: DBSession) -> list[ResourceOut]:
     from app.models import Resource
-    items = db.query(Resource).filter(Resource.deleted_at.is_not(None)).order_by(Resource.id.desc()).all()
+    query = db.query(Resource).filter(Resource.deleted_at.is_not(None))
+    if user.role != "admin":
+        query = query.filter(Resource.owner_id == user.id)
+    items = query.order_by(Resource.id.desc()).all()
     return [ResourceOut.model_validate(r) for r in items]
 
 
@@ -174,6 +178,8 @@ def restore(rid: int, user: CurrentUser, db: DBSession) -> ResourceOut:
     r = resource_service.get(db, rid)
     if not r:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "资源不存在")
+    if r.owner_id != user.id and user.role != "admin":
+        raise HTTPException(status.HTTP_403_FORBIDDEN, "无权恢复")
     r.deleted_at = None
     db.commit()
     db.refresh(r)
@@ -215,6 +221,8 @@ def extract_frames(
     r = resource_service.get(db, rid)
     if not r or r.deleted_at:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "资源不存在")
+    if r.owner_id != user.id and user.role != "admin":
+        raise HTTPException(status.HTTP_403_FORBIDDEN, "无权访问")
     if r.media_type != "video":
         raise HTTPException(status.HTTP_400_BAD_REQUEST, "仅支持视频抽帧")
     import asyncio, hashlib, io, os, subprocess, tempfile

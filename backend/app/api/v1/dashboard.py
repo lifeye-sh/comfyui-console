@@ -9,4 +9,4 @@ router = APIRouter(prefix="/dashboard", tags=["dashboard"])
 
 @router.get("/summary")
 def summary(user: CurrentUser, db: DBSession) -> dict:
-    return get_summary(db)
+    return get_summary(db, None if user.role == "admin" else user.id)

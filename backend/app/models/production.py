@@ -4,7 +4,7 @@ from __future__ import annotations
 from datetime import datetime
 from typing import Any, Dict, List, Optional
 
-from sqlalchemy import JSON, Boolean, DateTime, ForeignKey, Integer, String, Text, func
+from sqlalchemy import JSON, Boolean, DateTime, ForeignKey, Integer, String, Text, UniqueConstraint, func
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.models.base import Base, TimestampMixin
@@ -21,9 +21,36 @@ class GenerationType(Base, TimestampMixin):
     param_template: Mapped[Dict] = mapped_column(JSON, default=dict)
     menu_order: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
     enabled: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
+    # Deliberately no DB foreign key: this pointer creates a circular dependency
+    # with version.generation_type_id and must remain safe for SQLite upgrades.
+    published_config_version_id: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
 
     default_workflow: Mapped[Optional["Workflow"]] = relationship(foreign_keys=[default_workflow_id])
     batches: Mapped[List["Batch"]] = relationship(back_populates="generation_type")
+
+
+class GenerationTypeConfigVersion(Base, TimestampMixin):
+    """Immutable published V2 configuration plus its editable draft revision."""
+
+    __tablename__ = "generation_type_config_versions"
+    __table_args__ = (
+        UniqueConstraint("generation_type_id", "version", name="uq_generation_type_config_version"),
+    )
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    generation_type_id: Mapped[int] = mapped_column(
+        Integer, ForeignKey("generation_types.id"), nullable=False, index=True
+    )
+    version: Mapped[int] = mapped_column(Integer, nullable=False)
+    status: Mapped[str] = mapped_column(String(16), default="draft", nullable=False, index=True)
+    config: Mapped[Dict] = mapped_column(JSON, default=dict, nullable=False)
+    validation_errors: Mapped[List] = mapped_column(JSON, default=list, nullable=False)
+    source_version_id: Mapped[Optional[int]] = mapped_column(
+        Integer, ForeignKey("generation_type_config_versions.id"), nullable=True
+    )
+    created_by: Mapped[Optional[int]] = mapped_column(Integer, ForeignKey("users.id"), nullable=True)
+    published_by: Mapped[Optional[int]] = mapped_column(Integer, ForeignKey("users.id"), nullable=True)
+    published_at: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
 
 
 class Workflow(Base, TimestampMixin):
@@ -86,6 +113,9 @@ class Task(Base, TimestampMixin):
     user_id: Mapped[Optional[int]] = mapped_column(Integer, ForeignKey("users.id"), nullable=True)
     generation_type_id: Mapped[Optional[int]] = mapped_column(Integer, ForeignKey("generation_types.id"), nullable=True)
     workflow_version_id: Mapped[Optional[int]] = mapped_column(Integer, ForeignKey("workflow_versions.id"), nullable=True)
+    config_version_id: Mapped[Optional[int]] = mapped_column(
+        Integer, nullable=True, index=True
+    )
     params: Mapped[Dict] = mapped_column(JSON, default=dict)
     status: Mapped[str] = mapped_column(String(16), default="DRAFT", nullable=False, index=True)
     priority: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
@@ -159,6 +189,6 @@ class TaskResource(Base):
 
 
 __all__ = [
-    "GenerationType", "Workflow", "WorkflowVersion", "Batch", "Task",
+    "GenerationType", "GenerationTypeConfigVersion", "Workflow", "WorkflowVersion", "Batch", "Task",
     "TaskEvent", "Resource", "ResourceFolder", "TaskResource",
 ]

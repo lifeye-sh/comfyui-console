@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import hashlib
+import json
 import logging
 import os
 import subprocess
@@ -95,6 +96,43 @@ def build_video_thumbnail(video_path: str) -> bytes:
     if result.returncode != 0 or not result.stdout:
         raise RuntimeError(result.stderr.decode("utf-8", errors="ignore") or "无法提取视频首帧")
     return result.stdout
+
+
+def probe_media_metadata(media_path: str) -> tuple[int | None, int | None, int | None]:
+    """Return width, height and rounded duration using ffprobe when available."""
+    result = subprocess.run(
+        ["ffprobe", "-v", "quiet", "-print_format", "json", "-show_streams", "-show_format", media_path],
+        capture_output=True, text=True, timeout=30, check=False,
+    )
+    if result.returncode != 0:
+        return None, None, None
+    payload = json.loads(result.stdout or "{}")
+    video = next((stream for stream in payload.get("streams", []) if stream.get("codec_type") == "video"), {})
+    duration_value = payload.get("format", {}).get("duration") or next(
+        (stream.get("duration") for stream in payload.get("streams", []) if stream.get("duration")), None
+    )
+    duration = max(0, round(float(duration_value))) if duration_value is not None else None
+    return video.get("width"), video.get("height"), duration
+
+
+def ensure_media_metadata(db: Session, resource: Resource) -> None:
+    if resource.media_type not in ("video", "audio") or resource.deleted_at is not None:
+        return
+    if resource.duration is not None and (resource.media_type == "audio" or (resource.width and resource.height)):
+        return
+    storage = get_storage()
+    if not storage.exists(resource.storage_key):
+        return
+    try:
+        width, height, duration = probe_media_metadata(storage.abs_path(resource.storage_key))
+        resource.width = resource.width or width
+        resource.height = resource.height or height
+        resource.duration = resource.duration if resource.duration is not None else duration
+        db.commit()
+        db.refresh(resource)
+    except Exception as exc:  # noqa: BLE001
+        db.rollback()
+        logger.warning("媒体元数据补全失败 resource=%s: %s", resource.id, exc)
 
 
 def ensure_thumbnail(db: Session, resource: Resource) -> bool:

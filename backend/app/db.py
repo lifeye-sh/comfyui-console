@@ -53,3 +53,21 @@ def init_db() -> None:
             with engine.begin() as connection:
                 connection.execute(text("ALTER TABLE resources ADD COLUMN folder_id INTEGER"))
                 connection.execute(text("CREATE INDEX IF NOT EXISTS ix_resources_folder_id ON resources (folder_id)"))
+        generation_type_columns = {column["name"] for column in inspect(engine).get_columns("generation_types")}
+        if "published_config_version_id" not in generation_type_columns:
+            with engine.begin() as connection:
+                connection.execute(text("ALTER TABLE generation_types ADD COLUMN published_config_version_id INTEGER"))
+        task_columns = {column["name"] for column in inspect(engine).get_columns("tasks")}
+        if "config_version_id" not in task_columns:
+            with engine.begin() as connection:
+                connection.execute(text("ALTER TABLE tasks ADD COLUMN config_version_id INTEGER"))
+                connection.execute(text("CREATE INDEX IF NOT EXISTS ix_tasks_config_version_id ON tasks (config_version_id)"))
+        node_columns = {column["name"] for column in inspect(engine).get_columns("nodes")}
+        for column_name, definition in (
+            ("last_probe_at", "DATETIME"),
+            ("consecutive_failures", "INTEGER NOT NULL DEFAULT 0"),
+            ("health_error", "TEXT"),
+        ):
+            if column_name not in node_columns:
+                with engine.begin() as connection:
+                    connection.execute(text(f"ALTER TABLE nodes ADD COLUMN {column_name} {definition}"))

@@ -53,35 +53,40 @@ def ensure_task_result_folder(
     local_time = created_at or datetime.now(CHINA_TIMEZONE)
     if local_time.tzinfo:
         local_time = local_time.astimezone(CHINA_TIMEZONE)
+    month_text = local_time.strftime("%Y-%m")
+    month_key = f"task_results:{month_text}"
+    month_folder = _find_system(db, owner_id, month_key)
+    if not month_folder:
+        month_folder = ResourceFolder(
+            owner_id=owner_id, parent_id=root.id, name=month_text,
+            folder_type="month", system_key=month_key,
+        )
+        db.add(month_folder)
+        db.flush()
     date_text = local_time.strftime("%Y-%m-%d")
     date_key = f"task_results:{date_text}"
     date_folder = _find_system(db, owner_id, date_key)
     if not date_folder:
         date_folder = db.query(ResourceFolder).filter(
-            ResourceFolder.owner_id == owner_id, ResourceFolder.parent_id == root.id,
+            ResourceFolder.owner_id == owner_id,
             ResourceFolder.name == date_text, ResourceFolder.folder_type == "date",
             ResourceFolder.deleted_at.is_(None),
         ).first()
         if date_folder:
             date_folder.system_key = date_key
+            date_folder.parent_id = month_folder.id
     if not date_folder:
         date_folder = ResourceFolder(
-            owner_id=owner_id, parent_id=root.id, name=date_text,
+            owner_id=owner_id, parent_id=month_folder.id, name=date_text,
             folder_type="date", system_key=date_key,
         )
         db.add(date_folder)
         db.flush()
-    task_key = f"{date_key}:task:{task_id}"
-    task_folder = _find_system(db, owner_id, task_key)
-    if not task_folder:
-        task_folder = ResourceFolder(
-            owner_id=owner_id, parent_id=date_folder.id,
-            name=f"{task_id}-{task_type or '未知类型'}",
-            folder_type="task", system_key=task_key,
-        )
-        db.add(task_folder)
-        db.flush()
-    return task_folder
+    elif date_folder.parent_id != month_folder.id:
+        date_folder.parent_id = month_folder.id
+    # V2 任务结果只归档到日期目录。同一天的所有任务输出直接平铺展示，
+    # 任务归属通过 TaskResource 和“生成信息”查看，不再额外创建任务编号目录。
+    return date_folder
 
 
 def tree(db: Session, owner_id: int) -> list[dict]:
@@ -206,7 +211,7 @@ def delete(db: Session, owner_id: int, folder_id: int) -> int:
 
 def archive_existing(db: Session) -> int:
     changed = 0
-    # 所有任务输出（包括已处于旧图片/视频目录中的素材）迁入对应任务目录。
+    # 所有任务输出（包括旧任务编号目录中的素材）迁入对应日期目录。
     links = db.query(TaskResource).filter(TaskResource.role == "output").order_by(TaskResource.id).all()
     linked_resource_ids: set[int] = set()
     for link in links:
@@ -242,6 +247,17 @@ def archive_existing(db: Session) -> int:
             old_media_changed = True
     if old_media_changed:
         db.flush()
+    # 旧版曾创建“任务ID-任务类型”目录。资源迁出后将空目录软删除。
+    old_task_folders = db.query(ResourceFolder).filter(
+        ResourceFolder.folder_type == "task", ResourceFolder.deleted_at.is_(None)
+    ).all()
+    for folder in old_task_folders:
+        has_resources = db.query(Resource).filter(Resource.folder_id == folder.id, Resource.deleted_at.is_(None)).first()
+        has_children = db.query(ResourceFolder).filter(
+            ResourceFolder.parent_id == folder.id, ResourceFolder.deleted_at.is_(None)
+        ).first()
+        if not has_resources and not has_children:
+            folder.deleted_at = datetime.now(CHINA_TIMEZONE)
     # 删除旧规则遗留的空日期目录。
     old_date_folders = db.query(ResourceFolder).filter(
         ResourceFolder.folder_type == "date",

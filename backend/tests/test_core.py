@@ -28,6 +28,22 @@ def test_login_wrong_password() -> None:
     assert resp.status_code == 401
 
 
+def test_regular_user_can_read_generation_select_options() -> None:
+    admin_token = client.post("/api/v1/auth/login", json={"username": "admin", "password": "admin123"}).json()["access_token"]
+    username = "select-options-user"
+    created = client.post(
+        "/api/v1/users",
+        json={"username": username, "password": "user12345", "role": "user"},
+        headers={"Authorization": f"Bearer {admin_token}"},
+    )
+    if created.status_code not in (201, 400):
+        assert created.status_code == 201
+    token = client.post("/api/v1/auth/login", json={"username": username, "password": "user12345"}).json()["access_token"]
+    response = client.get("/api/v1/settings/select-options", headers={"Authorization": f"Bearer {token}"})
+    assert response.status_code == 200
+    assert response.json()["image_size"]["default_value"]
+
+
 def test_me_without_token() -> None:
     resp = client.get("/api/v1/auth/me")
     assert resp.status_code == 401

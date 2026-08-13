@@ -127,6 +127,10 @@ def submit_batch(db: Session, batch: Batch) -> dict:
             invalid += 1
             continue
         t.workflow_version_id = wv
+        effective_type_id = t.generation_type_id or batch.generation_type_id
+        if effective_type_id:
+            generation_type = db.get(GenerationType, effective_type_id)
+            t.config_version_id = generation_type.published_config_version_id if generation_type else None
         t.status = "PENDING"
         t.error = None
         enqueued += 1
@@ -196,8 +200,10 @@ def get(db: Session, bid: int) -> Optional[Batch]:
     return db.get(Batch, bid)
 
 
-def list_batches(db: Session, templates: bool = False, limit: int = 50, offset: int = 0) -> tuple[list[Batch], int]:
+def list_batches(db: Session, templates: bool = False, limit: int = 50, offset: int = 0, user_id: Optional[int] = None) -> tuple[list[Batch], int]:
     q = db.query(Batch).filter(Batch.is_template.is_(templates))
+    if user_id is not None:
+        q = q.filter(Batch.user_id == user_id)
     total = q.count()
     return q.order_by(Batch.id.desc()).offset(offset).limit(limit).all(), total
 

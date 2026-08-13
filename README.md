@@ -1,24 +1,38 @@
 # ComfyUI Console
 
-ComfyUI Console 是一个面向本地或远程 ComfyUI 节点的统一生成管理平台，提供工作流管理、参数映射、批量任务、任务调度、图片/视频/音频素材管理和移动端访问能力。
+ComfyUI Console 是一个面向本地或远程 ComfyUI 节点的统一 AI 内容生成管理平台，提供配置驱动的图片、视频和音频生成，工作流管理、参数映射、批量任务、独立调度、素材归档以及桌面端和移动端访问能力。
 
 项目地址：[https://github.com/lifeye-sh/comfyui-console](https://github.com/lifeye-sh/comfyui-console)
 
-当前 V1 为稳定运行版本。新版菜单与 Glassmorphism 界面作为 V2 独立规划，不会替换或破坏 V1；详细方案参见 [V2 产品、界面详细设计与开发计划](docs/v2-product-ui-development-plan.md)。
+当前仓库同时包含 V1 稳定界面和 V2 Glassmorphism 新界面。V2 使用独立的 `/v2` 路由和构建时功能开关，复用同一套认证、任务、素材和工作流数据；关闭 V2 后仍可立即回到 V1，不影响历史任务和数据。
+
+## 当前版本状态
+
+- V1 保留为稳定回退版本，原有路由和核心功能继续可用。
+- V2 已完成当前八轮主要迭代，具备系统概览、统一生成、任务管理、批次任务、素材中心、工作流中心和系统配置页面。
+- V2 生成类型配置支持草稿、发布版本、参数设计、工作流 JSON 导入与节点映射，并记录任务使用的配置版本。
+- 后端调度器在独立线程运行，登录和普通 API 请求不会被排队任务阻塞；管理员可在 V2“运行监控”查看心跳、节点与在途任务。
+- V2 默认仍由构建变量控制，部署时可选择只发布 V1、开放 V2，或按比例灰度开放。
+
+当前质量基线：后端 `60` 项测试通过，前端 `vue-tsc --noEmit` 与 Vite 生产构建通过（2026-08-13）。
 
 ## 主要功能
 
-- 图片、视频和音频生成类型动态菜单。
+- V1/V2 双界面、独立路由、构建开关与回退机制。
+- 图片、视频和音频生成类型动态菜单，V2 按媒体类别分组。
 - 文生图、图生图、文生视频、图生视频、动作迁移等生成页面。
-- ComfyUI API JSON 工作流导入、版本管理、参数自动匹配和手工映射。
+- ComfyUI API JSON 工作流导入、版本管理、参数自动匹配、节点属性选择和手工映射。
+- 生成类型配置草稿、不可变发布版本、回滚基础能力和工作流绑定完整度检查。
 - 每种生成类型只显示和管理本类型工作流。
 - 批量任务行、逐行生成、批量生成、复制和提示词文件导入。
 - 图片、视频和音频输入支持上传或从素材库选择，并提供预览。
-- 任务管理、状态过滤、任务详情、执行事件、结果预览和重新生成。
+- 任务管理、当天过滤、批量操作、任务详情、执行事件、结果预览、删除和重新生成。
 - 在任务详情修改参数，并创建一条新任务执行，不改变原任务。
-- 素材库无限级目录、任务结果自动归档、多媒体预览和生成参数查看。
-- ComfyUI 多节点管理、并发调度、失败重试和结果自动回收。
+- 素材库无限级目录、任务结果按月/日期自动归档、多媒体预览、下载和生成参数查看。
+- 图片预览支持缩放和拖动；视频显示首帧并可播放；音频支持在线播放。
+- ComfyUI 多节点管理、独立线程调度、并发控制、失败重试、异常恢复和结果自动回收。
 - 提示词库、参数方案、尺寸选项、审计日志、分享和回收站。
+- 管理员运行监控、调度器心跳、节点探测和异常任务释放/重提。
 - 响应式 Web 页面，支持桌面浏览器和移动端访问。
 
 ## 技术栈
@@ -45,11 +59,11 @@ comfyui-console/
 │  ├─ Dockerfile
 │  └─ pyproject.toml
 ├─ frontend/
-│  ├─ src/                 # Vue 页面、路由、API 和组件
+│  ├─ src/                 # Vue 页面、路由、API、V1 页面与 V2 独立模块
 │  ├─ nginx.conf           # 生产反向代理配置
 │  ├─ Dockerfile
 │  └─ package.json
-├─ docs/                   # 架构、功能、部署和 V2 规划文档
+├─ docs/                   # 架构、部署、V1 基线、V2 计划与迭代验收记录
 ├─ docker-compose.yml
 └─ README.md
 ```
@@ -97,6 +111,30 @@ COMFY_CONSOLE_ADMIN_USERNAME=admin
 COMFY_CONSOLE_ADMIN_PASSWORD=请替换为强密码
 ```
 
+V2 是前端构建时功能，需在 `frontend/.env.local` 中启用。可以从示例文件复制：
+
+Linux/macOS：
+
+```bash
+cp frontend/.env.example frontend/.env.local
+```
+
+Windows PowerShell：
+
+```powershell
+Copy-Item frontend/.env.example frontend/.env.local
+```
+
+编辑为：
+
+```dotenv
+VITE_UI_V2_ENABLED=true
+VITE_UI_V2_ROLLOUT_PERCENT=100
+VITE_UI_V2_DEFAULT=false
+```
+
+修改 V2 开关后必须重新构建前端镜像。若只需要 V1，可保持 `VITE_UI_V2_ENABLED=false`。
+
 可以使用下面的命令生成随机密钥：
 
 ```bash
@@ -116,6 +154,7 @@ docker compose up -d --build
 启动后访问：
 
 - Web 管理界面：`http://服务器IP/`
+- V2 界面：启用 V2 后通过 V1 的“进入新版”入口访问，或登录后打开 `http://服务器IP/v2`
 - 后端健康检查：`http://服务器IP:8000/health`
 - API 文档：`http://服务器IP:8000/docs`
 
@@ -167,7 +206,7 @@ COMFY_CONSOLE_ADMIN_PASSWORD=你的强密码
 
 ## 连接 ComfyUI 节点
 
-登录后进入“节点管理”，添加 ComfyUI 节点：
+登录后进入 V1“节点管理”或 V2“系统配置 → 运行监控”，添加和检查 ComfyUI 节点：
 
 | 配置项 | 示例 |
 | --- | --- |
@@ -177,6 +216,8 @@ COMFY_CONSOLE_ADMIN_PASSWORD=你的强密码
 | 最大并发 | 建议从 `1` 开始，根据显存调整 |
 
 保存后执行连接测试，再启用节点。
+
+任务提交后先进入平台数据库队列，再由后端独立调度线程派发到可用节点。请不要绕过平台直接修改同一任务的 ComfyUI 队列；当调度异常时，管理员可在“运行监控”查看调度器心跳、节点探测错误和占用执行槽的任务。
 
 ### Docker 网络注意事项
 
@@ -286,6 +327,27 @@ npm run typecheck
 npm run build
 ```
 
+### 5. V1/V2 切换
+
+V2 由以下前端构建变量控制：
+
+| 变量 | 说明 |
+| --- | --- |
+| `VITE_UI_V2_ENABLED` | V2 总开关；未配置或为 `false` 时访问 `/v2` 会返回 V1 |
+| `VITE_UI_V2_ROLLOUT_PERCENT` | 0–100 的浏览器稳定哈希灰度比例 |
+| `VITE_UI_V2_DEFAULT` | 预留的默认入口配置；当前用户仍可在 V1/V2 间主动切换 |
+
+开发环境启用方式：
+
+```bash
+cd frontend
+cp .env.example .env.local
+# 将 VITE_UI_V2_ENABLED 改为 true
+npm run dev
+```
+
+Windows PowerShell 使用 `Copy-Item .env.example .env.local`。生产回退时将总开关设为 `false` 并重新构建前端，后端数据和任务无需回滚。
+
 ## 环境变量
 
 所有后端环境变量以 `COMFY_CONSOLE_` 开头。
@@ -331,6 +393,14 @@ docker compose start backend
 
 生产环境建议定期执行自动备份，并同时备份数据库和素材目录，二者必须保持对应关系。
 
+任务输出默认归档到用户素材库的：
+
+```text
+任务结果 / YYYY-MM / YYYY-MM-DD
+```
+
+同一天的任务结果直接存放在日期目录，任务归属通过素材详情中的生成参数以及任务资源关联查询，不再额外创建任务编号目录。
+
 ### 升级
 
 1. 备份 `backend/data` 和 `backend/.env`。
@@ -349,6 +419,21 @@ docker compose logs --tail=200 backend
 ```
 
 当前应用启动时会创建缺失的表，并对部分 SQLite 字段执行兼容升级。生产环境引入 PostgreSQL 或执行跨版本升级时，应优先按 Alembic 迁移说明操作并先在备份环境验证。
+
+当前版本新增了生成类型配置版本和运行监控相关迁移。升级前建议执行：
+
+```bash
+cd backend
+alembic upgrade head
+```
+
+Docker 部署可使用：
+
+```bash
+docker compose exec backend alembic upgrade head
+```
+
+应用启动仍包含 SQLite 开发态兼容升级，但正式部署应以 Alembic 为准。
 
 ## 生产部署建议
 
@@ -400,6 +485,27 @@ docker compose up -d --force-recreate backend
 
 管理员账号已经存在时，修改种子密码不会覆盖数据库中的现有密码。
 
+### V2 菜单没有显示或访问 `/v2` 返回 V1
+
+V2 是前端构建时开关，修改 `frontend/.env.local` 后必须重新构建前端：
+
+```bash
+docker compose up -d --build frontend
+```
+
+确认 `VITE_UI_V2_ENABLED=true`，并检查 `VITE_UI_V2_ROLLOUT_PERCENT` 没有设置为 `0`。
+
+### 有排队任务时登录缓慢或任务停止执行
+
+当前版本已将 Dispatcher 放到独立线程。管理员进入 V2“系统配置 → 运行监控”检查：
+
+- 调度器是否显示“运行中”并持续更新心跳。
+- ComfyUI 节点是否在线，最近探测错误是什么。
+- 是否存在长期停留在 `DISPATCHING`、`QUEUED` 或 `RUNNING` 的任务。
+- 必要时对异常任务执行“释放执行槽”或“重新提交”。
+
+如果整个调度器未运行，检查后端启动日志中的 `Dispatcher started`，并重启后端服务。
+
 ### 端口冲突
 
 修改 `docker-compose.yml` 左侧宿主机端口。例如：
@@ -420,6 +526,14 @@ ports:
 - [开发计划](docs/development-plan.md)
 - [部署说明](docs/deployment.md)
 - [V2 产品、界面详细设计与开发计划](docs/v2-product-ui-development-plan.md)
+- [V2 开发执行计划](docs/v2-development-execution-plan.md)
+- [V2 Iteration 1 验收记录](docs/v2-iteration-1-acceptance-2026-08-13.md)
+- [V2 Iteration 2 验收记录](docs/v2-iteration-2-acceptance-2026-08-13.md)
+- [V2 Iteration 3 验收记录](docs/v2-iteration-3-acceptance-2026-08-13.md)
+- [V2 Iteration 5 验收记录](docs/v2-iteration-5-acceptance-2026-08-13.md)
+- [V2 Iteration 6 验收记录](docs/v2-iteration-6-acceptance-2026-08-13.md)
+- [V2 Iteration 7 验收记录](docs/v2-iteration-7-acceptance-2026-08-13.md)
+- [V2 Iteration 8 验收记录](docs/v2-iteration-8-acceptance-2026-08-13.md)
 
 ## 安全说明
 

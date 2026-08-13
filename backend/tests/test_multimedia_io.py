@@ -162,6 +162,27 @@ def test_scalar_parser_accepts_value_float_or_text_by_existing_node_field() -> N
         assert schema["expression_strength"]["path"] == "inputs.value"
 
 
+def test_v2_parser_uses_supplied_draft_parameters_instead_of_legacy_template() -> None:
+    with _session() as db:
+        result = parse_json(object(), {
+            "generation_type_code": "t2i",
+            "parameters": [
+                {"key": "custom_strength", "type": "float", "label": "自定义强度", "help": "页面说明"},
+                {"key": "reference", "type": "image", "label": "参考图"},
+            ],
+            "api_json": {
+                "1": {"class_type": "Custom", "inputs": {"Float": 0.7}, "_meta": {"title": "自定义强度"}},
+                "2": {"class_type": "LoadImage", "inputs": {"image": "old.png"}, "_meta": {"title": "参考图"}},
+            },
+        }, db)
+
+        schema = {item["key"]: item for item in result["param_schema"]}
+        assert set(schema) == {"custom_strength", "reference"}
+        assert schema["custom_strength"]["path"] == "inputs.Float"
+        assert schema["reference"]["path"] == "inputs.image"
+        assert "help" not in schema["custom_strength"]
+
+
 def test_parser_maps_text_and_audio_to_standard_fields() -> None:
     with _session() as db:
         result = parse_json(object(), {

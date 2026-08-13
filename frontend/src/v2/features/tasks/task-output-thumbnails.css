@@ -1,0 +1,18 @@
+.task-table .previews button {
+  width: 48px;
+  height: auto !important;
+  aspect-ratio: 2 / 3;
+}
+
+.detail .outputs img {
+  width: 100%;
+  height: auto !important;
+  aspect-ratio: 2 / 3;
+  object-fit: contain;
+}
+
+@media (max-width: 700px) {
+  .task-table .previews button {
+    width: 64px;
+  }
+}

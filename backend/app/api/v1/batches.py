@@ -25,7 +25,7 @@ def list_(
     limit: int = 50,
     offset: int = 0,
 ) -> list[BatchOut]:
-    items, _ = batch_service.list_batches(db, templates, limit, offset)
+    items, _ = batch_service.list_batches(db, templates, limit, offset, None if user.role == "admin" else user.id)
     return [BatchOut.model_validate(b) for b in items]
 
 
@@ -34,6 +34,8 @@ def get_one(bid: int, user: CurrentUser, db: DBSession) -> BatchOut:
     b = batch_service.get(db, bid)
     if not b:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "批次不存在")
+    if b.user_id != user.id and user.role != "admin":
+        raise HTTPException(status.HTTP_403_FORBIDDEN, "无权访问")
     return BatchOut.model_validate(b)
 
 
@@ -52,6 +54,8 @@ def rows(bid: int, user: CurrentUser, db: DBSession) -> list[TaskOut]:
     b = batch_service.get(db, bid)
     if not b:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "批次不存在")
+    if b.user_id != user.id and user.role != "admin":
+        raise HTTPException(status.HTTP_403_FORBIDDEN, "无权访问")
     return [TaskOut.model_validate(t) for t in sorted(b.tasks, key=lambda x: x.row_no)]
 
 
@@ -60,6 +64,8 @@ def status_(bid: int, user: CurrentUser, db: DBSession) -> dict:
     b = batch_service.get(db, bid)
     if not b:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "批次不存在")
+    if b.user_id != user.id and user.role != "admin":
+        raise HTTPException(status.HTTP_403_FORBIDDEN, "无权访问")
     return batch_service.batch_status_summary(b)
 
 
@@ -78,6 +84,8 @@ def cancel(bid: int, user: CurrentUser, db: DBSession) -> dict:
     b = batch_service.get(db, bid)
     if not b:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "批次不存在")
+    if b.user_id != user.id and user.role != "admin":
+        raise HTTPException(status.HTTP_403_FORBIDDEN, "无权操作")
     return {"cancelled": batch_service.cancel_batch(db, b)}
 
 
@@ -86,6 +94,8 @@ def retry_failed(bid: int, user: CurrentUser, db: DBSession) -> dict:
     b = batch_service.get(db, bid)
     if not b:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "批次不存在")
+    if b.user_id != user.id and user.role != "admin":
+        raise HTTPException(status.HTTP_403_FORBIDDEN, "无权操作")
     return {"retried": batch_service.retry_failed(db, b)}
 
 
@@ -102,6 +112,8 @@ def import_csv(
     b = batch_service.get(db, bid)
     if not b:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "批次不存在")
+    if b.user_id != user.id and user.role != "admin":
+        raise HTTPException(status.HTTP_403_FORBIDDEN, "无权操作")
     data = file.file.read()
     return batch_service.import_csv(db, b, user.id, data, start_row, start_col, append)
 
@@ -111,5 +123,7 @@ def save_template(bid: int, user: CurrentUser, db: DBSession) -> BatchOut:
     b = batch_service.get(db, bid)
     if not b:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "批次不存在")
+    if b.user_id != user.id and user.role != "admin":
+        raise HTTPException(status.HTTP_403_FORBIDDEN, "无权操作")
     tpl = batch_service.save_as_template(db, b)
     return BatchOut.model_validate(tpl)
