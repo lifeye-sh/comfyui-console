@@ -130,10 +130,10 @@ Copy-Item frontend/.env.example frontend/.env.local
 ```dotenv
 VITE_UI_V2_ENABLED=true
 VITE_UI_V2_ROLLOUT_PERCENT=100
-VITE_UI_V2_DEFAULT=false
+VITE_UI_V2_DEFAULT=true
 ```
 
-修改 V2 开关后必须重新构建前端镜像。若只需要 V1，可保持 `VITE_UI_V2_ENABLED=false`。
+修改 V2 开关后必须重新构建前端镜像。V2 是默认界面；紧急回滚时可设置 `VITE_UI_V2_ENABLED=false`。
 
 可以使用下面的命令生成随机密钥：
 
@@ -333,18 +333,20 @@ V2 由以下前端构建变量控制：
 
 | 变量 | 说明 |
 | --- | --- |
-| `VITE_UI_V2_ENABLED` | V2 总开关；未配置或为 `false` 时访问 `/v2` 会返回 V1 |
+| `VITE_UI_V2_ENABLED` | V2 总开关；默认启用，显式设为 `false` 时访问 `/v2` 会返回 V1 |
 | `VITE_UI_V2_ROLLOUT_PERCENT` | 0–100 的浏览器稳定哈希灰度比例 |
-| `VITE_UI_V2_DEFAULT` | 预留的默认入口配置；当前用户仍可在 V1/V2 间主动切换 |
+| `VITE_UI_V2_DEFAULT` | 未保存个人偏好时的默认入口；默认 `true`，即进入 V2 |
 
 开发环境启用方式：
 
 ```bash
 cd frontend
 cp .env.example .env.local
-# 将 VITE_UI_V2_ENABLED 改为 true
+# 默认已启用；如从旧配置升级，将 VITE_UI_V2_ENABLED 和 VITE_UI_V2_DEFAULT 改为 true
 npm run dev
 ```
+
+访问根路径 `/` 或登录成功后默认进入 `/v2`。用户仍可通过 V2 顶部的“切换旧版”进入 `/v1`，并保留个人选择。
 
 Windows PowerShell 使用 `Copy-Item .env.example .env.local`。生产回退时将总开关设为 `false` 并重新构建前端，后端数据和任务无需回滚。
 

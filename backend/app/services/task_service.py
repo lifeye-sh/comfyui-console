@@ -4,6 +4,7 @@ from __future__ import annotations
 from datetime import datetime, timezone
 from typing import Optional
 
+from sqlalchemy import String, cast, or_
 from sqlalchemy.orm import Session
 
 from app.models import GenerationType, Task, TaskEvent, TaskResource
@@ -27,6 +28,7 @@ def list_tasks(
     limit: int = 100,
     offset: int = 0,
     user_id: Optional[int] = None,
+    keyword: Optional[str] = None,
 ) -> tuple[list[Task], int]:
     q = db.query(Task)
     if user_id is not None:
@@ -39,6 +41,14 @@ def list_tasks(
         q = q.filter(Task.generation_type_id == generation_type_id)
     if active:
         q = q.filter(Task.status.in_(["PENDING", "DISPATCHING", "QUEUED", "RUNNING", "FINALIZING"]))
+    if keyword and keyword.strip():
+        pattern = f"%{keyword.strip()}%"
+        q = q.filter(or_(
+            cast(Task.id, String).ilike(pattern),
+            cast(Task.batch_id, String).ilike(pattern),
+            Task.params["prompt"].as_string().ilike(pattern),
+            Task.error.ilike(pattern),
+        ))
     created_from = _database_datetime(created_from)
     created_to = _database_datetime(created_to)
     if created_from:
@@ -117,13 +127,24 @@ def execute_with_params(db: Session, t: Task, params: dict) -> Task:
 
 
 def delete_task(db: Session, t: Task) -> None:
-    if t.status in ("PENDING", "DISPATCHING", "QUEUED", "RUNNING", "FINALIZING"):
-        raise ValueError("执行中的任务不能删除，请先取消任务")
-    # 删除任务记录但保留素材库文件；产物仍可在日期目录中独立管理。
-    db.query(TaskResource).filter(TaskResource.task_id == t.id).delete(synchronize_session=False)
-    db.query(TaskEvent).filter(TaskEvent.task_id == t.id).delete(synchronize_session=False)
-    db.delete(t)
-    db.commit()
+    """Delete a task record in every lifecycle state while preserving assets.
+
+    A running task may still finish inside ComfyUI, but removing it from the
+    console first marks it cancelled so the dispatcher will no longer finalize
+    or mutate the record. Task events and resource links are internal children
+    and are always removed with the task; physical resource files remain.
+    """
+    try:
+        if t.status in ("PENDING", "DISPATCHING", "QUEUED", "RUNNING", "FINALIZING"):
+            t.status = "CANCELLED"
+            db.flush()
+        db.query(TaskResource).filter(TaskResource.task_id == t.id).delete(synchronize_session=False)
+        db.query(TaskEvent).filter(TaskEvent.task_id == t.id).delete(synchronize_session=False)
+        db.delete(t)
+        db.commit()
+    except Exception:
+        db.rollback()
+        raise
 
 
 def delete_draft(db: Session, t: Task) -> None:

@@ -7,6 +7,7 @@ import { disconnectWs } from '@/ws/client'
 import GlassDrawer from '@/v2/components/GlassDrawer.vue'
 import V2Button from '@/v2/components/V2Button.vue'
 import { buildV2Menu, filterV2Menu, type GenerationMenu, type V2MenuItem } from '@/v2/app/menu'
+import { setUiPreference } from '@/v2/app/featureFlags'
 import '@/v2/styles/base.css'
 
 const route = useRoute()
@@ -47,7 +48,7 @@ function navigate(item: V2MenuItem) {
   if (item.to) router.push(item.to)
   else if (item.children?.length) toggleGroup(item.key)
 }
-function backToV1() { router.push('/') }
+function backToV1() { setUiPreference('v1'); router.push('/v1') }
 function logout() { disconnectWs(); auth.logout(); router.push('/login') }
 </script>
 
@@ -74,7 +75,7 @@ function logout() { disconnectWs(); auth.logout(); router.push('/login') }
         <div><small>COMFYUI CONSOLE / V2</small><strong>{{ currentLabel }}</strong></div>
         <div class="top-actions">
           <V2Button variant="ghost" @click="router.push('/v2/design-system')">组件规范</V2Button>
-          <V2Button variant="ghost" @click="backToV1">返回稳定版</V2Button>
+          <V2Button variant="ghost" @click="backToV1">切换旧版</V2Button>
           <button class="avatar-button" :aria-expanded="profileOpen" aria-label="打开用户菜单" @click="profileOpen = !profileOpen">{{ auth.user?.username?.slice(0, 1)?.toUpperCase() || 'U' }}</button>
           <div v-if="profileOpen" class="profile-menu"><strong>{{ auth.user?.username }}</strong><small>{{ auth.user?.role === 'admin' ? '管理员' : '普通用户' }}</small><button @click="logout">退出登录</button></div>
         </div>
@@ -90,7 +91,7 @@ function logout() { disconnectWs(); auth.logout(); router.push('/login') }
       <button :class="{ active: route.path.startsWith('/v2/assets') }" @click="router.push('/v2/assets')"><span>◇</span>素材</button>
       <button :class="{ active: profileOpen }" @click="profileOpen = !profileOpen"><span>○</span>我的</button>
     </nav>
-    <div v-if="profileOpen" class="mobile-profile"><strong>{{ auth.user?.username }}</strong><span>{{ auth.user?.role === 'admin' ? '管理员' : '普通用户' }}</span><button @click="router.push('/v2/design-system'); profileOpen = false">组件规范</button><button @click="backToV1">返回稳定版</button><button @click="logout">退出登录</button></div>
+    <div v-if="profileOpen" class="mobile-profile"><strong>{{ auth.user?.username }}</strong><span>{{ auth.user?.role === 'admin' ? '管理员' : '普通用户' }}</span><button @click="router.push('/v2/design-system'); profileOpen = false">组件规范</button><button @click="backToV1">切换旧版</button><button @click="logout">退出登录</button></div>
     <GlassDrawer :open="mobileGenerationOpen" title="选择生成类型" @close="mobileGenerationOpen = false">
       <div class="generation-list"><section v-for="group in generationItems" :key="group.key"><h3>{{ group.label }}</h3><button v-for="item in group.children||[]" :key="item.key" :disabled="!item.to" @click="item.to && router.push(item.to); mobileGenerationOpen = false"><span>{{ group.icon }}</span><div><strong>{{ item.label }}</strong><small>创建新的生成任务</small></div><b>›</b></button></section></div>
     </GlassDrawer>

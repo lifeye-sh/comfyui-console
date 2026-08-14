@@ -1,7 +1,7 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import { getAccessToken } from '@/api/client'
 import { useAuthStore } from '@/stores/auth'
-import { isV2Enabled } from '@/v2/app/featureFlags'
+import { isV2Enabled, preferV2 } from '@/v2/app/featureFlags'
 import { v2Routes } from '@/v2/routes'
 
 const router = createRouter({
@@ -16,7 +16,8 @@ const router = createRouter({
       path: '/',
       component: () => import('@/views/LayoutView.vue'),
       children: [
-        { path: '', name: 'home', component: () => import('@/views/HomeView.vue') },
+        { path: '', redirect: () => (preferV2() ? { name: 'v2-home' } : { name: 'home' }) },
+        { path: 'v1', name: 'home', component: () => import('@/views/HomeView.vue') },
         { path: 'gen/:code', name: 'generate', component: () => import('@/views/GenerateView.vue') },
         { path: 'wf/:code', name: 'workflow-by-type', component: () => import('@/views/WorkflowManageView.vue') },
         { path: 'tasks', name: 'tasks', component: () => import('@/views/TaskBoardView.vue') },

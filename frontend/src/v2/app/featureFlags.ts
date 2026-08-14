@@ -1,11 +1,18 @@
 const truthyValues = new Set(['1', 'true', 'yes', 'on'])
+const falseyValues = new Set(['0', 'false', 'no', 'off'])
+
+function envFlag(value: string | undefined, defaultValue: boolean): boolean {
+  const normalized = String(value || '').trim().toLowerCase()
+  if (truthyValues.has(normalized)) return true
+  if (falseyValues.has(normalized)) return false
+  return defaultValue
+}
 
 /**
- * V2 is deliberately build-time opt-in during the isolated development phase.
- * With no environment variable (the production default), V1 behaves exactly as before.
+ * V2 is the default UI. Deployments can still explicitly disable it for rollback.
  */
 export function isV2Enabled(): boolean {
-  const enabled = truthyValues.has(String(import.meta.env.VITE_UI_V2_ENABLED || '').trim().toLowerCase())
+  const enabled = envFlag(import.meta.env.VITE_UI_V2_ENABLED, true)
   if (!enabled) return false
   const rollout = Number(import.meta.env.VITE_UI_V2_ROLLOUT_PERCENT ?? 100)
   if (!Number.isFinite(rollout) || rollout >= 100) return true
@@ -18,7 +25,11 @@ export function isV2Enabled(): boolean {
 }
 
 export function preferV2(): boolean {
-  return isV2Enabled() && localStorage.getItem('cc_ui_preference') === 'v2'
+  if (!isV2Enabled()) return false
+  const preference = localStorage.getItem('cc_ui_preference')
+  if (preference === 'v1') return false
+  if (preference === 'v2') return true
+  return envFlag(import.meta.env.VITE_UI_V2_DEFAULT, true)
 }
 
 export function setUiPreference(version: 'v1' | 'v2'): void {

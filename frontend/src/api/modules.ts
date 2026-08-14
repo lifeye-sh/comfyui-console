@@ -86,6 +86,8 @@ export const batchApi = {
 
 export const taskApi = {
   list: (params?: any) => http.get('/tasks', { params: { limit: 200, ...params } }).then((r) => r.data),
+  count: (params?: any) => http.get('/tasks/count', { params }).then((r) => r.data as { total: number }),
+  outputSummaries: (taskIds: number[]) => http.get('/tasks/output-summaries', { params: { task_ids: taskIds.join(',') } }).then((r) => r.data),
   get: (id: number) => http.get(`/tasks/${id}`).then((r) => r.data),
   events: (id: number) => http.get(`/tasks/${id}/events`).then((r) => r.data),
   cancel: (id: number) => http.post(`/tasks/${id}/cancel`).then((r) => r.data),

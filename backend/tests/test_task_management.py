@@ -1,12 +1,14 @@
 from __future__ import annotations
 
 from datetime import datetime, timedelta, timezone
+from types import SimpleNamespace
 
 import pytest
 from sqlalchemy import create_engine
 from sqlalchemy.orm import Session
 
 from app.api.v1.resources import generation_info
+from app.api.v1.tasks import output_summaries
 from app.db import Base
 from app.models import Batch, GenerationType, Resource, Task, TaskResource
 from app.services import task_service
@@ -97,23 +99,51 @@ def test_list_tasks_can_be_scoped_to_current_user() -> None:
         assert items[0].user_id == 11
 
 
-def test_inactive_tasks_can_be_deleted_but_running_task_cannot() -> None:
+def test_list_tasks_supports_server_side_keyword_and_pagination() -> None:
+    with _session() as db:
+        batch, generation_type = _create_batch_and_type(db)
+        db.add_all([
+            Task(batch_id=batch.id, generation_type_id=generation_type.id, status="SUCCESS", params={"prompt": "分页目标 A"}),
+            Task(batch_id=batch.id, generation_type_id=generation_type.id, status="FAILED", params={"prompt": "分页目标 B"}),
+            Task(batch_id=batch.id, generation_type_id=generation_type.id, status="SUCCESS", params={"prompt": "其他任务"}),
+        ])
+        db.commit()
+
+        first, total = task_service.list_tasks(db, limit=1, offset=0, keyword="分页目标")
+        second, second_total = task_service.list_tasks(db, limit=1, offset=1, keyword="分页目标")
+
+        assert total == second_total == 2
+        assert len(first) == len(second) == 1
+        assert first[0].id != second[0].id
+        assert "分页目标" in first[0].params["prompt"]
+        assert "分页目标" in second[0].params["prompt"]
+
+
+def test_tasks_can_be_deleted_in_every_lifecycle_state() -> None:
     with _session() as db:
         batch, generation_type = _create_batch_and_type(db)
         draft = Task(batch_id=batch.id, generation_type_id=generation_type.id, status="DRAFT")
         success = Task(batch_id=batch.id, generation_type_id=generation_type.id, status="SUCCESS")
         running = Task(batch_id=batch.id, generation_type_id=generation_type.id, status="RUNNING")
         db.add_all([draft, success, running])
+        db.flush()
+        resource = Resource(media_type="image", direction="output", filename="kept.png", storage_key="resources/kept.png")
+        db.add(resource)
+        db.flush()
+        db.add(TaskResource(task_id=running.id, resource_id=resource.id, role="output"))
         db.commit()
         draft_id = draft.id
         success_id = success.id
+        running_id = running.id
 
         task_service.delete_task(db, draft)
         task_service.delete_task(db, success)
+        task_service.delete_task(db, running)
         assert db.get(Task, draft_id) is None
         assert db.get(Task, success_id) is None
-        with pytest.raises(ValueError, match="执行中的任务不能删除"):
-            task_service.delete_task(db, running)
+        assert db.get(Task, running_id) is None
+        assert db.get(Resource, resource.id) is not None
+        assert db.query(TaskResource).filter(TaskResource.task_id == running_id).count() == 0
 
 
 def test_success_or_failed_task_can_be_regenerated_without_overwriting_source() -> None:
@@ -227,3 +257,27 @@ def test_generated_resource_returns_source_task_parameters() -> None:
         assert result["task_id"] == task.id
         assert result["generation_type_name"] == "测试图片生成"
         assert result["params"]["prompt"] == "一只猫"
+
+
+def test_output_summaries_are_batched_scoped_and_limited_for_task_list() -> None:
+    with _session() as db:
+        batch, generation_type = _create_batch_and_type(db)
+        own = Task(batch_id=batch.id, user_id=11, generation_type_id=generation_type.id, status="SUCCESS")
+        other = Task(batch_id=batch.id, user_id=22, generation_type_id=generation_type.id, status="SUCCESS")
+        db.add_all([own, other])
+        db.flush()
+        resources = [
+            Resource(owner_id=11, media_type="image", direction="output", filename=f"own-{index}.png", storage_key=f"resources/own-{index}.png")
+            for index in range(4)
+        ]
+        foreign = Resource(owner_id=22, media_type="image", direction="output", filename="foreign.png", storage_key="resources/foreign.png")
+        db.add_all([*resources, foreign])
+        db.flush()
+        db.add_all([TaskResource(task_id=own.id, resource_id=item.id, role="output") for item in resources])
+        db.add(TaskResource(task_id=other.id, resource_id=foreign.id, role="output"))
+        db.commit()
+
+        result = output_summaries(f"{own.id},{other.id}", SimpleNamespace(id=11, role="user"), db)
+
+        assert set(result) == {own.id}
+        assert [item["filename"] for item in result[own.id]] == ["own-0.png", "own-1.png", "own-2.png"]

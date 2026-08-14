@@ -4,7 +4,7 @@ import { useRoute, useRouter, RouterView } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import { disconnectWs } from '@/ws/client'
 import { genTypeApi } from '@/api/modules'
-import { isV2Enabled } from '@/v2/app/featureFlags'
+import { isV2Enabled, setUiPreference } from '@/v2/app/featureFlags'
 
 const route = useRoute()
 const router = useRouter()
@@ -54,7 +54,7 @@ const activeLabel = computed(() => {
 })
 
 function go(key: string) {
-  if (key === 'home') router.push('/')
+  if (key === 'home') router.push('/v1')
   else if (key.startsWith('gen-')) router.push(`/gen/${key.slice(4)}`)
   else if (key.startsWith('wf-')) router.push(`/wf/${key.slice(3)}`)
   else router.push({ name: key })
@@ -79,7 +79,7 @@ const mobileTabs = [
 ]
 
 function goMobile(key: string) {
-  if (key === 'home') router.push('/')
+  if (key === 'home') router.push('/v1')
   else if (key === 'tasks') router.push('/tasks')
   else if (key === 'resources') router.push('/resources')
   else if (key === 'mine') router.push('/nodes')
@@ -89,6 +89,11 @@ function goMobile(key: string) {
     if (first) router.push(`/gen/${first.code}`)
     else router.push('/workflows')
   }
+}
+
+function switchToV2() {
+  setUiPreference('v2')
+  router.push('/v2')
 }
 </script>
 
@@ -133,7 +138,7 @@ function goMobile(key: string) {
       <div class="sider-footer">
         <div>
           <span class="user">{{ auth.user?.username }}（{{ auth.user?.role }}）</span>
-          <button v-if="v2Enabled" class="v2-entry" @click="router.push('/v2')">体验 V2</button>
+          <button v-if="v2Enabled" class="v2-entry" @click="switchToV2">切换 V2</button>
         </div>
         <button class="logout" @click="logout">退出</button>
       </div>
@@ -147,7 +152,7 @@ function goMobile(key: string) {
   <div class="mobile-layout">
     <div class="mobile-header">
       <span>{{ activeLabel }}</span>
-      <button v-if="v2Enabled" class="v2-entry mobile" @click="router.push('/v2')">V2</button>
+      <button v-if="v2Enabled" class="v2-entry mobile" @click="switchToV2">V2</button>
     </div>
     <div class="mobile-content">
       <RouterView />
