@@ -35,3 +35,7 @@ export function preferV2(): boolean {
 export function setUiPreference(version: 'v1' | 'v2'): void {
   localStorage.setItem('cc_ui_preference', version)
 }
+
+export function isShortDramaEnabled(): boolean {
+  return isV2Enabled() && envFlag(import.meta.env.VITE_UI_V2_1_SHORT_DRAMA_ENABLED, true)
+}

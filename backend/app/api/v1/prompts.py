@@ -24,7 +24,7 @@ def create_category(body: PromptCategoryCreateIn, user: CurrentUser, db: DBSessi
     return PromptCategoryOut.model_validate(c)
 
 
-@cat_router.delete("/{cid}", status_code=204)
+@cat_router.delete("/{cid}", status_code=204, response_model=None)
 def delete_category(cid: int, user: CurrentUser, db: DBSession) -> None:
     c = db.get(PromptCategory, cid)
     if not c:
@@ -61,7 +61,7 @@ def patch(pid: int, body: PromptPatchIn, user: CurrentUser, db: DBSession) -> Pr
     return PromptOut.model_validate(p)
 
 
-@router.delete("/{pid}", status_code=204)
+@router.delete("/{pid}", status_code=204, response_model=None)
 def delete(pid: int, user: CurrentUser, db: DBSession) -> None:
     p = db.get(Prompt, pid)
     if not p:

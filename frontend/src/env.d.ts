@@ -4,6 +4,7 @@ interface ImportMetaEnv {
   readonly VITE_UI_V2_ENABLED?: string
   readonly VITE_UI_V2_ROLLOUT_PERCENT?: string
   readonly VITE_UI_V2_DEFAULT?: string
+  readonly VITE_UI_V2_1_SHORT_DRAMA_ENABLED?: string
 }
 
 interface ImportMeta {

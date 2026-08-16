@@ -1,7 +1,7 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import { getAccessToken } from '@/api/client'
 import { useAuthStore } from '@/stores/auth'
-import { isV2Enabled, preferV2 } from '@/v2/app/featureFlags'
+import { isShortDramaEnabled, isV2Enabled, preferV2 } from '@/v2/app/featureFlags'
 import { v2Routes } from '@/v2/routes'
 
 const router = createRouter({
@@ -45,6 +45,9 @@ router.beforeEach(async (to) => {
   if (!getAccessToken()) return { name: 'login' }
   if (to.matched.some((record) => record.meta.requiresV2) && !isV2Enabled()) {
     return { name: 'home' }
+  }
+  if (to.matched.some((record) => record.meta.requiresShortDrama) && !isShortDramaEnabled()) {
+    return { name: 'v2-home' }
   }
   if (to.matched.some((record) => record.meta.adminOnly) && getAccessToken()) {
     const auth = useAuthStore()

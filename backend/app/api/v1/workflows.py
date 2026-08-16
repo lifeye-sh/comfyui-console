@@ -211,7 +211,7 @@ async def test_version(
         raise HTTPException(status.HTTP_502_BAD_GATEWAY, f"节点执行失败：{e}")
 
 
-@router.delete("/{workflow_id}", status_code=204)
+@router.delete("/{workflow_id}", status_code=204, response_model=None)
 def delete(workflow_id: int, user: CurrentUser, db: DBSession) -> None:
     wf = db.get(Workflow, workflow_id)
     if not wf:

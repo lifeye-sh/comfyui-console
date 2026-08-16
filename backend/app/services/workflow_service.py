@@ -8,7 +8,7 @@ from typing import Optional
 from sqlalchemy.orm import Session
 
 from app.comfy.client import ComfyUIClient
-from app.comfy.prompt_builder import build_prompt
+from app.comfy.prompt_builder import build_prompt, parse_size_value
 from app.core.events import publish_task_event
 from app.models import GenerationType, Node, Resource, Task, TaskResource, Workflow, WorkflowVersion
 from app.schemas.schemas import WorkflowCreateIn, WorkflowVersionIn
@@ -17,7 +17,7 @@ from app.schemas.schemas import WorkflowCreateIn, WorkflowVersionIn
 def create_workflow(db: Session, body: WorkflowCreateIn, owner_id: Optional[int]) -> Workflow:
     if body.generation_type_id is not None:
         generation_type = db.get(GenerationType, body.generation_type_id)
-        if not generation_type:
+        if not generation_type or generation_type.deleted_at is not None:
             raise ValueError("生成类型不存在")
         if generation_type.media_type != body.media_type:
             raise ValueError("工作流媒体类型与生成类型不一致")
@@ -88,6 +88,105 @@ def list_workflows(
 
 def get_version(db: Session, version_id: int) -> Optional[WorkflowVersion]:
     return db.get(WorkflowVersion, version_id)
+
+
+def validate_task_params(
+    db: Session,
+    version: WorkflowVersion,
+    params: dict,
+    user_id: Optional[int] = None,
+) -> tuple[dict, list[str]]:
+    """Filter and validate task params against the selected workflow version."""
+    from app.services.generation_type_service import get_select_options
+
+    source = params if isinstance(params, dict) else {}
+    clean: dict = {}
+    errors: list[str] = []
+    for spec in version.param_schema or []:
+        if not isinstance(spec, dict):
+            continue
+        key = str(spec.get("key") or "").strip()
+        if not key:
+            continue
+        value = source.get(key)
+        if value in (None, "", []):
+            if spec.get("required"):
+                errors.append(f"缺少必填参数：{spec.get('label') or key}")
+            continue
+        kind = spec.get("type")
+        if kind == "size":
+            parsed_size = parse_size_value(value)
+            if not parsed_size:
+                errors.append(f"参数“{spec.get('label') or key}”不是有效尺寸")
+                continue
+            source_key = str(spec.get("options_from") or "")
+            options = get_select_options(db, source_key) if source_key else []
+            allowed_sizes = {
+                parse_size_value(item.get("value")) for item in options if isinstance(item, dict)
+            }
+            allowed_sizes.discard(None)
+            if allowed_sizes and parsed_size not in allowed_sizes:
+                errors.append(f"参数“{spec.get('label') or key}”不是有效选项")
+                continue
+            value = f"{parsed_size[0]}x{parsed_size[1]}"
+        if kind in {"int", "seed"} and (not isinstance(value, int) or isinstance(value, bool)):
+            errors.append(f"参数“{spec.get('label') or key}”必须是整数")
+            continue
+        if kind in {"float", "slider"} and (not isinstance(value, (int, float)) or isinstance(value, bool)):
+            errors.append(f"参数“{spec.get('label') or key}”必须是数字")
+            continue
+        if kind == "bool" and not isinstance(value, bool):
+            errors.append(f"参数“{spec.get('label') or key}”必须是开关值")
+            continue
+        if kind in {"text", "textarea"} and not isinstance(value, str):
+            errors.append(f"参数“{spec.get('label') or key}”必须是文本")
+            continue
+        if isinstance(value, (int, float)) and not isinstance(value, bool):
+            if spec.get("min") is not None and value < spec["min"]:
+                errors.append(f"参数“{spec.get('label') or key}”小于最小值")
+                continue
+            if spec.get("max") is not None and value > spec["max"]:
+                errors.append(f"参数“{spec.get('label') or key}”大于最大值")
+                continue
+        if kind == "select":
+            options = spec.get("options") or get_select_options(db, str(spec.get("options_from") or ""))
+            allowed = [item.get("value") for item in options if isinstance(item, dict)]
+            if allowed and value not in allowed:
+                errors.append(f"参数“{spec.get('label') or key}”不是有效选项")
+                continue
+        if kind in {"image", "video", "audio"}:
+            raw_ids = value if isinstance(value, list) else [value]
+            if not spec.get("multiple") and len(raw_ids) > 1:
+                errors.append(f"参数“{spec.get('label') or key}”只允许选择一个素材")
+                continue
+            max_items = int(spec.get("max_items") or 0)
+            if max_items and len(raw_ids) > max_items:
+                errors.append(f"参数“{spec.get('label') or key}”最多选择 {max_items} 个素材")
+                continue
+            resource_ids: list[int] = []
+            invalid_media = False
+            for raw_id in raw_ids:
+                try:
+                    resource_id = int(raw_id)
+                except (TypeError, ValueError):
+                    errors.append(f"参数“{spec.get('label') or key}”素材编号无效")
+                    invalid_media = True
+                    break
+                resource = db.get(Resource, resource_id)
+                if not resource or resource.deleted_at is not None or resource.media_type != kind:
+                    errors.append(f"参数“{spec.get('label') or key}”素材不存在或类型不匹配")
+                    invalid_media = True
+                    break
+                if user_id is not None and resource.owner_id not in (None, user_id) and resource.visibility != "public":
+                    errors.append(f"参数“{spec.get('label') or key}”无权访问该素材")
+                    invalid_media = True
+                    break
+                resource_ids.append(resource_id)
+            if invalid_media:
+                continue
+            value = resource_ids if spec.get("multiple") else resource_ids[0]
+        clean[key] = value
+    return clean, errors
 
 
 async def test_execute(db: Session, version_id: int, node_id: int, params: dict, user_id: Optional[int]) -> dict:

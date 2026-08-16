@@ -9,12 +9,13 @@ ComfyUI Console 是一个面向本地或远程 ComfyUI 节点的统一 AI 内容
 ## 当前版本状态
 
 - V1 保留为稳定回退版本，原有路由和核心功能继续可用。
-- V2 已完成当前八轮主要迭代，具备系统概览、统一生成、任务管理、批次任务、素材中心、工作流中心和系统配置页面。
+- V2 已完成八轮主要迭代，具备系统概览、统一生成、任务管理、批次任务、素材中心、工作流中心和系统配置页面。
+- V2.1 已建立 AI 短剧工作台，当前支持小说导入、结构化分析、故事档案确认、AI 改编方案、世界设定、分镜和镜头生产闭环。
 - V2 生成类型配置支持草稿、发布版本、参数设计、工作流 JSON 导入与节点映射，并记录任务使用的配置版本。
 - 后端调度器在独立线程运行，登录和普通 API 请求不会被排队任务阻塞；管理员可在 V2“运行监控”查看心跳、节点与在途任务。
 - V2 默认仍由构建变量控制，部署时可选择只发布 V1、开放 V2，或按比例灰度开放。
 
-当前质量基线：后端 `60` 项测试通过，前端 `vue-tsc --noEmit` 与 Vite 生产构建通过（2026-08-13）。
+当前质量基线：后端 `83` 项测试通过，前端 `vue-tsc --noEmit` 与 Vite 生产构建通过（2026-08-15）。
 
 ## 主要功能
 
@@ -34,6 +35,8 @@ ComfyUI Console 是一个面向本地或远程 ComfyUI 节点的统一 AI 内容
 - 提示词库、参数方案、尺寸选项、审计日志、分享和回收站。
 - 管理员运行监控、调度器心跳、节点探测和异常任务释放/重提。
 - 响应式 Web 页面，支持桌面浏览器和移动端访问。
+- OpenAI 兼容模型配置、加密密钥保存、连接测试、小说分块分析、JSON 自动修复和调用用量审计。
+- 单集 AI 剧本候选、分集锁定、人工确认应用和自动版本快照，AI 生成不会直接覆盖人工草稿。
 
 ## 技术栈
 
@@ -104,6 +107,7 @@ Copy-Item backend/.env.example backend/.env
 
 ```dotenv
 COMFY_CONSOLE_DEBUG=false
+COMFY_CONSOLE_SHORT_DRAMA_ENABLED=true
 COMFY_CONSOLE_DATABASE_URL=sqlite:///./data/app.db
 COMFY_CONSOLE_STORAGE_PATH=./data/resources
 COMFY_CONSOLE_SECRET_KEY=请替换为足够长的随机密钥
@@ -131,6 +135,7 @@ Copy-Item frontend/.env.example frontend/.env.local
 VITE_UI_V2_ENABLED=true
 VITE_UI_V2_ROLLOUT_PERCENT=100
 VITE_UI_V2_DEFAULT=true
+VITE_UI_V2_1_SHORT_DRAMA_ENABLED=true
 ```
 
 修改 V2 开关后必须重新构建前端镜像。V2 是默认界面；紧急回滚时可设置 `VITE_UI_V2_ENABLED=false`。
@@ -203,6 +208,19 @@ COMFY_CONSOLE_ADMIN_PASSWORD=你的强密码
 如果没有配置，程序默认使用 `admin / admin123`。默认密码只适合本地测试，生产环境必须在首次启动前通过 `.env` 修改。
 
 管理员种子仅在账号不存在时创建；已有管理员不会因修改 `.env` 自动更换密码。
+
+## 配置小说转剧本 AI
+
+管理员登录 V2 后，进入“系统配置 → AI 模型配置”，添加一个 OpenAI 兼容服务，填写名称、API Base URL、模型名称和 API Key，并设为默认配置。保存后可先执行连接测试。
+
+项目使用流程：
+
+1. 在“短剧项目”中新建项目并导入小说。
+2. 进入“剧本改编”，选择模型并启动 AI 分析；长文本会按章节和段落分块处理。
+3. 检查并确认故事档案，再生成 AI 改编方案。
+4. 确认候选方案后，继续维护世界设定、分镜和镜头生产。
+
+API Key 只以加密形式保存，列表接口仅返回掩码。加密密钥来自 `COMFY_CONSOLE_SECRET_KEY`，生产部署后必须保持该值稳定，否则历史 API Key 将无法解密。未配置模型时仍可使用页面中明确标注的“本地规则”作为降级方案。
 
 ## 连接 ComfyUI 节点
 
@@ -336,6 +354,7 @@ V2 由以下前端构建变量控制：
 | `VITE_UI_V2_ENABLED` | V2 总开关；默认启用，显式设为 `false` 时访问 `/v2` 会返回 V1 |
 | `VITE_UI_V2_ROLLOUT_PERCENT` | 0–100 的浏览器稳定哈希灰度比例 |
 | `VITE_UI_V2_DEFAULT` | 未保存个人偏好时的默认入口；默认 `true`，即进入 V2 |
+| `VITE_UI_V2_1_SHORT_DRAMA_ENABLED` | V2.1 短剧项目菜单和路由开关，默认启用 |
 
 开发环境启用方式：
 
@@ -359,6 +378,10 @@ Windows PowerShell 使用 `Copy-Item .env.example .env.local`。生产回退时�
 | `COMFY_CONSOLE_APP_NAME` | `comfyui-console` | 应用名称 |
 | `COMFY_CONSOLE_VERSION` | `0.1.0` | API 显示版本 |
 | `COMFY_CONSOLE_DEBUG` | `true` | 调试模式，生产应设为 `false` |
+| `COMFY_CONSOLE_SHORT_DRAMA_ENABLED` | `true` | V2.1 短剧模块运行开关；关闭后状态接口会通知前端回退 |
+| `COMFY_CONSOLE_STORY_WORKER_POLL_SECONDS` | `1` | 独立 Story Worker 的队列轮询间隔（秒） |
+| `COMFY_CONSOLE_STORY_WORKER_TIMEOUT_SECONDS` | `300` | 创作任务心跳超时回收阈值（秒） |
+| `COMFY_CONSOLE_STORY_WORKER_MAX_RETRIES` | `2` | Worker 中断后的自动恢复次数上限 |
 | `COMFY_CONSOLE_DATABASE_URL` | `sqlite:///./data/app.db` | SQLAlchemy 数据库地址 |
 | `COMFY_CONSOLE_STORAGE_PATH` | `./data/resources` | 素材存储目录 |
 | `COMFY_CONSOLE_SECRET_KEY` | 开发默认值 | JWT 签名密钥，生产必须修改 |

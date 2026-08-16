@@ -31,7 +31,12 @@ def list_(
     enabled: bool | None = None,
 ) -> list[GenerationTypeOut]:
     items = generation_type_service.list_types(db, media_type, enabled_only=bool(enabled))
-    return [GenerationTypeOut.model_validate(t) for t in items]
+    result = []
+    for item in items:
+        output = GenerationTypeOut.model_validate(item)
+        output.can_delete = generation_type_service.can_delete_type(db, item)
+        result.append(output)
+    return result
 
 
 @router.get("/menu")
@@ -57,7 +62,7 @@ def patch(
     db: DBSession,
 ) -> GenerationTypeOut:
     gt = db.get(GenerationType, type_id)
-    if not gt:
+    if not gt or gt.deleted_at is not None:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "生成类型不存在")
     gt = generation_type_service.patch_type(db, gt, body.param_template, body.enabled, body.menu_order)
     return GenerationTypeOut.model_validate(gt)
@@ -66,7 +71,7 @@ def patch(
 @router.patch("/{type_id}/default-workflow", response_model=GenerationTypeOut)
 def set_default(type_id: int, body: DefaultWorkflowIn, admin: AdminUser, db: DBSession) -> GenerationTypeOut:
     gt = db.get(GenerationType, type_id)
-    if not gt:
+    if not gt or gt.deleted_at is not None:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "生成类型不存在")
     try:
         gt = generation_type_service.set_default_workflow(db, gt, body.workflow_version_id)

@@ -2,10 +2,11 @@ export type TaskItem = {
   id: number; batch_id: number; row_no: number; generation_type_id: number | null; workflow_version_id: number | null
   params: Record<string, unknown>; status: string; priority: number; node_id: number | null; prompt_id: string | null
   retries: number; error: string | null; started_at: string | null; finished_at: string | null; created_at: string
+  workflow_param_schema?: Array<{ key: string; label?: string; type?: string; options?: Array<{label:string;value:unknown}>; options_from?: string }>
 }
 export type TaskEvent = { id: number; type: string; progress: number; payload: Record<string, unknown>; created_at: string }
 export type TaskOutput = { id: number; filename: string; media_type: 'image' | 'video' | 'audio'; mime: string; thumbUrl?: string; fileUrl?: string; width?: number | null; height?: number | null; duration?: number | null }
-export type GenerationTypeItem = { id: number; code: string; name: string; media_type: string; param_schema?: Array<{ key: string; label?: string; type?: string }> }
+export type GenerationTypeItem = { id: number; code: string; name: string; media_type: string; param_schema?: Array<{ key: string; label?: string; type?: string; options?: Array<{label:string;value:unknown}>; options_from?: string }> }
 export type DashboardSummary = {
   generated_at: string
   tasks: { total: number; today: number; active: number; success: number; failed: number; success_rate: number; status_counts: Record<string, number> }

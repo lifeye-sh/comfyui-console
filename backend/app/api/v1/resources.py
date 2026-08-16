@@ -154,7 +154,7 @@ def get_one(rid: int, user: CurrentUser, db: DBSession) -> ResourceOut:
     return ResourceOut.model_validate(r)
 
 
-@router.delete("/{rid}", status_code=204)
+@router.delete("/{rid}", status_code=204, response_model=None)
 def delete(rid: int, user: CurrentUser, db: DBSession) -> None:
     r = resource_service.get(db, rid)
     if not r or r.owner_id != user.id:
@@ -186,7 +186,7 @@ def restore(rid: int, user: CurrentUser, db: DBSession) -> ResourceOut:
     return ResourceOut.model_validate(r)
 
 
-@router.delete("/{rid}/permanent", status_code=204)
+@router.delete("/{rid}/permanent", status_code=204, response_model=None)
 def permanent_delete(rid: int, user: CurrentUser, db: DBSession) -> None:
     from app.core.deps import require_admin
     if user.role != "admin":

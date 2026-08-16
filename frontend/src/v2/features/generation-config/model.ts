@@ -18,6 +18,24 @@ export type ParameterConfig = {
   options?: Array<{ label: string; value: unknown }>
   options_from?: string
   visible_when?: { key: string; operator: 'equals' | 'not_equals' | 'truthy'; value?: unknown }
+  node?: string | number
+  path?: string
+  size_kind?: 'image' | 'video'
+  targets?: {
+    width?: { node?: string | number; path?: string }
+    height?: { node?: string | number; path?: string }
+  }
+}
+
+export type RuntimeWorkflow = {
+  workflow_id: number
+  workflow_version_id: number
+  version: number
+  name: string
+  is_default: boolean
+  order?: number
+  parameters: ParameterConfig[]
+  parameter_schemes?: Array<{ id: string; name: string; is_default: boolean; params: Record<string, unknown> }>
 }
 
 export type GenerationConfig = {
@@ -32,7 +50,7 @@ export type GenerationConfig = {
     name: string
     workflow_id?: number
     workflow_version_id?: number
-    mappings: Array<{ key: string; node: string; path: string }>
+    mappings: Array<{ key: string; node: string; path: string; targets?: ParameterConfig['targets'] }>
     output_mapping: Record<string, unknown>
   }>
   outputs: { media_type: MediaType; multiple: boolean; naming_pattern?: string }
@@ -43,7 +61,7 @@ export type ConfigValidation = {
   valid: boolean
   errors: ConfigIssue[]
   warnings: ConfigIssue[]
-  workflow_checks: Array<{ workflow_version_id: number; valid: boolean; missing_parameters: string[] }>
+  workflow_checks: Array<{ workflow_version_id: number; valid: boolean; missing_parameters: string[]; parameter_count?: number }>
 }
 
 export type ConfigVersion = {

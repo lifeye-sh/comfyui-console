@@ -1,11 +1,14 @@
 """生成类型服务增强：启用/排序/参数模板修改。"""
 from __future__ import annotations
 
-from typing import Optional
+from typing import Any, Optional
+from uuid import uuid4
 
+from sqlalchemy import or_
 from sqlalchemy.orm import Session
 
-from app.models import GenerationType, Setting, Workflow, WorkflowVersion
+from app.comfy.value_normalizers import H3_ASPECT_RATIO_ALIASES, normalize_h3_aspect_ratio
+from app.models import Batch, GenerationType, Setting, Task, Workflow, WorkflowVersion
 
 # 默认选择项（存入 settings 表，管理员可在平台设置页修改）
 DEFAULT_SELECT_OPTIONS: dict[str, list[dict]] = {
@@ -81,6 +84,10 @@ DEFAULT_SELECT_OPTIONS: dict[str, list[dict]] = {
         {"label": "16 fps", "value": 16},
         {"label": "24 fps", "value": 24},
         {"label": "30 fps", "value": 30},
+    ],
+    "h3_aspect_ratio": [
+        {"label": value, "value": value}
+        for value in H3_ASPECT_RATIO_ALIASES.values()
     ],
 }
 
@@ -306,17 +313,22 @@ SELECT_OPTION_LABELS: dict[str, str] = {
     "video_height": "视频高度",
     "video_length": "视频帧数",
     "video_fps": "视频帧率",
+    "h3_aspect_ratio": "H3宽高比",
 }
 
-MAINTAINABLE_SELECT_OPTION_KEYS = ("image_size", "video_size", "video_length", "video_fps")
+MAINTAINABLE_SELECT_OPTION_KEYS = (
+    "image_size", "video_size", "video_length", "video_fps", "h3_aspect_ratio",
+)
 DEFAULT_SELECT_VALUES: dict[str, int | str] = {
     "image_size": "1088x1920",
     "video_size": "576x1024",
     "video_length": 81,
     "video_fps": 24,
+    "h3_aspect_ratio": "16:9 (Widescreen)",
 }
 
 MOTION_TRANSFER_SCHEME_KEY = "motion_transfer_parameter_schemes"
+CUSTOM_SELECT_OPTION_DEFINITIONS_KEY = "custom_select_option_definitions"
 MOTION_TRANSFER_SCHEME_DEFAULTS = [{
     "id": 1,
     "name": "默认方案",
@@ -352,13 +364,44 @@ def save_motion_transfer_schemes(db: Session, schemes: list[dict]) -> list[dict]
     return schemes
 
 
+def normalize_param_template(value: Any, code: str | None = None) -> list[dict]:
+    """Normalize legacy JSON shapes to the parameter array used by V1 and V2."""
+    if isinstance(value, list):
+        return [item for item in value if isinstance(item, dict)]
+    if isinstance(value, dict):
+        parameters = value.get("parameters")
+        if isinstance(parameters, list):
+            return [item for item in parameters if isinstance(item, dict)]
+        if value.get("key") and value.get("type"):
+            return [value]
+        if value and all(isinstance(item, dict) for item in value.values()):
+            return list(value.values())
+    return [dict(item) for item in PARAM_TEMPLATES.get(code or "", [])]
+
+
+def repair_param_templates(db: Session) -> int:
+    """Persistently repair old `{}`/mapping values so downstream task code is safe."""
+    repaired = 0
+    for item in db.query(GenerationType).all():
+        normalized = normalize_param_template(item.param_template, item.code)
+        if item.param_template != normalized:
+            item.param_template = normalized
+            repaired += 1
+    if repaired:
+        db.commit()
+    return repaired
+
+
 def list_types(db: Session, media_type: Optional[str] = None, enabled_only: bool = False) -> list[GenerationType]:
-    q = db.query(GenerationType)
+    q = db.query(GenerationType).filter(GenerationType.deleted_at.is_(None))
     if media_type:
         q = q.filter(GenerationType.media_type == media_type)
     if enabled_only:
         q = q.filter(GenerationType.enabled.is_(True))
-    return q.order_by(GenerationType.menu_order).all()
+    items = q.order_by(GenerationType.menu_order).all()
+    for item in items:
+        item.param_template = normalize_param_template(item.param_template, item.code)
+    return items
 
 
 def set_default_workflow(db: Session, gt: GenerationType, workflow_version_id: int) -> GenerationType:
@@ -374,9 +417,9 @@ def set_default_workflow(db: Session, gt: GenerationType, workflow_version_id: i
     return gt
 
 
-def patch_type(db: Session, gt: GenerationType, param_template: Optional[dict], enabled: Optional[bool], menu_order: Optional[int]) -> GenerationType:
+def patch_type(db: Session, gt: GenerationType, param_template: Optional[list[dict]], enabled: Optional[bool], menu_order: Optional[int]) -> GenerationType:
     if param_template is not None:
-        gt.param_template = param_template
+        gt.param_template = normalize_param_template(param_template, gt.code)
     if enabled is not None:
         gt.enabled = enabled
     if menu_order is not None:
@@ -386,13 +429,30 @@ def patch_type(db: Session, gt: GenerationType, param_template: Optional[dict], 
     return gt
 
 
+def has_task_history(db: Session, generation_type_id: int) -> bool:
+    """Treat every task row, including a draft, as usage history."""
+    return db.query(Task.id).join(Batch, Batch.id == Task.batch_id).filter(or_(
+        Task.generation_type_id == generation_type_id,
+        Batch.generation_type_id == generation_type_id,
+    )).first() is not None
+
+
+def can_delete_type(db: Session, generation_type: GenerationType) -> bool:
+    return (
+        generation_type.deleted_at is None
+        and not generation_type.enabled
+        and not has_task_history(db, generation_type.id)
+    )
+
+
 def seed_builtin_types(db: Session) -> None:
     existing = {t.code for t in db.query(GenerationType).all()}
+    added = False
     for media_type, code, name, order in BUILTIN_TYPES:
         if code in existing:
-            gt = db.query(GenerationType).filter(GenerationType.code == code).first()
-            if gt:
-                gt.param_template = PARAM_TEMPLATES.get(code, [])
+            # Seed data is only a bootstrap default. Existing rows may contain
+            # administrator-managed parameter designs and must never be reset
+            # when Uvicorn reloads or the service restarts.
             continue
         db.add(GenerationType(
             media_type=media_type,
@@ -401,7 +461,10 @@ def seed_builtin_types(db: Session) -> None:
             menu_order=order,
             param_template=PARAM_TEMPLATES.get(code, []),
         ))
-    db.commit()
+        added = True
+    if added:
+        db.commit()
+    repair_param_templates(db)
 
 
 def seed_select_options(db: Session) -> None:
@@ -409,12 +472,33 @@ def seed_select_options(db: Session) -> None:
     for key, options in DEFAULT_SELECT_OPTIONS.items():
         existing = db.get(Setting, key)
         if existing:
+            if key == "h3_aspect_ratio" and isinstance(existing.value, list):
+                repaired = []
+                changed = False
+                for item in existing.value:
+                    if not isinstance(item, dict):
+                        repaired.append(item)
+                        continue
+                    repaired_item = dict(item)
+                    normalized = normalize_h3_aspect_ratio(repaired_item.get("value"))
+                    if normalized != repaired_item.get("value"):
+                        repaired_item["value"] = normalized
+                        changed = True
+                    repaired.append(repaired_item)
+                if changed:
+                    # Assign a new list so SQLAlchemy reliably persists JSON changes.
+                    existing.value = repaired
             continue
         db.add(Setting(key=key, value=options))
     for key, value in DEFAULT_SELECT_VALUES.items():
         default_key = f"{key}_default"
-        if not db.get(Setting, default_key):
+        existing_default = db.get(Setting, default_key)
+        if not existing_default:
             db.add(Setting(key=default_key, value=value))
+        elif key == "h3_aspect_ratio":
+            normalized = normalize_h3_aspect_ratio(existing_default.value)
+            if normalized != existing_default.value:
+                existing_default.value = normalized
     db.commit()
 
 
@@ -426,10 +510,80 @@ def get_select_options(db: Session, key: str) -> list[dict]:
     return DEFAULT_SELECT_OPTIONS.get(key, [])
 
 
+def get_custom_select_option_definitions(db: Session) -> list[dict]:
+    setting = db.get(Setting, CUSTOM_SELECT_OPTION_DEFINITIONS_KEY)
+    value = setting.value if setting else []
+    if not isinstance(value, list):
+        return []
+    return [
+        item for item in value
+        if isinstance(item, dict) and str(item.get("key", "")).startswith("custom_")
+    ]
+
+
+def get_select_option_definitions(db: Session) -> list[dict]:
+    builtins = [{
+        "key": key,
+        "label": SELECT_OPTION_LABELS.get(key, key),
+        "value_type": "string" if isinstance(DEFAULT_SELECT_VALUES.get(key), str) else "number",
+        "custom": False,
+    } for key in MAINTAINABLE_SELECT_OPTION_KEYS]
+    return builtins + get_custom_select_option_definitions(db)
+
+
+def create_select_option_project(db: Session, label: str, value_type: str = "string") -> dict:
+    name = label.strip()
+    if not name:
+        raise ValueError("项目名称不能为空")
+    if value_type not in {"string", "number"}:
+        raise ValueError("选项值类型只能是文本或数字")
+    definitions = get_custom_select_option_definitions(db)
+    if any(item.get("label") == name for item in definitions):
+        raise ValueError("已存在同名选择项项目")
+    definition = {
+        "key": f"custom_{uuid4().hex[:12]}",
+        "label": name,
+        "value_type": value_type,
+        "custom": True,
+    }
+    definitions.append(definition)
+    setting = db.get(Setting, CUSTOM_SELECT_OPTION_DEFINITIONS_KEY)
+    if setting:
+        setting.value = definitions
+    else:
+        db.add(Setting(key=CUSTOM_SELECT_OPTION_DEFINITIONS_KEY, value=definitions))
+    db.add(Setting(key=definition["key"], value=[]))
+    db.commit()
+    return definition
+
+
+def delete_select_option_project(db: Session, key: str) -> None:
+    definitions = get_custom_select_option_definitions(db)
+    if not any(item.get("key") == key for item in definitions):
+        raise ValueError("只能删除自定义选择项项目")
+    setting = db.get(Setting, CUSTOM_SELECT_OPTION_DEFINITIONS_KEY)
+    if setting:
+        setting.value = [item for item in definitions if item.get("key") != key]
+    options = db.get(Setting, key)
+    default = db.get(Setting, f"{key}_default")
+    if options:
+        db.delete(options)
+    if default:
+        db.delete(default)
+    db.commit()
+
+
+def is_select_option_project(db: Session, key: str) -> bool:
+    return key in MAINTAINABLE_SELECT_OPTION_KEYS or any(
+        item.get("key") == key for item in get_custom_select_option_definitions(db)
+    )
+
+
 def get_all_select_options(db: Session) -> dict[str, list[dict]]:
     """返回所有选择项（供前端设置页和菜单接口使用）。"""
     out: dict[str, list[dict]] = {}
-    for key in DEFAULT_SELECT_OPTIONS:
+    for definition in get_select_option_definitions(db):
+        key = definition["key"]
         out[key] = get_select_options(db, key)
     return out
 
@@ -440,6 +594,12 @@ def get_select_default(db: Session, key: str) -> int | str | None:
 
 
 def save_select_options(db: Session, key: str, options: list[dict], default_value: int | str | None = None) -> None:
+    if key == "h3_aspect_ratio":
+        options = [
+            {**item, "value": normalize_h3_aspect_ratio(item.get("value"))}
+            for item in options
+        ]
+        default_value = normalize_h3_aspect_ratio(default_value)
     s = db.get(Setting, key)
     if s:
         s.value = options
@@ -471,7 +631,7 @@ def menu_tree(db: Session) -> dict:
                 if v:
                     param_schema = v.param_schema or []
         if not param_schema:
-            param_schema = t.param_template or PARAM_TEMPLATES.get(t.code, [])
+            param_schema = normalize_param_template(t.param_template, t.code)
         if t.media_type == "video" and t.code != "motion_transfer" and not any(p.get("key") == "duration" for p in param_schema):
             param_schema = [
                 *param_schema,
@@ -494,7 +654,7 @@ def menu_tree(db: Session) -> dict:
             "media_type": t.media_type,
             "default_workflow_id": t.default_workflow_id,
             "menu_order": t.menu_order,
-            "param_template": t.param_template,
+            "param_template": normalize_param_template(t.param_template, t.code),
             "param_schema": resolved,
             "size_options": select_options.get(f"{t.media_type}_size", []),
             "size_default": get_select_default(db, f"{t.media_type}_size"),
@@ -503,4 +663,7 @@ def menu_tree(db: Session) -> dict:
 
 
 def get_type_by_code(db: Session, code: str) -> Optional[GenerationType]:
-    return db.query(GenerationType).filter(GenerationType.code == code).first()
+    return db.query(GenerationType).filter(
+        GenerationType.code == code,
+        GenerationType.deleted_at.is_(None),
+    ).first()

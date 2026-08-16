@@ -7,7 +7,8 @@ from typing import Optional
 from sqlalchemy import String, cast, or_
 from sqlalchemy.orm import Session
 
-from app.models import GenerationType, Task, TaskEvent, TaskResource
+from app.models import GenerationType, Task, TaskEvent, TaskResource, WorkflowVersion
+from app.services.generation_type_service import normalize_param_template
 
 
 def _database_datetime(value: datetime | None) -> datetime | None:
@@ -101,14 +102,25 @@ def regenerate(db: Session, t: Task) -> Task:
 def execute_with_params(db: Session, t: Task, params: dict) -> Task:
     """Create a new queued task from an existing task without mutating the source."""
     executed_params = dict(params or {})
-    generation_type = db.get(GenerationType, t.generation_type_id) if t.generation_type_id else None
-    for spec in (generation_type.param_template if generation_type else []) or []:
+    workflow_version = db.get(WorkflowVersion, t.workflow_version_id) if t.workflow_version_id else None
+    schema = workflow_version.param_schema if workflow_version and workflow_version.param_schema else []
+    if not schema and t.generation_type_id:
+        generation_type = db.get(GenerationType, t.generation_type_id)
+        schema = normalize_param_template(generation_type.param_template, generation_type.code) if generation_type else []
+    for spec in schema:
         if spec.get("type") in ("image", "video", "audio"):
             key = spec.get("key")
             if key in (t.params or {}):
                 executed_params[key] = t.params[key]
             else:
                 executed_params.pop(key, None)
+    if workflow_version and workflow_version.param_schema:
+        from app.services import workflow_service
+        executed_params, errors = workflow_service.validate_task_params(
+            db, workflow_version, executed_params, t.user_id
+        )
+        if errors:
+            raise ValueError("；".join(errors))
     executed = Task(
         batch_id=t.batch_id,
         row_no=t.row_no,

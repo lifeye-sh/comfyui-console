@@ -16,7 +16,7 @@ from app.comfy.client import ComfyUIClient
 from app.comfy.prompt_builder import build_prompt
 from app.core.events import publish_task_event
 from app.db import SessionLocal
-from app.models import GenerationType, Node, Resource, Task, TaskResource, WorkflowVersion
+from app.models import GenerationType, Node, Resource, ShotTaskLink, Task, TaskResource, WorkflowVersion
 from app.storage.local_fs import get_storage
 from app.services import node_service
 
@@ -176,6 +176,7 @@ class Dispatcher:
                 await self._probe_nodes(db)
                 self._last_probe_at = now
             await self._finalize_completed(db)
+            await self._retry_short_drama_compensation(db)
             await self._submit_pending(db)
             self._ticks += 1
             self._last_tick_at = datetime.now(timezone.utc)
@@ -324,21 +325,46 @@ class Dispatcher:
                 continue
             status_info = entry.get("status", {}) or {}
             if status_info.get("completed"):
+                has_shot_link = db.query(ShotTaskLink.id).filter(ShotTaskLink.task_id == t.id).first() is not None
                 try:
+                    if has_shot_link:
+                        from app.short_drama import production_service
+                        production_service.mark_output_payload(db, t.id, entry.get("outputs", {}))
                     await self._collect_outputs(db, t, client, entry.get("outputs", {}))
                     t.status = "SUCCESS"
+                    t.error = None
                     t.finished_at = datetime.now(timezone.utc)
                     db.commit()
-                    await self._publish(t.id, "completed", 100, {})
+                    sync_pending = False
+                    if has_shot_link:
+                        try:
+                            production_service.reconcile_task_outputs(db, t.id)
+                        except Exception as sync_exc:  # noqa: BLE001
+                            db.rollback()
+                            production_service.mark_sync_failed(db, t.id, str(sync_exc))
+                            sync_pending = True
+                            logger.exception("shot output sync failed task=%s", t.id)
+                    await self._publish(t.id, "completed", 100, {"take_sync_pending": sync_pending})
                     self._completed += 1
                 except Exception as e:  # noqa: BLE001
                     db.rollback()
-                    t.status = "FAILED"
-                    t.error = f"输出回收失败: {e}"
-                    t.finished_at = datetime.now(timezone.utc)
-                    db.commit()
-                    await self._publish(t.id, "failed", 0, {"error": str(e)})
-                    self._failed += 1
+                    t = db.get(Task, t.id)
+                    if has_shot_link:
+                        t.status = "SUCCESS"
+                        t.error = None
+                        t.finished_at = datetime.now(timezone.utc)
+                        db.commit()
+                        production_service.mark_output_payload(db, t.id, entry.get("outputs", {}))
+                        production_service.mark_sync_failed(db, t.id, str(e), "output_collect_failed")
+                        await self._publish(t.id, "completed", 100, {"take_sync_pending": True, "sync_error": str(e)})
+                        self._completed += 1
+                    else:
+                        t.status = "FAILED"
+                        t.error = f"输出回收失败: {e}"
+                        t.finished_at = datetime.now(timezone.utc)
+                        db.commit()
+                        await self._publish(t.id, "failed", 0, {"error": str(e)})
+                        self._failed += 1
             elif status_info.get("status_str") == "error":
                 t.status = "FAILED"
                 t.error = str(status_info.get("messages"))[:500]
@@ -348,6 +374,44 @@ class Dispatcher:
                 self._failed += 1
             # History may be served from a local cache without yielding. Keep
             # the API responsive even while many completed jobs are collected.
+            await asyncio.sleep(0)
+
+    async def _retry_short_drama_compensation(self, db: Session) -> None:
+        """Retry output collection/Take sync without changing successful task state."""
+        now = datetime.now(timezone.utc).replace(tzinfo=None)
+        links = (
+            db.query(ShotTaskLink)
+            .filter(
+                ShotTaskLink.status.in_(["output_collect_failed", "sync_failed"]),
+                (ShotTaskLink.next_retry_at.is_(None) | (ShotTaskLink.next_retry_at <= now)),
+            )
+            .order_by(ShotTaskLink.next_retry_at, ShotTaskLink.id)
+            .limit(5)
+            .all()
+        )
+        handled: set[int] = set()
+        for link in links:
+            if link.task_id in handled:
+                continue
+            handled.add(link.task_id)
+            task = db.get(Task, link.task_id)
+            if not task or task.status != "SUCCESS":
+                continue
+            failed_status = link.status
+            try:
+                if failed_status == "output_collect_failed":
+                    node = db.get(Node, task.node_id) if task.node_id else None
+                    if not node:
+                        raise RuntimeError("任务执行节点不存在，无法补拉产物")
+                    await self._collect_outputs(db, task, self._get_client(node), link.output_payload or {})
+                    db.commit()
+                from app.short_drama import production_service
+                production_service.reconcile_task_outputs(db, task.id)
+            except Exception as exc:  # noqa: BLE001
+                db.rollback()
+                from app.short_drama import production_service
+                production_service.mark_sync_failed(db, task.id, str(exc), failed_status)
+                logger.warning("short drama compensation failed task=%s: %s", task.id, exc)
             await asyncio.sleep(0)
 
     async def _recover_orphan(self, db: Session, task: Task, client: ComfyUIClient) -> None:
@@ -409,6 +473,20 @@ class Dispatcher:
         data = await client.get_view_bytes(fname, subfolder=subfolder, type_=type_)
         import hashlib, os
         sha = hashlib.sha256(data).hexdigest()
+        existing = (
+            db.query(Resource)
+            .join(TaskResource, TaskResource.resource_id == Resource.id)
+            .filter(
+                TaskResource.task_id == t.id,
+                TaskResource.role == "output",
+                Resource.sha256 == sha,
+                Resource.filename == fname,
+                Resource.deleted_at.is_(None),
+            )
+            .first()
+        )
+        if existing:
+            return
         ext = os.path.splitext(fname)[1] or ""
         key = f"resources/{datetime.now(timezone.utc):%Y-%m}/{sha[:8]}/{fname}"
         storage = get_storage()

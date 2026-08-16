@@ -1,3 +1,5 @@
+import { isShortDramaEnabled } from '@/v2/app/featureFlags'
+
 export type V2MenuItem = {
   key: string
   label: string
@@ -19,11 +21,15 @@ export function buildV2Menu(generationMenu?: Partial<GenerationMenu>): V2MenuIte
 
   return [
     { key: 'overview', label: '系统概览', icon: '⌂', to: '/v2' },
+    ...(isShortDramaEnabled() ? [{ key: 'drama', label: '短剧项目', icon: '▤', children: [
+      { key: 'drama-projects', label: '全部项目', icon: '·', to: '/v2/drama/projects' },
+      { key: 'drama-new', label: '新建短剧', icon: '·', to: '/v2/drama/new' },
+    ] }] : []),
     { key: 'creation', label: '创作生成', icon: '✦', children: generationGroups.length ? generationGroups : [{ key: 'generate-empty', label: '生成类型加载中', icon: '·' }] },
     { key: 'tasks', label: '任务中心', icon: '☷', children: [{ key: 'task-list', label: '任务管理', icon: '·', to: '/v2/tasks' }, { key: 'batches', label: '批次任务', icon: '·', to: '/v2/batches' }] },
     { key: 'assets', label: '素材中心', icon: '◇', children: [{ key: 'library', label: '素材库', icon: '·', to: '/v2/assets' }, { key: 'asset-picker', label: '素材选择器', icon: '·', to: '/v2/assets/picker' }, { key: 'reference-video', label: '参考视频', icon: '·', to: '/v2/reference-videos' }, { key: 'prompt-library', label: '提示词库', icon: '·', to: '/v2/prompts' }, { key: 'recycle', label: '回收站', icon: '·', to: '/v2/recycle-bin' }] },
     { key: 'workflows', label: '工作流中心', icon: '⌘', children: [{ key: 'workflow-list', label: '工作流管理', icon: '·', to: '/v2/workflows' }, { key: 'schemes', label: '参数方案', icon: '·', to: '/v2/parameter-schemes' }] },
-    { key: 'system', label: '系统配置', icon: '⚙', adminOnly: true, children: [{ key: 'generation-types', label: '生成类型配置', icon: '·', to: '/v2/settings/generation-types' }, { key: 'nodes', label: '运行监控', icon: '·', to: '/v2/settings/nodes' }, { key: 'users', label: '用户与权限', icon: '·', to: '/v2/settings/users' }, { key: 'settings', label: '系统设置', icon: '·', to: '/v2/settings/system' }, { key: 'audit', label: '审计日志', icon: '·', to: '/v2/settings/audit' }] },
+    { key: 'system', label: '系统配置', icon: '⚙', adminOnly: true, children: [{ key: 'generation-types', label: '生成类型配置', icon: '·', to: '/v2/settings/generation-types' }, { key: 'ai-settings', label: 'AI 模型配置', icon: '·', to: '/v2/settings/ai' }, { key: 'nodes', label: '运行监控', icon: '·', to: '/v2/settings/nodes' }, { key: 'users', label: '用户与权限', icon: '·', to: '/v2/settings/users' }, { key: 'settings', label: '系统设置', icon: '·', to: '/v2/settings/system' }, { key: 'audit', label: '审计日志', icon: '·', to: '/v2/settings/audit' }] },
   ]
 }
 

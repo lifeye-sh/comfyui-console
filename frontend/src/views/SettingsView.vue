@@ -9,7 +9,7 @@ import V2Button from '@/v2/components/V2Button.vue'
 import V2Field from '@/v2/components/V2Field.vue'
 
 type OptionItem = { label: string; value: any }
-type SelectOption = { label: string; options: OptionItem[]; default_value: any }
+type SelectOption = { label: string; options: OptionItem[]; default_value: any; value_type?: 'string' | 'number'; custom?: boolean }
 type MotionScheme = { id: number; name: string; is_default: boolean; params: Record<string, any> }
 
 const message = useMessage()
@@ -24,6 +24,9 @@ const editingKey = ref<string | null>(null)
 const editingLabel = ref('')
 const editingItems = ref<OptionItem[]>([])
 const editingDefaultValue = ref<any>(null)
+const creatingOptionProject = ref(false)
+const newOptionProjectLabel = ref('')
+const newOptionProjectValueType = ref<'string' | 'number'>('string')
 
 const resolutionOptions = [
   { label: '480p', value: 1 }, { label: '576p（默认）', value: 2 },
@@ -34,6 +37,7 @@ const algorithmOptions = [
 ]
 const optionEntries = computed(() => Object.entries(selectOptions.value))
 const isSizeOption = computed(() => editingKey.value === 'image_size' || editingKey.value === 'video_size')
+const isStringOption = computed(() => isSizeOption.value || selectOptions.value[editingKey.value || '']?.value_type !== 'number')
 
 async function load() {
   loading.value = true
@@ -90,7 +94,7 @@ function openSelectEditor(key: string) {
   editingItems.value = (selectOptions.value[key]?.options || []).map(item => ({ ...item }))
   editingDefaultValue.value = selectOptions.value[key]?.default_value ?? editingItems.value[0]?.value ?? null
 }
-function addSelectItem() { editingItems.value.push({ label: '', value: isSizeOption.value ? '1024x1024' : 0 }) }
+function addSelectItem() { editingItems.value.push({ label: '', value: isSizeOption.value ? '1024x1024' : isStringOption.value ? '' : 0 }) }
 function deleteSelectItem(index: number) {
   if (editingItems.value[index]?.value === editingDefaultValue.value) editingDefaultValue.value = null
   editingItems.value.splice(index, 1)
@@ -110,6 +114,22 @@ async function saveSelectOptions() {
   } catch { message.error('选择项保存失败') }
   finally { savingDrawer.value = false }
 }
+async function createOptionProject() {
+  const label = newOptionProjectLabel.value.trim()
+  if (!label) { message.warning('请输入项目名称'); return }
+  savingDrawer.value = true
+  try {
+    const created = await settingsApi.createSelectOptionProject(label, newOptionProjectValueType.value)
+    creatingOptionProject.value = false; newOptionProjectLabel.value = ''; newOptionProjectValueType.value = 'string'
+    await load(); openSelectEditor(created.key); message.success('选择项项目已创建，请继续添加选项')
+  } catch (event: any) { message.error(event.response?.data?.detail || '新增选择项项目失败') }
+  finally { savingDrawer.value = false }
+}
+async function deleteOptionProject(key: string, label: string) {
+  if (!confirm(`确定删除选择项项目“${label}”？该项目的选项和默认值也会删除。`)) return
+  try { await settingsApi.deleteSelectOptionProject(key); await load(); message.success('选择项项目已删除') }
+  catch (event: any) { message.error(event.response?.data?.detail || '删除选择项项目失败') }
+}
 function defaultLabel(info: SelectOption) { return info.options.find(item => item.value === info.default_value)?.label || info.default_value }
 function resolutionLabel(value: number) { return resolutionOptions.find(item => item.value === value)?.label || value }
 function algorithmLabel(value: number) { return algorithmOptions.find(item => item.value === value)?.label || value }
@@ -127,7 +147,7 @@ onMounted(load)
     <nav class="section-nav" aria-label="设置分区">
       <a href="#general"><span>01</span><b>平台参数</b><small>上传、任务和通知</small></a>
       <a href="#motion"><span>02</span><b>动作迁移方案</b><small>算法与强度预设</small></a>
-      <a href="#options"><span>03</span><b>选项维护</b><small>尺寸、帧数和帧率</small></a>
+      <a href="#options"><span>03</span><b>选项维护</b><small>尺寸、比例、帧数和帧率</small></a>
     </nav>
 
     <section id="general" class="settings-section">
@@ -166,12 +186,12 @@ onMounted(load)
     </section>
 
     <section id="options" class="settings-section">
-      <header class="section-heading"><div><span class="section-icon">☷</span><div><h2>选择项维护</h2><p>统一管理图片尺寸、视频尺寸、帧数和帧率，修改后生成页面立即使用新选项。</p></div></div></header>
+      <header class="section-heading"><div><span class="section-icon">☷</span><div><h2>选择项维护</h2><p>统一管理内置和自定义选择项，修改后生成类型参数设计可立即引用。</p></div></div><V2Button variant="primary" @click="creatingOptionProject=true">新增项目</V2Button></header>
       <GlassCard padding="sm" class="option-list">
         <article v-for="([key, info]) in optionEntries" :key="key">
           <div class="option-icon">{{ String(info.label).includes('图片') ? '▧' : String(info.label).includes('视频') ? '▷' : '≡' }}</div>
           <div class="option-main"><div><h3>{{ info.label }}</h3><StatusBadge tone="success">默认：{{ defaultLabel(info) }}</StatusBadge></div><p>{{ info.options.map(item => item.label).join('、') }}</p></div>
-          <div class="option-actions"><V2Button variant="primary" @click="openSelectEditor(key)">编辑选项</V2Button></div>
+          <div class="option-actions"><V2Button variant="primary" @click="openSelectEditor(key)">编辑选项</V2Button><V2Button v-if="info.custom" variant="danger" @click="deleteOptionProject(key,info.label)">删除项目</V2Button></div>
         </article>
       </GlassCard>
     </section>
@@ -186,7 +206,15 @@ onMounted(load)
     </GlassDrawer>
 
     <GlassDrawer :open="!!editingKey" :title="`编辑“${editingLabel}”选项`" @close="editingKey=null">
-      <div class="drawer-form"><V2Field label="默认值"><select v-model="editingDefaultValue"><option v-for="item in editingItems.filter(item=>item.label)" :key="String(item.value)" :value="item.value">{{ item.label }}</option></select></V2Field><div class="option-editor"><div v-for="(item,index) in editingItems" :key="index"><input v-model="item.label" placeholder="显示名称"/><input v-if="isSizeOption" v-model="item.value" placeholder="如 1280x720"/><input v-else v-model.number="item.value" type="number" placeholder="数值"/><button aria-label="删除选项" @click="deleteSelectItem(index)">×</button></div></div><V2Button variant="ghost" @click="addSelectItem">＋ 添加选项</V2Button><V2Button variant="primary" :disabled="savingDrawer" @click="saveSelectOptions">{{ savingDrawer ? '保存中…' : '保存选项' }}</V2Button></div>
+      <div class="drawer-form"><V2Field label="默认值"><select v-model="editingDefaultValue"><option v-for="item in editingItems.filter(item=>item.label)" :key="String(item.value)" :value="item.value">{{ item.label }}</option></select></V2Field><div class="option-editor"><div v-for="(item,index) in editingItems" :key="index"><input v-model="item.label" placeholder="显示名称"/><input v-if="isStringOption" v-model="item.value" :placeholder="isSizeOption ? '如 1280x720' : '如 16:9'"/><input v-else v-model.number="item.value" type="number" placeholder="数值"/><button aria-label="删除选项" @click="deleteSelectItem(index)">×</button></div></div><V2Button variant="ghost" @click="addSelectItem">＋ 添加选项</V2Button><V2Button variant="primary" :disabled="savingDrawer" @click="saveSelectOptions">{{ savingDrawer ? '保存中…' : '保存选项' }}</V2Button></div>
+    </GlassDrawer>
+
+    <GlassDrawer :open="creatingOptionProject" title="新增选择项项目" @close="creatingOptionProject=false">
+      <div class="drawer-form">
+        <V2Field label="项目名称" required hint="将在生成类型的参数设计中作为选项来源显示"><input v-model="newOptionProjectLabel" maxlength="80" placeholder="例如：H3 视频模型"/></V2Field>
+        <V2Field label="选项值类型" hint="文本适合比例、模型名；数字适合帧率、步数"><select v-model="newOptionProjectValueType"><option value="string">文本</option><option value="number">数字</option></select></V2Field>
+        <V2Button variant="primary" :disabled="savingDrawer" @click="createOptionProject">{{ savingDrawer ? '创建中…' : '创建并添加选项' }}</V2Button>
+      </div>
     </GlassDrawer>
   </div>
 </template>

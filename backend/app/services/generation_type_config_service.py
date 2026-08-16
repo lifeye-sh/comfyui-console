@@ -8,6 +8,7 @@ from sqlalchemy import func
 from sqlalchemy.orm import Session
 
 from app.models import GenerationType, GenerationTypeConfigVersion, Workflow, WorkflowVersion
+from app.services.generation_type_service import normalize_param_template
 
 
 SUPPORTED_PARAMETER_TYPES = {
@@ -42,11 +43,75 @@ def build_default_config(db: Session, generation_type: GenerationType) -> dict[s
             "menu_order": generation_type.menu_order,
         },
         "page": {"title": generation_type.name, "description": ""},
-        "parameters": deepcopy(generation_type.param_template or []),
+        "parameters": deepcopy(normalize_param_template(generation_type.param_template, generation_type.code)),
         "parameter_schemes": [],
         "workflow_bindings": bindings,
         "outputs": {"media_type": generation_type.media_type, "multiple": True},
     }
+
+
+def _merged_workflow_parameters(version: WorkflowVersion, legacy_parameters: list[dict]) -> list[dict]:
+    """Use the workflow version as source of truth while enriching old mappings.
+
+    Older versions sometimes contain only key/type/node/path. During the V2
+    transition their presentation metadata is inherited by key from the old
+    generation-type parameter list without mutating the immutable version.
+    """
+    legacy_by_key = {
+        str(item.get("key")): item for item in legacy_parameters
+        if isinstance(item, dict) and item.get("key")
+    }
+    source_schema = version.param_schema or legacy_parameters
+    merged: list[dict] = []
+    media_order = 0
+    for item in source_schema:
+        if not isinstance(item, dict) or not item.get("key"):
+            continue
+        parameter = {**deepcopy(legacy_by_key.get(str(item["key"]), {})), **deepcopy(item)}
+        parameter.setdefault("group", "media" if parameter.get("type") in {"image", "video", "audio"} else "parameter")
+        if parameter["group"] == "media":
+            media_order += 1
+            parameter.setdefault("media_order", media_order)
+        merged.append(parameter)
+    return merged
+
+
+def build_runtime_workflows(db: Session, generation_type: GenerationType, config: dict[str, Any]) -> list[dict]:
+    """Return pinned, bound workflow versions with their independent forms."""
+    bindings = config.get("workflow_bindings") if isinstance(config, dict) else []
+    bindings = bindings if isinstance(bindings, list) else []
+    if not bindings:
+        workflows = db.query(Workflow).filter_by(
+            generation_type_id=generation_type.id, status="active"
+        ).order_by(Workflow.id).all()
+        bindings = [{
+            "workflow_id": item.id,
+            "workflow_version_id": item.current_version_id,
+            "is_default": item.id == generation_type.default_workflow_id,
+        } for item in workflows if item.current_version_id]
+    legacy_parameters = config.get("parameters", []) if isinstance(config, dict) else []
+    legacy_parameters = legacy_parameters if isinstance(legacy_parameters, list) else []
+    result: list[dict] = []
+    for order, binding in enumerate(bindings):
+        if not isinstance(binding, dict):
+            continue
+        version = db.get(WorkflowVersion, binding.get("workflow_version_id"))
+        workflow = db.get(Workflow, version.workflow_id) if version else None
+        if not workflow or workflow.status != "active" or workflow.generation_type_id != generation_type.id:
+            continue
+        result.append({
+            "workflow_id": workflow.id,
+            "workflow_version_id": version.id,
+            "version": version.version,
+            "name": workflow.name,
+            "is_default": bool(binding.get("is_default")),
+            "order": order,
+            "parameters": _merged_workflow_parameters(version, legacy_parameters),
+            "parameter_schemes": deepcopy(binding.get("parameter_schemes") or config.get("parameter_schemes") or []),
+        })
+    if result and not any(item["is_default"] for item in result):
+        result[0]["is_default"] = True
+    return result
 
 
 def get_or_create_draft(db: Session, generation_type: GenerationType, user_id: int | None) -> GenerationTypeConfigVersion:
@@ -105,12 +170,13 @@ def validate_config(db: Session, generation_type: GenerationType, config: dict[s
         if basic.get("media_type") not in (None, generation_type.media_type):
             issue(errors, "basic.media_type", "immutable", "媒体类型不可修改")
 
+    workflow_parameter_mode = int(config.get("schema_version") or 1) >= 2
     parameters = config.get("parameters")
     if not isinstance(parameters, list):
         issue(errors, "parameters", "invalid_type", "参数配置必须是数组")
         parameters = []
     keys: set[str] = set()
-    for index, parameter in enumerate(parameters):
+    for index, parameter in enumerate(parameters if not workflow_parameter_mode else []):
         path = f"parameters.{index}"
         if not isinstance(parameter, dict):
             issue(errors, path, "invalid_type", "参数必须是对象")
@@ -155,10 +221,55 @@ def validate_config(db: Session, generation_type: GenerationType, config: dict[s
             issue(errors, f"{path}.workflow_version_id", "wrong_type", "工作流版本不存在或不属于当前类型")
         else:
             mapped = {item.get("key") for item in (version.param_schema or []) if isinstance(item, dict)}
-            missing = sorted(key for key in keys if key not in mapped)
+            missing = sorted(key for key in keys if key not in mapped) if not workflow_parameter_mode else []
             check["missing_parameters"] = missing
             if missing:
                 issue(warnings, path, "incomplete_mapping", f"工作流尚未映射参数：{', '.join(missing)}")
+            workflow_keys: set[str] = set()
+            size_parameter_count = 0
+            for parameter_index, parameter in enumerate(version.param_schema or []):
+                parameter_path = f"{path}.parameters.{parameter_index}"
+                if not isinstance(parameter, dict):
+                    issue(errors, parameter_path, "invalid_type", "工作流参数必须是对象")
+                    continue
+                parameter_key = str(parameter.get("key") or "").strip()
+                if not parameter_key:
+                    issue(errors, f"{parameter_path}.key", "required", "工作流参数键不能为空")
+                elif parameter_key in workflow_keys:
+                    issue(errors, f"{parameter_path}.key", "duplicate", f"工作流参数键 {parameter_key} 重复")
+                else:
+                    workflow_keys.add(parameter_key)
+                if parameter.get("type") not in SUPPORTED_PARAMETER_TYPES:
+                    issue(errors, f"{parameter_path}.type", "unsupported", f"不支持的参数类型：{parameter.get('type')}")
+                if parameter.get("type") == "select" and not parameter.get("options") and not parameter.get("options_from"):
+                    issue(errors, f"{parameter_path}.options", "required", "下拉参数必须配置选项来源")
+                if parameter.get("type") == "size":
+                    size_parameter_count += 1
+                    expected_source = f"{generation_type.media_type}_size"
+                    if parameter.get("options_from") != expected_source:
+                        issue(errors, f"{parameter_path}.options_from", "invalid_size_source", f"尺寸参数必须使用 {expected_source} 维护项")
+                    targets = parameter.get("targets") if isinstance(parameter.get("targets"), dict) else {}
+                    for dimension in ("width", "height"):
+                        target = targets.get(dimension) if isinstance(targets.get(dimension), dict) else {}
+                        target_node = (version.api_json or {}).get(str(target.get("node") or ""))
+                        if not target_node or not target.get("path"):
+                            issue(errors, f"{parameter_path}.targets.{dimension}", "mapping_required", f"尺寸参数尚未映射{dimension == 'width' and '宽度' or '高度'}节点")
+                default_value = parameter.get("default")
+                if isinstance(default_value, (int, float)) and not isinstance(default_value, bool):
+                    if parameter.get("min") is not None and default_value < parameter["min"]:
+                        issue(errors, f"{parameter_path}.default", "out_of_range", "默认值小于最小值")
+                    if parameter.get("max") is not None and default_value > parameter["max"]:
+                        issue(errors, f"{parameter_path}.default", "out_of_range", "默认值大于最大值")
+                if parameter.get("type") != "size":
+                    node = (version.api_json or {}).get(str(parameter.get("node") or ""))
+                    path_value = str(parameter.get("path") or "")
+                    if parameter.get("required") and (not node or not path_value):
+                        issue(errors, parameter_path, "mapping_required", f"必填参数“{parameter.get('label') or parameter_key}”尚未映射节点")
+                    elif not node or not path_value:
+                        issue(warnings, parameter_path, "mapping_empty", f"参数“{parameter.get('label') or parameter_key}”将使用工作流默认值")
+            if size_parameter_count > 1:
+                issue(errors, f"{path}.parameters", "duplicate_size", "每个工作流只能配置一个复合尺寸参数")
+            check["parameter_count"] = len(workflow_keys)
         workflow_checks.append(check)
         if binding.get("is_default"):
             default_count += 1

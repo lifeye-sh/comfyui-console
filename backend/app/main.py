@@ -12,6 +12,8 @@ from app.config import settings
 from app.core.exceptions import register_exception_handlers
 from app.db import SessionLocal, init_db
 from app.queue.dispatcher import dispatcher
+from app.short_drama.worker import story_worker
+from app.short_drama.ai_service import seed_prompts
 from app.services import auth_service, generation_type_service, prompt_service, resource_service, resource_folder_service
 from app.ws.gateway import init_ws
 
@@ -32,15 +34,22 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
         prompt_service.seed_default_categories(db)
         resource_service.repair_resource_media_types(db)
         resource_folder_service.archive_existing(db)
+        seed_prompts(db)
     finally:
         db.close()
     # 3. 启动调度器
     await dispatcher.start()
     logger.info("Dispatcher started")
+    if settings.short_drama_enabled:
+        await story_worker.start()
+        logger.info("Story Worker started")
     yield
     # 4. 关闭
     await dispatcher.stop()
     logger.info("Dispatcher stopped")
+    if settings.short_drama_enabled:
+        await story_worker.stop()
+        logger.info("Story Worker stopped")
 
 
 app = FastAPI(
@@ -79,7 +88,10 @@ from app.api.v1 import (  # noqa: E402
     dashboard as _dashboard,
     runtime as _runtime,
 )
-from app.api.v2 import generation_type_configs as _v2_generation_type_configs  # noqa: E402
+from app.api.v2 import (  # noqa: E402
+    generation_type_configs as _v2_generation_type_configs,
+    short_drama as _v2_short_drama,
+)
 
 api_prefix = "/api/v1"
 app.include_router(_auth.router, prefix=api_prefix)
@@ -100,6 +112,7 @@ app.include_router(_audit.router, prefix=api_prefix)
 app.include_router(_dashboard.router, prefix=api_prefix)
 app.include_router(_runtime.router, prefix=api_prefix)
 app.include_router(_v2_generation_type_configs.router, prefix="/api/v2")
+app.include_router(_v2_short_drama.router, prefix="/api/v2")
 
 
 @app.get("/health", tags=["meta"])

@@ -11,7 +11,7 @@ const router = useRouter()
 const items = ref<any[]>([])
 const keyword = ref('')
 const media = ref('')
-const state = ref('')
+const state = ref('true')
 const loading = ref(true)
 const message = ref('')
 
@@ -31,6 +31,17 @@ async function toggle(item: any) {
   message.value = item.enabled ? '生成类型已停用' : '生成类型已启用'
   await load()
 }
+async function remove(item: any) {
+  if (!item.can_delete || item.enabled) return
+  if (!confirm(`确定删除“${item.name}”？删除后不会再显示，也不能重新启用。`)) return
+  try {
+    await generationTypeConfigApi.remove(item.id)
+    message.value = `生成类型“${item.name}”已删除`
+    await load()
+  } catch (event: any) {
+    message.value = event.response?.data?.message || event.response?.data?.detail || '删除失败'
+  }
+}
 onMounted(load)
 </script>
 
@@ -44,7 +55,7 @@ onMounted(load)
       <GlassCard v-for="item in filtered" :key="item.id" interactive>
         <header><span class="media-icon">{{ item.media_type==='image'?'▧':item.media_type==='video'?'▷':'♫' }}</span><div><h3>{{ item.name }}</h3><code>{{ item.code }}</code></div><StatusBadge :tone="item.enabled?'success':'neutral'">{{ item.enabled?'已启用':'已停用' }}</StatusBadge></header>
         <dl><div><dt>媒体类型</dt><dd>{{ item.media_type }}</dd></div><div><dt>菜单顺序</dt><dd>{{ item.menu_order }}</dd></div><div><dt>发布版本</dt><dd>{{ item.published_config_version_id ? `#${item.published_config_version_id}` : '尚未发布' }}</dd></div><div><dt>默认工作流</dt><dd>{{ item.default_workflow_id ? `#${item.default_workflow_id}` : '未配置' }}</dd></div></dl>
-        <footer><V2Button variant="primary" @click="router.push(`/v2/settings/generation-types/${item.id}`)">配置</V2Button><V2Button :variant="item.enabled?'danger':'secondary'" @click="toggle(item)">{{ item.enabled?'停用':'启用' }}</V2Button></footer>
+        <footer><V2Button variant="primary" @click="router.push(`/v2/settings/generation-types/${item.id}`)">配置</V2Button><V2Button :variant="item.enabled?'danger':'secondary'" @click="toggle(item)">{{ item.enabled?'停用':'启用' }}</V2Button><V2Button v-if="!item.enabled" variant="danger" :disabled="!item.can_delete" :title="item.can_delete?'删除此生成类型':'已有任务记录，不能删除'" @click="remove(item)">{{ item.can_delete?'删除':'已有任务' }}</V2Button></footer>
       </GlassCard>
       <p v-if="!filtered.length" class="empty">没有符合条件的生成类型</p>
     </div>

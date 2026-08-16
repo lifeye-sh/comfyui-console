@@ -4,7 +4,7 @@ from __future__ import annotations
 from datetime import datetime
 from typing import Any, Dict, List, Optional
 
-from sqlalchemy import JSON, Boolean, DateTime, ForeignKey, Integer, String, Text, UniqueConstraint, func
+from sqlalchemy import JSON, Boolean, DateTime, ForeignKey, Index, Integer, String, Text, UniqueConstraint, func
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.models.base import Base, TimestampMixin
@@ -18,9 +18,10 @@ class GenerationType(Base, TimestampMixin):
     code: Mapped[str] = mapped_column(String(32), unique=True, index=True, nullable=False)
     name: Mapped[str] = mapped_column(String(64), nullable=False)
     default_workflow_id: Mapped[Optional[int]] = mapped_column(Integer, ForeignKey("workflows.id"), nullable=True)
-    param_template: Mapped[Dict] = mapped_column(JSON, default=dict)
+    param_template: Mapped[List[Dict[str, Any]]] = mapped_column(JSON, default=list, nullable=False)
     menu_order: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
     enabled: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
+    deleted_at: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True, index=True)
     # Deliberately no DB foreign key: this pointer creates a circular dependency
     # with version.generation_type_id and must remain safe for SQLite upgrades.
     published_config_version_id: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
@@ -106,6 +107,7 @@ class Batch(Base, TimestampMixin):
 
 class Task(Base, TimestampMixin):
     __tablename__ = "tasks"
+    __table_args__ = (Index("ix_tasks_status_node_id", "status", "node_id"),)
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
     batch_id: Mapped[int] = mapped_column(Integer, ForeignKey("batches.id"), nullable=False, index=True)

@@ -31,7 +31,7 @@ def list_(user: CurrentUser, db: DBSession, resource_id: int | None = None) -> l
     return [ShareOut.model_validate(s) for s in share_service.list_shares(db, resource_id)]
 
 
-@router.delete("/{share_id}", status_code=204)
+@router.delete("/{share_id}", status_code=204, response_model=None)
 def revoke(share_id: int, user: CurrentUser, db: DBSession) -> None:
     share = db.get(Share, share_id)
     if not share:

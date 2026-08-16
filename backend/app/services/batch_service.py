@@ -10,6 +10,7 @@ from sqlalchemy.orm import Session
 
 from app.models import Batch, GenerationType, Resource, Task, Workflow, WorkflowVersion
 from app.schemas.schemas import BatchCreateIn, BatchRowIn
+from app.services import workflow_service
 
 
 def _version_for_type(db: Session, version_id: int, type_id: Optional[int]) -> Optional[int]:
@@ -38,6 +39,11 @@ def _resolve_workflow_version(db: Session, batch: Batch, task: Task) -> Optional
 
 
 def create_batch(db: Session, body: BatchCreateIn, user_id: Optional[int]) -> Batch:
+    type_ids = {value for value in [body.generation_type_id, *(row.generation_type_id for row in body.rows)] if value is not None}
+    for type_id in type_ids:
+        generation_type = db.get(GenerationType, type_id)
+        if not generation_type or generation_type.deleted_at is not None or not generation_type.enabled:
+            raise ValueError("生成类型不存在或已停用")
     batch = Batch(
         user_id=user_id,
         name=body.name,
@@ -127,6 +133,21 @@ def submit_batch(db: Session, batch: Batch) -> dict:
             invalid += 1
             continue
         t.workflow_version_id = wv
+        version = db.get(WorkflowVersion, wv)
+        if version and version.param_schema:
+            clean_params, validation_errors = workflow_service.validate_task_params(
+                db, version, t.params or {}, t.user_id
+            )
+        elif version:
+            # Legacy workflow versions may not have a schema snapshot yet.
+            clean_params, validation_errors = dict(t.params or {}), []
+        else:
+            clean_params, validation_errors = {}, ["工作流版本不存在"]
+        if validation_errors:
+            t.error = "；".join(validation_errors)
+            invalid += 1
+            continue
+        t.params = clean_params
         effective_type_id = t.generation_type_id or batch.generation_type_id
         if effective_type_id:
             generation_type = db.get(GenerationType, effective_type_id)

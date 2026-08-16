@@ -3,7 +3,39 @@ from __future__ import annotations
 
 import copy
 import random
+import re
 from typing import Any
+
+from app.comfy.value_normalizers import normalize_h3_aspect_ratio
+
+
+def parse_size_value(value: Any) -> tuple[int, int] | None:
+    """Parse a maintained size value such as 1088x1920 or 1088×1920."""
+    if isinstance(value, dict):
+        value = f"{value.get('width', '')}x{value.get('height', '')}"
+    match = re.fullmatch(r"\s*(\d+)\s*[xX×*]\s*(\d+)\s*", str(value or ""))
+    if not match:
+        return None
+    width, height = int(match.group(1)), int(match.group(2))
+    return (width, height) if width > 0 and height > 0 else None
+
+
+def _inject(prompt: dict[str, Any], target_spec: dict, value: Any, fallback_key: str) -> None:
+    node = prompt.get(str(target_spec.get("node") or ""))
+    path = str(target_spec.get("path") or "")
+    if node is None or not path:
+        return
+    parts = path.split(".")
+    target = node
+    for part in parts[:-1]:
+        target = target.setdefault(part, {})
+    field = parts[-1]
+    if field not in target:
+        if fallback_key in target:
+            field = fallback_key
+        else:
+            return
+    target[field] = value
 
 
 def build_prompt(api_json: dict[str, Any], param_schema: list[dict], params: dict[str, Any]) -> dict[str, Any]:
@@ -24,12 +56,33 @@ def build_prompt(api_json: dict[str, Any], param_schema: list[dict], params: dic
         # 这里直接注入会在错误映射下创建无效字段，并保留工作流原始素材。
         if spec.get("type") in ("image", "video", "audio"):
             continue
+        if spec.get("type") == "size":
+            parsed = parse_size_value(value)
+            if not parsed:
+                continue
+            targets = spec.get("targets") if isinstance(spec.get("targets"), dict) else {}
+            _inject(prompt, targets.get("width") or {}, parsed[0], "width")
+            _inject(prompt, targets.get("height") or {}, parsed[1], "height")
+            continue
         node_id = str(spec["node"])
         path = spec["path"]  # 如 "inputs.text"
         parts = path.split(".")
         node = prompt.get(node_id)
         if node is None:
             continue
+        # H3's ResolutionSelector validates against the complete display value
+        # (for example ``16:9 (Widescreen)``). Historical settings and tasks may
+        # still contain the former shorthand ``16:9``. Limit the compatibility
+        # conversion to H3-backed fields so unrelated aspect-ratio nodes keep
+        # their native value format.
+        if (
+            spec.get("options_from") == "h3_aspect_ratio"
+            or (
+                key in {"aspect_ratio", "h3_aspect_ratio"}
+                and node.get("class_type") == "ResolutionSelector"
+            )
+        ):
+            value = normalize_h3_aspect_ratio(value)
         target = node
         for p in parts[:-1]:
             target = target.setdefault(p, {})

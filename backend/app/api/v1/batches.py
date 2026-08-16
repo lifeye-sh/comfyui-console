@@ -13,7 +13,10 @@ router = APIRouter(prefix="/batches", tags=["batches"])
 
 @router.post("", response_model=BatchOut, status_code=201)
 def create(body: BatchCreateIn, user: CurrentUser, db: DBSession) -> BatchOut:
-    b = batch_service.create_batch(db, body, user.id)
+    try:
+        b = batch_service.create_batch(db, body, user.id)
+    except ValueError as exc:
+        raise HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY, str(exc)) from exc
     return BatchOut.model_validate(b)
 
 

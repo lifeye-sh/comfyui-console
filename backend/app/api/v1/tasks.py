@@ -151,7 +151,12 @@ def get_one(tid: int, user: CurrentUser, db: DBSession) -> TaskOut:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "任务不存在")
     if t.user_id != user.id and user.role != "admin":
         raise HTTPException(status.HTTP_403_FORBIDDEN, "无权访问")
-    return TaskOut.model_validate(t)
+    result = TaskOut.model_validate(t)
+    if t.workflow_version_id:
+        from app.models import WorkflowVersion
+        version = db.get(WorkflowVersion, t.workflow_version_id)
+        result.workflow_param_schema = version.param_schema if version else []
+    return result
 
 
 @router.get("/{tid}/events", response_model=list[TaskEventOut])
@@ -208,11 +213,14 @@ def execute_with_params(tid: int, body: TaskExecuteIn, user: CurrentUser, db: DB
         raise HTTPException(status.HTTP_404_NOT_FOUND, "任务不存在")
     if t.user_id != user.id and user.role != "admin":
         raise HTTPException(status.HTTP_403_FORBIDDEN, "无权操作")
-    executed = task_service.execute_with_params(db, t, body.params)
+    try:
+        executed = task_service.execute_with_params(db, t, body.params)
+    except ValueError as exc:
+        raise HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY, str(exc)) from exc
     return TaskOut.model_validate(executed)
 
 
-@router.delete("/{tid}", status_code=204)
+@router.delete("/{tid}", status_code=204, response_model=None)
 def delete_task(tid: int, user: CurrentUser, db: DBSession) -> None:
     t = task_service.get(db, tid)
     if not t:

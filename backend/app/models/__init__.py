@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 from app.models.base import Base, TimestampMixin
+from app.models.ai import AIProviderConfig, AIPromptTemplate, AIGenerationRecord, NovelAnalysisVersion, ScreenplayRevisionCandidate
 from app.models.core import Node, Setting, User
 from app.models.production import (
     Batch,
@@ -17,9 +18,37 @@ from app.models.production import (
 )
 from app.models.prompt import Prompt, PromptCategory
 from app.models.share_audit import AuditLog, Share
+from app.models.short_drama import (
+    AdaptationCandidate,
+    Character,
+    CharacterRelationship,
+    CharacterVariant,
+    CreativeJob,
+    Episode,
+    Location,
+    ProjectBrief,
+    ProjectResourceLink,
+    Prop,
+    Scene,
+    ShortDramaProject,
+    Shot,
+    ShotTaskLink,
+    SourceChapter,
+    SourceDocument,
+    SourceParagraph,
+    StoryVersion,
+    Take,
+    WorldCandidate,
+    StoryboardCandidate,
+)
 
 __all__ = [
     "Base",
+    "AIProviderConfig",
+    "AIPromptTemplate",
+    "AIGenerationRecord",
+    "NovelAnalysisVersion",
+    "ScreenplayRevisionCandidate",
     "TimestampMixin",
     "User",
     "Node",
@@ -38,4 +67,25 @@ __all__ = [
     "PromptCategory",
     "Share",
     "AuditLog",
+    "ShortDramaProject",
+    "ProjectBrief",
+    "Episode",
+    "Scene",
+    "StoryVersion",
+    "Shot",
+    "Take",
+    "Character",
+    "CharacterRelationship",
+    "CharacterVariant",
+    "Location",
+    "Prop",
+    "CreativeJob",
+    "AdaptationCandidate",
+    "SourceDocument",
+    "SourceChapter",
+    "SourceParagraph",
+    "ProjectResourceLink",
+    "ShotTaskLink",
+    "WorldCandidate",
+    "StoryboardCandidate",
 ]

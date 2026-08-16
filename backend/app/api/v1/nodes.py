@@ -29,7 +29,7 @@ def patch_node(node_id: int, body: NodePatchIn, admin: AdminUser, db: DBSession)
     return NodeOut.model_validate(node_service.patch_node(db, node, body))
 
 
-@router.delete("/{node_id}", status_code=204)
+@router.delete("/{node_id}", status_code=204, response_model=None)
 def delete_node(node_id: int, admin: AdminUser, db: DBSession) -> None:
     node = db.get(Node, node_id)
     if not node:

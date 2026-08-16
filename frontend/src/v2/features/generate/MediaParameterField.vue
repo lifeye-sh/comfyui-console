@@ -6,8 +6,8 @@ import AssetPicker from '@/v2/components/AssetPicker.vue'
 import V2Button from '@/v2/components/V2Button.vue'
 import type { ResourceItem } from '@/v2/features/assets/model'
 
-const props = defineProps<{ modelValue: number | null | undefined; mediaType: 'image' | 'video' | 'audio'; disabled?: boolean }>()
-const emit = defineEmits<{ 'update:modelValue': [number | null]; selected: [ResourceItem | null] }>()
+const props = defineProps<{ modelValue: number | number[] | null | undefined; mediaType: 'image' | 'video' | 'audio'; disabled?: boolean; multiple?: boolean }>()
+const emit = defineEmits<{ 'update:modelValue': [number | number[] | null]; selected: [ResourceItem | ResourceItem[] | null] }>()
 const pickerOpen = ref(false)
 const resource = ref<ResourceItem | null>(null)
 const previewUrl = ref('')
@@ -15,7 +15,7 @@ let request = 0
 
 function release() { if (previewUrl.value) URL.revokeObjectURL(previewUrl.value); previewUrl.value = '' }
 async function load() {
-  const id = Number(props.modelValue || 0); const marker = ++request; release(); resource.value = null
+  const id = Number(Array.isArray(props.modelValue) ? props.modelValue[0] : (props.modelValue || 0)); const marker = ++request; release(); resource.value = null
   if (!id) return
   try {
     const item = await resourceApi.get(id) as ResourceItem
@@ -27,7 +27,7 @@ async function load() {
     }
   } catch { resource.value = null }
 }
-function choose(items: ResourceItem[]) { const item = items[0] || null; resource.value = item; emit('update:modelValue', item?.id || null); emit('selected', item) }
+function choose(items: ResourceItem[]) { const item = items[0] || null; resource.value = item; emit('update:modelValue', props.multiple ? items.map(value=>value.id) : (item?.id || null)); emit('selected', props.multiple ? items : item) }
 function clear() { resource.value = null; release(); emit('update:modelValue', null); emit('selected', null) }
 watch(() => props.modelValue, load, { immediate: true }); onUnmounted(release)
 </script>
@@ -37,10 +37,10 @@ watch(() => props.modelValue, load, { immediate: true }); onUnmounted(release)
     <button type="button" class="preview" :disabled="disabled" @click="pickerOpen=true">
       <img v-if="previewUrl" :src="previewUrl" :alt="resource?.filename" />
       <span v-else class="media-icon">{{ mediaType==='image'?'▧':mediaType==='video'?'▶':'♪' }}</span>
-      <span class="copy"><b>{{ resource?.filename || `选择${mediaType==='image'?'图片':mediaType==='video'?'视频':'音频'}` }}</b><small>{{ modelValue ? `素材 #${modelValue}` : '从素材库选择或上传' }}</small></span>
+      <span class="copy"><b>{{ resource?.filename || `选择${mediaType==='image'?'图片':mediaType==='video'?'视频':'音频'}` }}</b><small>{{ Array.isArray(modelValue) ? `已选择 ${modelValue.length} 个素材` : modelValue ? `素材 #${modelValue}` : '从素材库选择或上传' }}</small></span>
     </button>
     <V2Button v-if="modelValue" variant="ghost" :disabled="disabled" @click="clear">清除</V2Button>
-    <AssetPicker :open="pickerOpen" :media-type="mediaType" @close="pickerOpen=false" @select="choose" />
+    <AssetPicker :open="pickerOpen" :media-type="mediaType" :multiple="multiple" @close="pickerOpen=false" @select="choose" />
   </div>
 </template>
 

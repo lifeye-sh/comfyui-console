@@ -4,7 +4,7 @@ from __future__ import annotations
 from datetime import datetime
 from typing import Any, Optional
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 # ---- auth ----
 class LoginIn(BaseModel):
@@ -112,12 +112,27 @@ class GenerationTypeOut(BaseModel):
     menu_order: int
     enabled: bool
     published_config_version_id: Optional[int] = None
+    can_delete: bool = False
+
+    @field_validator("param_template", mode="before")
+    @classmethod
+    def normalize_legacy_param_template(cls, value: Any) -> list[dict]:
+        if isinstance(value, list):
+            return [item for item in value if isinstance(item, dict)]
+        if isinstance(value, dict):
+            if isinstance(value.get("parameters"), list):
+                return [item for item in value["parameters"] if isinstance(item, dict)]
+            if value.get("key") and value.get("type"):
+                return [value]
+            if value and all(isinstance(item, dict) for item in value.values()):
+                return list(value.values())
+        return []
 
 class DefaultWorkflowIn(BaseModel):
     workflow_version_id: int
 
 class GenerationTypePatchIn(BaseModel):
-    param_template: Optional[dict] = None
+    param_template: Optional[list[dict]] = None
     enabled: Optional[bool] = None
     menu_order: Optional[int] = None
 
@@ -168,6 +183,7 @@ class TaskOut(BaseModel):
     started_at: Optional[datetime]
     finished_at: Optional[datetime]
     created_at: datetime
+    workflow_param_schema: list[dict] = Field(default_factory=list)
 
 class TaskExecuteIn(BaseModel):
     params: dict = Field(default_factory=dict)

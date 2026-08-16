@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+from datetime import datetime, timezone
 
 from fastapi import APIRouter, HTTPException, status
 
@@ -13,14 +14,14 @@ from app.schemas.generation_type_config import (
     GenerationTypeConfigSaveIn,
     GenerationTypeConfigVersionOut,
 )
-from app.services import audit_service, generation_type_config_service as service
+from app.services import audit_service, generation_type_config_service as service, generation_type_service
 
 router = APIRouter(prefix="/generation-types", tags=["v2-generation-type-configs"])
 
 
 def _type_or_404(db: DBSession, type_id: int) -> GenerationType:
     generation_type = db.get(GenerationType, type_id)
-    if not generation_type:
+    if not generation_type or generation_type.deleted_at is not None:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "生成类型不存在")
     return generation_type
 
@@ -30,10 +31,12 @@ def get_active_config(type_id: int, user: CurrentUser, db: DBSession) -> dict:
     generation_type = _type_or_404(db, type_id)
     version = db.get(GenerationTypeConfigVersion, generation_type.published_config_version_id) \
         if generation_type.published_config_version_id else None
+    config = version.config if version else service.build_default_config(db, generation_type)
     return {
         "generation_type_id": type_id,
         "published_version_id": version.id if version else None,
-        "config": version.config if version else service.build_default_config(db, generation_type),
+        "config": config,
+        "workflows": service.build_runtime_workflows(db, generation_type, config),
     }
 
 
@@ -67,7 +70,7 @@ def publish(type_id: int, admin: AdminUser, db: DBSession) -> GenerationTypeConf
     try:
         published = service.publish_draft(db, generation_type, draft, admin.id)
     except ValueError as exc:
-        raise HTTPException(status.HTTP_422_UNPROCESSABLE_CONTENT, str(exc)) from exc
+        raise HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY, str(exc)) from exc
     audit_service.log(db, admin.id, "generation_type.config.publish", "generation_type", type_id,
                       json.dumps({"version_id": published.id}, ensure_ascii=False))
     return GenerationTypeConfigVersionOut.model_validate(published)
@@ -111,7 +114,7 @@ def rollback(
     try:
         rolled_back = service.rollback(db, generation_type, source, admin.id)
     except ValueError as exc:
-        raise HTTPException(status.HTTP_422_UNPROCESSABLE_CONTENT, str(exc)) from exc
+        raise HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY, str(exc)) from exc
     audit_service.log(db, admin.id, "generation_type.config.rollback", "generation_type", type_id,
                       json.dumps({"source_version_id": source.id, "version_id": rolled_back.id}, ensure_ascii=False))
     return GenerationTypeConfigVersionOut.model_validate(rolled_back)
@@ -124,3 +127,15 @@ def deactivate(type_id: int, admin: AdminUser, db: DBSession) -> dict:
     db.commit()
     audit_service.log(db, admin.id, "generation_type.config.deactivate", "generation_type", type_id)
     return {"ok": True, "enabled": False}
+
+
+@router.delete("/{type_id}", status_code=204, response_model=None)
+def delete_unused_type(type_id: int, admin: AdminUser, db: DBSession) -> None:
+    generation_type = _type_or_404(db, type_id)
+    if generation_type.enabled:
+        raise HTTPException(status.HTTP_409_CONFLICT, "请先停用生成类型后再删除")
+    if generation_type_service.has_task_history(db, type_id):
+        raise HTTPException(status.HTTP_409_CONFLICT, "该生成类型已经产生任务，不能删除")
+    generation_type.deleted_at = datetime.now(timezone.utc)
+    db.commit()
+    audit_service.log(db, admin.id, "generation_type.delete", "generation_type", type_id)
