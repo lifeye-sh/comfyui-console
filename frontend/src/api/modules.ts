@@ -394,6 +394,7 @@ export const taskApi = {
   bulk: (task_ids: number[], action: 'delete' | 'cancel' | 'retry' | 'regenerate') =>
     http.post('/tasks/bulk/action', { task_ids, action }).then((r) => r.data),
   outputs: (id: number) => http.get(`/tasks/${id}/outputs`).then((r) => r.data),
+  recheck: (id: number) => http.post(`/tasks/${id}/recheck`).then((r) => r.data),
 }
 
 export const resourceApi = {
@@ -420,6 +421,14 @@ export const resourceApi = {
   move: (id: number, folder_id: number | null) => http.post(`/resources/${id}/move`, { folder_id }).then((r) => r.data),
   batchMove: (resource_ids: number[], folder_id: number | null) =>
     http.post('/resources/batch-move', { resource_ids, folder_id }).then((r) => r.data),
+  batchDelete: (resource_ids: number[]) =>
+    http.post('/resources/batch-delete', { resource_ids }).then((r) => r.data),
+  batchPurge: (resource_ids: number[]) =>
+    http.post('/resources/batch-purge', { resource_ids }).then((r) => r.data),
+  trimVideo: (id: number, start: number, end: number) =>
+    http.post(`/resources/${id}/trim`, { start, end }).then((r) => r.data),
+  mergeVideos: (resource_ids: number[]) =>
+    http.post('/resources/merge', { resource_ids }).then((r) => r.data),
 }
 
 export const resourceFolderApi = {

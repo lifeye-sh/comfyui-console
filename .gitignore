@@ -6,6 +6,7 @@ __pycache__/
 .venv/
 venv/
 .pytest_cache/
+.test-tmp/
 .mypy_cache/
 .ruff_cache/
 *.db
@@ -20,6 +21,9 @@ dist/
 /frontend/*.mp4
 /frontend/*.mov
 /frontend/*.webm
+/frontend/workflows/*.mp4
+/frontend/workflows/*.txt
+/小公主.txt
 
 # Runtime data
 /backend/data/*

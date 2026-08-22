@@ -4,7 +4,7 @@ from __future__ import annotations
 from fastapi import APIRouter, Depends, HTTPException, status
 
 from app.core.deps import CurrentUser, DBSession
-from app.comfy.formats import parse_api_json
+from app.comfy.formats import NODE_TYPE_RULES, match_input_field, parse_api_json, title_matches_parameter
 from app.models import Workflow, WorkflowVersion
 from app.services import workflow_service
 from app.schemas.schemas import WorkflowCreateIn, WorkflowOut, WorkflowPatchIn, WorkflowVersionIn, WorkflowVersionOut
@@ -33,7 +33,6 @@ def parse_json(user: CurrentUser, body: dict, db: DBSession) -> dict:
         template = supplied_parameters if isinstance(supplied_parameters, list) else PARAM_TEMPLATES.get(gt_code, [])
         select_options = get_all_select_options(db)
         # 解析节点列表
-        from app.comfy.formats import parse_api_json, NODE_TYPE_RULES, match_input_field, title_matches_parameter
         auto = parse_api_json(api_json)
         # 构建参数映射框架：每个参数带 node/path 留空，type/label/default 来自模板
         params = []

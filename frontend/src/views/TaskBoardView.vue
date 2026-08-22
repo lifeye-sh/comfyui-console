@@ -562,7 +562,24 @@ const columns: DataTableColumns<TaskItem> = [
     key: 'prompt',
     minWidth: 240,
     ellipsis: { tooltip: true },
-    render: (row) => promptText(row),
+    render: (row) => {
+      const text = promptText(row)
+      if (text === '—') return text
+      return h('div', { style: 'display:flex;align-items:center;gap:6px' }, [
+        h('span', { style: 'overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1' }, text),
+        h('button', {
+          style: 'flex-shrink:0;padding:1px 6px;font-size:11px;color:#94a3b8;background:#f1f5f9;border:1px solid #e2e8f0;border-radius:4px;cursor:pointer',
+          onClick: (e: Event) => {
+            const target = e.currentTarget as HTMLElement
+            navigator.clipboard?.writeText(text).then(() => {
+              const original = target.textContent
+              target.textContent = '✓'
+              setTimeout(() => { target.textContent = original }, 1500)
+            }).catch(() => {})
+          },
+        }, '复制'),
+      ])
+    },
   },
   {
     title: '预览',

@@ -39,6 +39,15 @@ const mediaParameters = computed(() => designedParameters.value.filter(item => i
 const mappingPresets = computed(() => config.value?.workflow_mapping_presets || [])
 
 watch(config, () => { if (ready) dirty.value = true }, { deep: true })
+// 选择选项来源后自动填入系统维护项的默认值
+watch(() => currentParameter.value?.options_from, (newVal, oldVal) => {
+  if (newVal && newVal !== oldVal && currentParameter.value) {
+    const source = selectOptions.value[newVal]
+    if (source?.default_value !== undefined) {
+      currentParameter.value.default = source.default_value
+    }
+  }
+})
 onBeforeRouteLeave(() => !dirty.value || confirm('当前配置尚未保存，确认离开？'))
 
 async function load() {

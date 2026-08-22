@@ -284,8 +284,94 @@ class Dispatcher:
                 raise RuntimeError(f"输入素材不存在: #{rid}")
             if r.media_type != spec.get("type"):
                 raise RuntimeError(f"输入素材 #{rid} 类型与参数 {spec['key']} 不匹配")
-            # Reading large image/video/audio inputs is blocking file I/O and
-            # must not freeze FastAPI's event loop.
+
+            # 遮罩优先：如果该 image 参数附带了 __mask 字段，上传遮罩文件。
+            #
+            # 统一策略（原图输出永不修改）：
+            #   1. 原图照常上传注入 LoadImage 的 image widget（正常流程，不跳过）
+            #   2. 遮罩文件（纯黑白图：白=遮罩，黑=非遮罩）上传到 ComfyUI
+            #   3. 插入 LoadImageMask 节点（channel="red"）加载遮罩文件，输出 MASK 张量
+            #   4. 扫描 prompt 中所有引用 LoadImage MASK 输出的连接 ["<node_id>", 1]，
+            #      改为指向 LoadImageMask 的输出 ["_mask_loader", 0]
+            #   5. 扫描 class_type 含 mask/inpaint/drawmask 且 mask 输入缺失的节点，
+            #      连接到 LoadImageMask 输出
+            #   6. LoadImage 的 IMAGE 输出连接 ["<node_id>", 0] 完全不动
+            mask_rid: int | None = None
+            if spec.get("type") == "image":
+                mask_raw = t.params.get(f"{spec['key']}__mask")
+                if mask_raw:
+                    try:
+                        mask_rid = int(mask_raw)
+                    except (TypeError, ValueError):
+                        mask_rid = None
+            if mask_rid:
+                mask_r = db.get(Resource, mask_rid)
+                if not mask_r:
+                    raise RuntimeError(f"遮罩素材不存在: #{mask_rid}")
+                if mask_r.media_type != "image":
+                    raise RuntimeError(f"遮罩素材 #{mask_rid} 不是图片类型")
+                mask_data = await asyncio.to_thread(get_storage().read, mask_r.storage_key)
+                mask_up = await client.upload_image(mask_data, mask_r.filename)
+                mask_fname = mask_up.get("name", mask_r.filename)
+                mask_subfolder = str(mask_up.get("subfolder") or "").strip("/\\")
+                if mask_subfolder:
+                    mask_fname = f"{mask_subfolder}/{mask_fname}"
+
+                # 原图照常上传并注入（正常流程，LoadImage 的 image widget）
+                data = await asyncio.to_thread(get_storage().read, r.storage_key)
+                up = await client.upload_image(data, r.filename)
+                orig_fname = up.get("name", r.filename)
+                orig_subfolder = str(up.get("subfolder") or "").strip("/\\")
+                if orig_subfolder:
+                    orig_fname = f"{orig_subfolder}/{orig_fname}"
+                target, field = resolve_multimedia_target(prompt, spec)
+                target[field] = orig_fname
+
+                # 插入 LoadImageMask 节点加载遮罩文件
+                # LoadImageMask RETURN_TYPES = ("MASK",)，output 0 = MASK
+                # channel="red": mask = R/255.0 → 白色=1.0（遮罩），黑色=0.0（无遮罩）
+                mask_loader_id = f"_mask_loader_{spec.get('key', 'image')}"
+                prompt[mask_loader_id] = {
+                    "class_type": "LoadImageMask",
+                    "inputs": {"image": mask_fname, "channel": "red"},
+                }
+
+                # 获取 LoadImage 节点 ID（param_schema 中的 node 字段）
+                loadimage_node_id = str(spec.get("node") or "")
+
+                # 扫描 prompt 中所有节点的 inputs：
+                #   - 把引用 LoadImage MASK 输出 ["<id>", 1] 的连接改为 ["_mask_loader", 0]
+                #   - 对 class_type 含 mask/inpaint/drawmask 且 mask 输入缺失的节点，
+                #     连接到 LoadImageMask 输出
+                for nid, nd in prompt.items():
+                    if not isinstance(nd, dict) or nid == mask_loader_id:
+                        continue
+                    nd_inputs = nd.get("inputs")
+                    if not isinstance(nd_inputs, dict):
+                        continue
+                    nd_class = str(nd.get("class_type", "")).lower()
+                    for key, val in list(nd_inputs.items()):
+                        # 检查是否为 LoadImage 的 MASK 输出连接 ["<id>", 1]
+                        if (
+                            isinstance(val, list) and len(val) == 2
+                            and str(val[0]) == loadimage_node_id
+                            and val[1] == 1
+                        ):
+                            # 改为指向 LoadImageMask 的 MASK 输出
+                            nd_inputs[key] = [mask_loader_id, 0]
+                    # 对缺失 mask 输入的节点（如 DrawMaskOnImage），补充连接
+                    class_needs_mask = any(
+                        kw in nd_class for kw in ("mask", "inpaint", "drawmask")
+                    )
+                    if class_needs_mask:
+                        mask_val = nd_inputs.get("mask")
+                        if mask_val in (None, "", 0, []):
+                            nd_inputs["mask"] = [mask_loader_id, 0]
+
+                db.add(TaskResource(task_id=t.id, resource_id=mask_r.id, role="mask", slot_key=spec["key"]))
+                continue
+
+            # 常规路径：上传原图片 / 视频 / 音频
             data = await asyncio.to_thread(get_storage().read, r.storage_key)
             up = await client.upload_image(data, r.filename)
             fname = up.get("name", r.filename)
@@ -488,7 +574,7 @@ class Dispatcher:
         if existing:
             return
         ext = os.path.splitext(fname)[1] or ""
-        key = f"resources/{datetime.now(timezone.utc):%Y-%m}/{sha[:8]}/{fname}"
+        key = f"resources/{datetime.now(timezone.utc):%Y-%m}/{sha[:16]}/{fname}"
         storage = get_storage()
         storage.save_bytes(data, key)
         mime = mimetypes.guess_type(fname)[0] or {

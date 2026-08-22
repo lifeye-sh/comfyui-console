@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed, ref, watch } from 'vue'
 import V2Button from '@/v2/components/V2Button.vue'
 import V2Field from '@/v2/components/V2Field.vue'
 import { parameterTypes } from './model'
@@ -101,6 +101,86 @@ function changeType(mapping: any, value: string) {
   }
   normalizeMediaOrder()
 }
+// 监听 select 类型参数的 options_from 变化，自动填入系统维护项默认值
+watch(() => props.mappings.map(m => m.options_from), (newVals, oldVals) => {
+  if (!oldVals) return
+  for (let i = 0; i < newVals.length; i++) {
+    if (newVals[i] !== oldVals[i] && newVals[i]) {
+      const m = props.mappings[i]
+      const source = props.selectOptions[newVals[i]]
+      if (source?.default_value !== undefined && (m.type === 'select' || m.type === 'size')) {
+        m.default = source.default_value
+      }
+    }
+  }
+}, { deep: true })
+
+// 根据路径名推断参数类型
+function inferType(path: string): string | null {
+  const p = path.toLowerCase()
+  if (p.includes('image') || p.includes('picture') || p.includes('photo')) return 'image'
+  if (p.includes('video')) return 'video'
+  if (p.includes('audio') || p.includes('sound') || p.includes('voice')) return 'audio'
+  if (p.includes('negative') || p.includes('neg')) return 'textarea'
+  if (p.includes('prompt') || p.includes('text') || p.includes('caption') || p.includes('description')) return 'textarea'
+  if (p.includes('seed')) return 'seed'
+  if (p.includes('denoise') || p.includes('strength') || p.includes('cfg') || p.includes('scale')) return 'float'
+  if (p.includes('width') || p.includes('height') || p.includes('size') || p.includes('length') || p.includes('count') || p.includes('frames') || p.includes('batch')) return 'int'
+  if (p.includes('step') || p.includes('fps') || p.includes('num')) return 'int'
+  if (p.includes('enable') || p.includes('disable') || p.includes('use') || p.includes('skip')) return 'bool'
+  return null
+}
+
+// 根据路径名生成中文标签
+function inferLabel(path: string): string {
+  const labelMap: Record<string, string> = {
+    prompt: '提示词', negative: '负面提示词', negative_prompt: '负面提示词',
+    seed: '随机种子', steps: '步数', cfg: 'CFG引导系数', denoise: '重绘幅度',
+    width: '宽度', height: '高度', image: '输入图片', video: '输入视频',
+    audio: '输入音频', text: '文本', caption: '描述', description: '描述',
+    batch_size: '批量数量', length: '帧数', fps: '帧率',
+    noise_seed: '噪声种子', noise: '噪声', scale: '缩放比例',
+    strength: '强度', sampler_name: '采样器', scheduler: '调度器',
+    start_at: '开始步', end_at: '结束步', control_after_generate: '生成后控制',
+  }
+  const key = path.toLowerCase().replace(/^inputs\./, '')
+  if (labelMap[key]) return labelMap[key]
+  // 去掉 inputs. 前缀，转驼峰式中文显示
+  const cleaned = key.replace(/^inputs\./, '').replace(/_/g, ' ').trim()
+  return cleaned || path
+}
+
+// 监听 path 变化，自动填充 label/key/type（仅在用户未手动填写时）
+watch(() => props.mappings.map(m => `${m.node}:${m.path}`), (newVals, oldVals) => {
+  if (!oldVals) return
+  for (let i = 0; i < newVals.length; i++) {
+    if (newVals[i] === oldVals[i] || !newVals[i]) continue
+    const m = props.mappings[i]
+    if (!m.path) continue
+    const pathName = String(m.path).replace(/^inputs\./, '')
+    // 仅在值为空或仍是默认占位时自动填
+    if (!m.label || m.label === '新参数' || m.label === '新素材') {
+      m.label = inferLabel(pathName)
+    }
+    if (!m.key || m.key.startsWith('parameter_') || m.key.startsWith('material_')) {
+      m.key = pathName.replace(/[^a-zA-Z0-9_]/g, '_')
+    }
+    // 仅在类型为默认值（text 或新建时的初始类型）时自动推断
+    if (m.type === 'text' && !mediaTypes.includes(m.type)) {
+      const inferred = inferType(pathName)
+      if (inferred) {
+        m.type = inferred
+        // 如果推断为媒体类型，更新 group
+        if (mediaTypes.includes(inferred)) {
+          m.group = 'media'
+          m.default = null
+          m.media_order = mediaMappings.value.length + 1
+        }
+        normalizeMediaOrder()
+      }
+    }
+  }
+}, { deep: true })
 
 async function fileChanged(event: Event) {
   const file = (event.target as HTMLInputElement).files?.[0]

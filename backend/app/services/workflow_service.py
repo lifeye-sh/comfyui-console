@@ -186,6 +186,28 @@ def validate_task_params(
                 continue
             value = resource_ids if spec.get("multiple") else resource_ids[0]
         clean[key] = value
+
+        # --- 遮罩参数校验：{key}__mask 引用一张带 alpha 通道的 PNG Resource ---
+        if kind == "image":
+            mask_key = f"{key}__mask"
+            mask_value = source.get(mask_key)
+            if mask_value in (None, "", 0):
+                continue
+            try:
+                mask_rid = int(mask_value)
+            except (TypeError, ValueError):
+                errors.append(f"参数“{spec.get('label') or key}”的遮罩素材编号无效")
+                continue
+            if mask_rid <= 0:
+                continue
+            mask_resource = db.get(Resource, mask_rid)
+            if not mask_resource or mask_resource.deleted_at is not None or mask_resource.media_type != "image":
+                errors.append(f"参数“{spec.get('label') or key}”的遮罩素材不存在或不是图片")
+                continue
+            if user_id is not None and mask_resource.owner_id not in (None, user_id) and mask_resource.visibility != "public":
+                errors.append(f"参数“{spec.get('label') or key}”的遮罩素材无权访问")
+                continue
+            clean[mask_key] = mask_rid
     return clean, errors
 
 

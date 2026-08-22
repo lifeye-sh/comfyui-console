@@ -122,6 +122,20 @@ def test_parser_maps_template_image_to_actual_loader_field() -> None:
         assert input_image["path"] == "inputs.image"
 
 
+def test_parser_without_generation_type_uses_automatic_detection() -> None:
+    with _session() as db:
+        result = parse_json(object(), {
+            "api_json": {
+                "10": {"class_type": "LoadImage", "inputs": {"image": "original.png"}},
+                "20": {"class_type": "SaveImage", "inputs": {}},
+            },
+        }, db)
+
+        assert any(node["id"] == "10" for node in result["nodes"])
+        assert result["output_mapping"]["image"] == ["20"]
+        assert result["media_type"] == "image"
+
+
 def test_parser_uses_conventional_input_fields_for_custom_nodes() -> None:
     with _session() as db:
         result = parse_json(object(), {

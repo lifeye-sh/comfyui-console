@@ -190,6 +190,15 @@ function formatParamValue(value: unknown) {
   return String(value)
 }
 
+function copyText(text: string, e: Event) {
+  const target = e.currentTarget as HTMLElement
+  navigator.clipboard?.writeText(text).then(() => {
+    const original = target.textContent
+    target.textContent = '✓ 已复制'
+    setTimeout(() => { target.textContent = original }, 1500)
+  }).catch(() => {})
+}
+
 async function del(id: number) {
   try {
     await resourceApi.delete(id)
@@ -365,7 +374,10 @@ async function moveSelected() {
             <div class="border rounded divide-y max-h-72 overflow-auto">
               <div v-for="(value, key) in generationInfo.params" :key="key" class="grid grid-cols-[150px_1fr] gap-3 p-2 text-sm">
                 <div class="font-medium break-all">{{ key }}</div>
-                <pre class="whitespace-pre-wrap break-all font-sans">{{ formatParamValue(value) }}</pre>
+                <div class="flex items-start gap-2">
+                  <pre class="whitespace-pre-wrap break-all font-sans flex-1">{{ formatParamValue(value) }}</pre>
+                  <button v-if="typeof value === 'string' && String(key).includes('prompt')" type="button" class="shrink-0 px-2 py-0.5 text-xs text-gray-400 border border-gray-600 rounded hover:text-white hover:border-gray-400 transition" @click="copyText(value, $event)">复制</button>
+                </div>
               </div>
             </div>
           </div>

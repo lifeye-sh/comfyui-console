@@ -1,0 +1,615 @@
+{
+  "6": {
+    "inputs": {
+      "fl2va_model": "minimax/minimax_h3_fl2va_int8_convrot.safetensors",
+      "ref2va_model": "minimax/minimax_h3_ref2va_int8_convrot.safetensors",
+      "text_encoder": "minimax/qwen3vl_32b_minimax_h3_int8_convrot.safetensors",
+      "video_vae": "minimax/minimax_h3_video_vae_fp16.safetensors",
+      "audio_vae": "minimax/minimax_h3_audio_vae_fp32.safetensors"
+    },
+    "class_type": "MiniMaxH3EasyLoader",
+    "_meta": {
+      "title": "MiniMax H3 Easy 加载器"
+    }
+  },
+  "7": {
+    "inputs": {
+      "mode": "reference",
+      "prompt": [
+        "125",
+        0
+      ],
+      "resolution": "480P",
+      "aspect_ratio": "9:16",
+      "width": 1344,
+      "height": 768,
+      "seconds": [
+        "138",
+        0
+      ],
+      "advanced": true,
+      "fps": 24,
+      "keyframe_role": "first",
+      "ref_image_size": "2k",
+      "reference_mention_mode": "index",
+      "prompt_optimizer_settings": false,
+      "prompt_optimizer_scene_guide": "none",
+      "h3_bundle": [
+        "6",
+        0
+      ],
+      "media_1": [
+        "18",
+        0
+      ],
+      "media_type_1": "image",
+      "media_2": [
+        "35",
+        0
+      ],
+      "media_type_2": "image",
+      "media_3": [
+        "36",
+        0
+      ],
+      "media_type_3": "image",
+      "media_4": [
+        "126",
+        0
+      ],
+      "media_type_4": "video",
+      "prompt_optimizer_resources": "[{\"type\":\"image\",\"tag\":\"<Picture 1>\",\"name\":\"model_20260722__00002_.png\",\"asset\":{\"filename\":\"model_20260722__00002_.png\",\"subfolder\":\"\",\"storage\":\"input\"}},{\"type\":\"image\",\"tag\":\"<Picture 2>\",\"name\":\"krea2_identity_edit_00028_.png\",\"asset\":{\"filename\":\"krea2_identity_edit_00028_.png\",\"subfolder\":\"\",\"storage\":\"input\"}},{\"type\":\"image\",\"tag\":\"<Picture 3>\",\"name\":\"Gemini_Generated_Image_vkf0emvkf0emvkf0.jpg\",\"asset\":{\"filename\":\"Gemini_Generated_Image_vkf0emvkf0emvkf0.jpg\",\"subfolder\":\"\",\"storage\":\"input\"}},{\"type\":\"video\",\"tag\":\"<Video 1>\",\"name\":\"1视编\",\"asset\":null},{\"type\":\"image\",\"tag\":\"<Picture 4>\",\"name\":\"None\",\"asset\":{\"filename\":\"None\",\"subfolder\":\"\",\"storage\":\"input\"}},{\"type\":\"image\",\"tag\":\"<Picture 5>\",\"name\":\"None\",\"asset\":{\"filename\":\"None\",\"subfolder\":\"\",\"storage\":\"input\"}},{\"type\":\"image\",\"tag\":\"<Picture 6>\",\"name\":\"None\",\"asset\":{\"filename\":\"None\",\"subfolder\":\"\",\"storage\":\"input\"}},{\"type\":\"video\",\"tag\":\"<Video 2>\",\"name\":\"2视编\",\"asset\":null},{\"type\":\"video\",\"tag\":\"<Video 3>\",\"name\":\"3视编\",\"asset\":null},{\"type\":\"audio\",\"tag\":\"<Audio 1>\",\"name\":\"1音编\",\"asset\":null},{\"type\":\"audio\",\"tag\":\"<Audio 2>\",\"name\":\"2音编\",\"asset\":null},{\"type\":\"audio\",\"tag\":\"<Audio 3>\",\"name\":\"3音编\",\"asset\":null}]",
+      "prompt_optimizer_marker": "{\"context_sha256\":\"3c5216d1d9e02db8b4f771a3ed336330591d00c847396c6c9a3a63384698b25b\",\"prompt_sha256\":\"1ae73d83bf825987b018af98b244381028b818cbb632aa2612745bc95cbd44b6\",\"version\":1}",
+      "prompt_optimizer_prompt_connected": true
+    },
+    "class_type": "MiniMaxH3Easy",
+    "_meta": {
+      "title": "MiniMax H3 Easy"
+    }
+  },
+  "16": {
+    "inputs": {
+      "frame_rate": [
+        "142:8",
+        4
+      ],
+      "loop_count": 0,
+      "filename_prefix": "YZ-H3-一采",
+      "format": "video/h264-mp4",
+      "pix_fmt": "yuv420p",
+      "crf": 19,
+      "save_metadata": false,
+      "trim_to_audio": false,
+      "pingpong": false,
+      "save_output": false,
+      "images": [
+        "142:5",
+        0
+      ],
+      "audio": [
+        "142:15",
+        0
+      ]
+    },
+    "class_type": "VHS_VideoCombine",
+    "_meta": {
+      "title": "Video Combine 🎥🅥🅗🅢"
+    }
+  },
+  "18": {
+    "inputs": {
+      "image": "model_20260722__00002_.png"
+    },
+    "class_type": "LoadImage",
+    "_meta": {
+      "title": "1图"
+    }
+  },
+  "35": {
+    "inputs": {
+      "image": "krea2_identity_edit_00028_.png"
+    },
+    "class_type": "LoadImage",
+    "_meta": {
+      "title": "2图"
+    }
+  },
+  "36": {
+    "inputs": {
+      "image": "Gemini_Generated_Image_vkf0emvkf0emvkf0.jpg"
+    },
+    "class_type": "LoadImage",
+    "_meta": {
+      "title": "3图"
+    }
+  },
+  "43": {
+    "inputs": {
+      "file": "啧啧啧.mp4",
+      "video-preview": ""
+    },
+    "class_type": "LoadVideo",
+    "_meta": {
+      "title": "1视"
+    }
+  },
+  "93": {
+    "inputs": {
+      "frame_rate": [
+        "142:8",
+        4
+      ],
+      "loop_count": 0,
+      "filename_prefix": "YZ-H3-2采",
+      "format": "video/h264-mp4",
+      "pix_fmt": "yuv420p",
+      "crf": 19,
+      "save_metadata": true,
+      "trim_to_audio": false,
+      "pingpong": false,
+      "save_output": true,
+      "images": [
+        "142:72",
+        0
+      ],
+      "audio": [
+        "142:69",
+        0
+      ]
+    },
+    "class_type": "VHS_VideoCombine",
+    "_meta": {
+      "title": "Video Combine 🎥🅥🅗🅢"
+    }
+  },
+  "125": {
+    "inputs": {
+      "prompt": "图片1为火灵儿，视频1是参考视频。用穿白色长背心的火灵儿<图片1>替换参考视频<视频1>里穿深色吊带裙跳舞的女人，其他保持与参考视频里女人的动作和镜头一致，注意稳定人物的脸和白背心"
+    },
+    "class_type": "CR Prompt Text",
+    "_meta": {
+      "title": "1、提示词"
+    }
+  },
+  "126": {
+    "inputs": {
+      "start_time": 7,
+      "duration": [
+        "138",
+        0
+      ],
+      "strict_duration": true,
+      "video": [
+        "43",
+        0
+      ]
+    },
+    "class_type": "Video Slice",
+    "_meta": {
+      "title": "1视编"
+    }
+  },
+  "138": {
+    "inputs": {
+      "value": 0
+    },
+    "class_type": "PrimitiveFloat",
+    "_meta": {
+      "title": "2、秒数"
+    }
+  },
+  "142:12": {
+    "inputs": {
+      "sampler_name": "euler"
+    },
+    "class_type": "KSamplerSelect",
+    "_meta": {
+      "title": "K采样器选择"
+    }
+  },
+  "142:11": {
+    "inputs": {
+      "model": [
+        "142:115",
+        0
+      ],
+      "conditioning": [
+        "142:8",
+        0
+      ]
+    },
+    "class_type": "BasicGuider",
+    "_meta": {
+      "title": "基本引导器"
+    }
+  },
+  "142:115": {
+    "inputs": {
+      "attention": "comfy kitchen attention",
+      "model": [
+        "142:116",
+        0
+      ]
+    },
+    "class_type": "ModelAttentionBackend",
+    "_meta": {
+      "title": "ModelAttentionBackend"
+    }
+  },
+  "142:114": {
+    "inputs": {
+      "shift_video": 12,
+      "shift_audio": 3,
+      "model": [
+        "142:9",
+        0
+      ]
+    },
+    "class_type": "MiniMaxH3SigmaShift",
+    "_meta": {
+      "title": "ModelSamplingMiniMaxH3"
+    }
+  },
+  "142:116": {
+    "inputs": {
+      "tau": 1.3,
+      "start_percent": 0.2,
+      "end_percent": 0.9,
+      "min_tokens": 4096,
+      "int8_qk": true,
+      "sink_conditioning": "exact_kv_and_rows",
+      "morton": false,
+      "morton_curve": "2d_frame",
+      "int8_pv": true,
+      "verbose": false,
+      "use_tma": false,
+      "dense_blocks": "",
+      "model": [
+        "142:114",
+        0
+      ]
+    },
+    "class_type": "SolAttnPatch",
+    "_meta": {
+      "title": "Patch Sol-Attn"
+    }
+  },
+  "142:13": {
+    "inputs": {
+      "scheduler": "beta",
+      "steps": 8,
+      "denoise": 1,
+      "model": [
+        "142:115",
+        0
+      ]
+    },
+    "class_type": "BasicScheduler",
+    "_meta": {
+      "title": "基本调度器"
+    }
+  },
+  "142:8": {
+    "inputs": {
+      "h3_context": [
+        "7",
+        1
+      ]
+    },
+    "class_type": "MiniMaxH3EasyOutput",
+    "_meta": {
+      "title": "MiniMax H3 Easy 输出"
+    }
+  },
+  "142:14": {
+    "inputs": {
+      "noise_seed": 90163244717380
+    },
+    "class_type": "RandomNoise",
+    "_meta": {
+      "title": "随机噪波"
+    }
+  },
+  "142:10": {
+    "inputs": {
+      "noise": [
+        "142:14",
+        0
+      ],
+      "guider": [
+        "142:11",
+        0
+      ],
+      "sampler": [
+        "142:12",
+        0
+      ],
+      "sigmas": [
+        "142:13",
+        0
+      ],
+      "latent_image": [
+        "142:8",
+        1
+      ]
+    },
+    "class_type": "SamplerCustomAdvanced",
+    "_meta": {
+      "title": "自定义采样器（高级）"
+    }
+  },
+  "142:15": {
+    "inputs": {
+      "samples": [
+        "142:10",
+        0
+      ],
+      "vae": [
+        "142:8",
+        3
+      ]
+    },
+    "class_type": "VAEDecodeAudio",
+    "_meta": {
+      "title": "VAE解码（音频）"
+    }
+  },
+  "142:5": {
+    "inputs": {
+      "samples": [
+        "142:10",
+        0
+      ],
+      "vae": [
+        "142:8",
+        2
+      ]
+    },
+    "class_type": "VAEDecode",
+    "_meta": {
+      "title": "VAE解码"
+    }
+  },
+  "142:94": {
+    "inputs": {
+      "anything": [
+        "142:5",
+        0
+      ]
+    },
+    "class_type": "easy cleanGpuUsed",
+    "_meta": {
+      "title": "清理显存占用"
+    }
+  },
+  "142:64": {
+    "inputs": {
+      "width": [
+        "142:75",
+        0
+      ],
+      "height": [
+        "142:75",
+        1
+      ],
+      "upscale_method": "nvidia_rtx_vsr",
+      "keep_proportion": "crop",
+      "pad_color": "0, 0, 0",
+      "crop_position": "center",
+      "divisible_by": 0,
+      "device": "cpu",
+      "image": [
+        "142:94",
+        0
+      ]
+    },
+    "class_type": "ImageResizeKJv2",
+    "_meta": {
+      "title": "Resize Image v2"
+    }
+  },
+  "142:133": {
+    "inputs": {
+      "unet_name": "minimax\\minimax_h3_ref2va_pruned_int8_convrot.safetensors",
+      "weight_dtype": "default"
+    },
+    "class_type": "UNETLoader",
+    "_meta": {
+      "title": "UNet加载器"
+    }
+  },
+  "142:56": {
+    "inputs": {
+      "audio": [
+        "142:15",
+        0
+      ],
+      "vae": [
+        "142:8",
+        3
+      ]
+    },
+    "class_type": "VAEEncodeAudio",
+    "_meta": {
+      "title": "VAE编码（音频）"
+    }
+  },
+  "142:55": {
+    "inputs": {
+      "pixels": [
+        "142:64",
+        0
+      ],
+      "vae": [
+        "142:8",
+        2
+      ]
+    },
+    "class_type": "VAEEncode",
+    "_meta": {
+      "title": "VAE编码"
+    }
+  },
+  "142:104": {
+    "inputs": {
+      "video_latent": [
+        "142:55",
+        0
+      ],
+      "audio_latent": [
+        "142:56",
+        0
+      ]
+    },
+    "class_type": "LTXVConcatAVLatent",
+    "_meta": {
+      "title": "LTXVConcatAVLatent"
+    }
+  },
+  "142:66": {
+    "inputs": {
+      "model": [
+        "142:133",
+        0
+      ],
+      "conditioning": [
+        "142:8",
+        0
+      ]
+    },
+    "class_type": "BasicGuider",
+    "_meta": {
+      "title": "基本引导器"
+    }
+  },
+  "142:61": {
+    "inputs": {
+      "sampler_name": "euler"
+    },
+    "class_type": "KSamplerSelect",
+    "_meta": {
+      "title": "K采样器选择"
+    }
+  },
+  "142:76": {
+    "inputs": {
+      "scheduler": "beta",
+      "steps": 4,
+      "denoise": 0.20000000000000004,
+      "model": [
+        "142:133",
+        0
+      ]
+    },
+    "class_type": "BasicScheduler",
+    "_meta": {
+      "title": "基本调度器"
+    }
+  },
+  "142:60": {
+    "inputs": {
+      "noise_seed": 630951455061519
+    },
+    "class_type": "RandomNoise",
+    "_meta": {
+      "title": "随机噪波"
+    }
+  },
+  "142:72": {
+    "inputs": {
+      "samples": [
+        "142:68",
+        0
+      ],
+      "vae": [
+        "142:8",
+        2
+      ]
+    },
+    "class_type": "VAEDecode",
+    "_meta": {
+      "title": "VAE解码"
+    }
+  },
+  "142:112": {
+    "inputs": {
+      "anything": [
+        "142:72",
+        0
+      ]
+    },
+    "class_type": "easy cleanGpuUsed",
+    "_meta": {
+      "title": "清理显存占用"
+    }
+  },
+  "142:9": {
+    "inputs": {
+      "lora_name": "minimax\\minimax_h3_fl2v_turbo_8step_v1.0_comfyui_bf16.safetensors",
+      "strength_model": 0.7500000000000001,
+      "model": [
+        "7",
+        0
+      ]
+    },
+    "class_type": "LoraLoaderModelOnly",
+    "_meta": {
+      "title": "LoRA加载器（仅模型）"
+    }
+  },
+  "142:69": {
+    "inputs": {
+      "samples": [
+        "142:68",
+        0
+      ],
+      "vae": [
+        "142:8",
+        3
+      ]
+    },
+    "class_type": "VAEDecodeAudio",
+    "_meta": {
+      "title": "VAE解码（音频）"
+    }
+  },
+  "142:68": {
+    "inputs": {
+      "noise": [
+        "142:60",
+        0
+      ],
+      "guider": [
+        "142:66",
+        0
+      ],
+      "sampler": [
+        "142:61",
+        0
+      ],
+      "sigmas": [
+        "142:76",
+        0
+      ],
+      "latent_image": [
+        "142:104",
+        0
+      ]
+    },
+    "class_type": "SamplerCustomAdvanced",
+    "_meta": {
+      "title": "自定义采样器（高级）"
+    }
+  },
+  "142:75": {
+    "inputs": {
+      "aspect_ratio": "9:16 (Portrait Widescreen)",
+      "megapixels": 0.9,
+      "multiple": 32
+    },
+    "class_type": "ResolutionSelector",
+    "_meta": {
+      "title": "分辨率选择器"
+    }
+  }
+}

@@ -536,7 +536,7 @@ onWsEvent(async (e: any) => {
 })
 
 function addRow() {
-  rows.value.push({
+  rows.value.unshift({
     prompt: '', size: defaultSize.value, width: defaultWidth.value, height: defaultHeight.value,
     duration: defaultDuration.value,
     seed: defaultSeed.value, random_seed: useRandomSeed.value,

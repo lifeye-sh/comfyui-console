@@ -60,6 +60,15 @@ async function del(id: number) {
   }
 }
 
+function copyPrompt(text: string, e: Event) {
+  const target = e.currentTarget as HTMLElement
+  navigator.clipboard?.writeText(text).then(() => {
+    const original = target.textContent
+    target.textContent = '✓ 已复制'
+    setTimeout(() => { target.textContent = original }, 1500)
+  }).catch(() => {})
+}
+
 function openEdit(p: any) {
   selected.value = p
   form.name = p.name
@@ -116,6 +125,7 @@ function reset() {
           </NSpace>
         </div>
         <NText style="font-size: 12px" depth="3">{{ p.content }}</NText>
+        <div v-if="p.content" class="mt-1"><NButton size="tiny" quaternary @click="copyPrompt(p.content, $event)">复制</NButton></div>
       </div>
     </div>
 

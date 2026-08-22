@@ -1,0 +1,561 @@
+{
+  "1": {
+    "inputs": {
+      "text": "score_6, score_5, score_4, low resolution,worst quality, low quality, normal quality, lowres,jpeg, cropped, bad composition, artifacts bad proportions, error, inaccurate limb, bad anatomy, bad, ugly, terrible, extra fingers, fewer fingers, missing fingers, extra arms, extra legs, inaccurate eyes,extra digit, fewer digits, trademark, artist's name, username, watermarksignature, watermark, text, words, ribs, rib marks, visible ribs, abdominal muscles, skinny, muscular, thin, ",
+      "clip": [
+        "26",
+        1
+      ]
+    },
+    "class_type": "CLIPTextEncode",
+    "_meta": {
+      "title": "CLIP文本编码"
+    }
+  },
+  "4": {
+    "inputs": {
+      "text": [
+        "339",
+        0
+      ],
+      "clip": [
+        "26",
+        1
+      ]
+    },
+    "class_type": "CLIPTextEncode",
+    "_meta": {
+      "title": "CLIP文本编码"
+    }
+  },
+  "5": {
+    "inputs": {
+      "pixels": [
+        "337",
+        0
+      ],
+      "vae": [
+        "26",
+        2
+      ]
+    },
+    "class_type": "VAEEncode",
+    "_meta": {
+      "title": "VAE编码"
+    }
+  },
+  "6": {
+    "inputs": {
+      "samples": [
+        "27",
+        0
+      ],
+      "vae": [
+        "26",
+        2
+      ]
+    },
+    "class_type": "VAEDecode",
+    "_meta": {
+      "title": "VAE解码"
+    }
+  },
+  "10": {
+    "inputs": {
+      "filename_prefix": "ComfyUI",
+      "images": [
+        "24",
+        0
+      ]
+    },
+    "class_type": "SaveImage",
+    "_meta": {
+      "title": "保存图像"
+    }
+  },
+  "20": {
+    "inputs": {
+      "method": "wavelet",
+      "image_output": "Preview",
+      "save_prefix": "ComfyUI",
+      "image_ref": [
+        "337",
+        0
+      ],
+      "image_target": [
+        "326",
+        0
+      ]
+    },
+    "class_type": "easy imageColorMatch",
+    "_meta": {
+      "title": "图像颜色匹配"
+    }
+  },
+  "23": {
+    "inputs": {
+      "mask_opacity": 0.5000000000000001,
+      "mask_color": "255, 0, 0",
+      "pass_through": false,
+      "image": [
+        "337",
+        0
+      ],
+      "mask": [
+        "36",
+        0
+      ]
+    },
+    "class_type": "ImageAndMaskPreview",
+    "_meta": {
+      "title": "ImageAndMaskPreview"
+    }
+  },
+  "24": {
+    "inputs": {
+      "x": 0,
+      "y": 0,
+      "resize_source": false,
+      "destination": [
+        "337",
+        0
+      ],
+      "source": [
+        "20",
+        0
+      ],
+      "mask": [
+        "36",
+        0
+      ]
+    },
+    "class_type": "ImageCompositeMasked",
+    "_meta": {
+      "title": "合成图像（遮罩）"
+    }
+  },
+  "26": {
+    "inputs": {
+      "ckpt_name": "XL\\JANKUTrainedChenkinNoobai_v69.safetensors"
+    },
+    "class_type": "CheckpointLoaderSimple",
+    "_meta": {
+      "title": "Checkpoint加载器（简易）"
+    }
+  },
+  "27": {
+    "inputs": {
+      "seed": 950796319453899,
+      "steps": 9,
+      "cfg": 3.5,
+      "sampler_name": "dpmpp_2m_sde",
+      "scheduler": "karras",
+      "denoise": 0.45,
+      "model": [
+        "26",
+        0
+      ],
+      "positive": [
+        "4",
+        0
+      ],
+      "negative": [
+        "1",
+        0
+      ],
+      "latent_image": [
+        "5",
+        0
+      ]
+    },
+    "class_type": "KSampler",
+    "_meta": {
+      "title": "K采样器"
+    }
+  },
+  "32": {
+    "inputs": {
+      "rgthree_comparer": {
+        "images": [
+          {
+            "name": "A",
+            "selected": true,
+            "url": "/api/view?filename=rgthree.compare._temp_ohjuy_00009_.png&type=temp&subfolder=&rand=0.405082135533125"
+          },
+          {
+            "name": "B",
+            "selected": true,
+            "url": "/api/view?filename=rgthree.compare._temp_ohjuy_00010_.png&type=temp&subfolder=&rand=0.07842447701902511"
+          }
+        ]
+      },
+      "image_a": [
+        "337",
+        0
+      ],
+      "image_b": [
+        "24",
+        0
+      ]
+    },
+    "class_type": "Image Comparer (rgthree)",
+    "_meta": {
+      "title": "Image Comparer (rgthree)"
+    }
+  },
+  "33": {
+    "inputs": {
+      "image": "clipspace-painted-masked-1786978046837.png [input]"
+    },
+    "class_type": "LoadImage",
+    "_meta": {
+      "title": "1、加载图像"
+    }
+  },
+  "36": {
+    "inputs": {
+      "grow": 20,
+      "blur": 60,
+      "blur_type": "gaussian",
+      "mask": [
+        "337",
+        1
+      ]
+    },
+    "class_type": "INPAINT_ExpandMask",
+    "_meta": {
+      "title": "Expand Mask"
+    }
+  },
+  "319": {
+    "inputs": {
+      "anything": [
+        "328",
+        0
+      ]
+    },
+    "class_type": "easy cleanGpuUsed",
+    "_meta": {
+      "title": "清理显存占用"
+    }
+  },
+  "320": {
+    "inputs": {
+      "conditioning": [
+        "324",
+        0
+      ],
+      "latent": [
+        "322",
+        0
+      ]
+    },
+    "class_type": "ReferenceLatent",
+    "_meta": {
+      "title": "参考Latent"
+    }
+  },
+  "321": {
+    "inputs": {
+      "conditioning": [
+        "329",
+        0
+      ],
+      "latent": [
+        "322",
+        0
+      ]
+    },
+    "class_type": "ReferenceLatent",
+    "_meta": {
+      "title": "参考Latent"
+    }
+  },
+  "322": {
+    "inputs": {
+      "pixels": [
+        "6",
+        0
+      ],
+      "vae": [
+        "333",
+        0
+      ]
+    },
+    "class_type": "VAEEncode",
+    "_meta": {
+      "title": "VAE编码"
+    }
+  },
+  "323": {
+    "inputs": {
+      "width": [
+        "336",
+        0
+      ],
+      "height": [
+        "336",
+        1
+      ],
+      "batch_size": 1
+    },
+    "class_type": "EmptyFlux2LatentImage",
+    "_meta": {
+      "title": "空Latent图像（Flux2）"
+    }
+  },
+  "324": {
+    "inputs": {
+      "conditioning": [
+        "329",
+        0
+      ]
+    },
+    "class_type": "ConditioningZeroOut",
+    "_meta": {
+      "title": "条件零化"
+    }
+  },
+  "325": {
+    "inputs": {
+      "clean_file_cache": true,
+      "clean_processes": true,
+      "clean_dlls": true,
+      "retry_times": 3,
+      "anything": [
+        "326",
+        0
+      ]
+    },
+    "class_type": "RAMCleanup",
+    "_meta": {
+      "title": "🎈RAM-Cleanup"
+    }
+  },
+  "326": {
+    "inputs": {
+      "samples": [
+        "319",
+        0
+      ],
+      "vae": [
+        "333",
+        0
+      ]
+    },
+    "class_type": "VAEDecode",
+    "_meta": {
+      "title": "VAE解码"
+    }
+  },
+  "328": {
+    "inputs": {
+      "seed": 105148099138779,
+      "steps": 6,
+      "cfg": 1,
+      "sampler_name": "euler",
+      "scheduler": "simple",
+      "denoise": 1,
+      "model": [
+        "331",
+        0
+      ],
+      "positive": [
+        "321",
+        0
+      ],
+      "negative": [
+        "320",
+        0
+      ],
+      "latent_image": [
+        "323",
+        0
+      ]
+    },
+    "class_type": "KSampler",
+    "_meta": {
+      "title": "K采样器"
+    }
+  },
+  "329": {
+    "inputs": {
+      "text": "transform the image to realistic photograph, Asian, 转为写实风格，",
+      "clip": [
+        "332",
+        0
+      ]
+    },
+    "class_type": "CLIPTextEncode",
+    "_meta": {
+      "title": "CLIP文本编码"
+    }
+  },
+  "330": {
+    "inputs": {
+      "unet_name": "flux\\flux-2-klein-9b-fp8.safetensors",
+      "weight_dtype": "default"
+    },
+    "class_type": "UNETLoader",
+    "_meta": {
+      "title": "UNet加载器"
+    }
+  },
+  "331": {
+    "inputs": {
+      "lora_name": "flux-2-klein\\Klein_9B-anime2real-semi(漫转真).safetensors",
+      "strength_model": 0.9,
+      "model": [
+        "334",
+        0
+      ]
+    },
+    "class_type": "LoraLoaderModelOnly",
+    "_meta": {
+      "title": "LoRA加载器（仅模型）"
+    }
+  },
+  "332": {
+    "inputs": {
+      "clip_name": "flux\\qwen_3_8b_fp8mixed.safetensors",
+      "type": "flux2",
+      "device": "default"
+    },
+    "class_type": "CLIPLoader",
+    "_meta": {
+      "title": "加载CLIP"
+    }
+  },
+  "333": {
+    "inputs": {
+      "vae_name": "FLUX\\flux2-vae.safetensors"
+    },
+    "class_type": "VAELoader",
+    "_meta": {
+      "title": "加载VAE"
+    }
+  },
+  "334": {
+    "inputs": {
+      "lora_name": "flux-2-klein\\Klein_9B-anything2real_a_patched.safetensors",
+      "strength_model": 0.9,
+      "model": [
+        "330",
+        0
+      ]
+    },
+    "class_type": "LoraLoaderModelOnly",
+    "_meta": {
+      "title": "LoRA加载器（仅模型）"
+    }
+  },
+  "336": {
+    "inputs": {
+      "image": [
+        "6",
+        0
+      ]
+    },
+    "class_type": "GetImageSize",
+    "_meta": {
+      "title": "获取图像尺寸"
+    }
+  },
+  "337": {
+    "inputs": {
+      "aspect_ratio": "original",
+      "proportional_width": 1,
+      "proportional_height": 1,
+      "fit": "letterbox",
+      "method": "lanczos",
+      "round_to_multiple": "8",
+      "scale_to_side": "longest",
+      "scale_to_length": [
+        "344",
+        0
+      ],
+      "background_color": "#000000",
+      "image": [
+        "33",
+        0
+      ],
+      "mask": [
+        "33",
+        1
+      ]
+    },
+    "class_type": "LayerUtility: ImageScaleByAspectRatio V2",
+    "_meta": {
+      "title": "图层工具：按宽高比缩放 V2"
+    }
+  },
+  "338": {
+    "inputs": {
+      "text": "nude, pussy,long labia,half-open vagina , photorealistic, 8k"
+    },
+    "class_type": "CR Text",
+    "_meta": {
+      "title": "3、提示词"
+    }
+  },
+  "339": {
+    "inputs": {
+      "separator": "",
+      "text1": [
+        "340",
+        0
+      ],
+      "text2": [
+        "338",
+        0
+      ]
+    },
+    "class_type": "CR Text Concatenate",
+    "_meta": {
+      "title": "🔤 CR Text Concatenate"
+    }
+  },
+  "340": {
+    "inputs": {
+      "text": "explicit, masterpiece, best quality,absurdres, amazing quality,very aesthetic, highres, absurdres,\n1girl,an asian young woman,long dark brown hair,medium breasts,\npussy,long labia,full-open vagina,"
+    },
+    "class_type": "CR Text",
+    "_meta": {
+      "title": "🔤 CR Text"
+    }
+  },
+  "341": {
+    "inputs": {
+      "filename_prefix": "ComfyUI",
+      "images": [
+        "326",
+        0
+      ]
+    },
+    "class_type": "SaveImage",
+    "_meta": {
+      "title": "保存图像"
+    }
+  },
+  "342": {
+    "inputs": {
+      "images": [
+        "6",
+        0
+      ]
+    },
+    "class_type": "PreviewImage",
+    "_meta": {
+      "title": "预览图像"
+    }
+  },
+  "344": {
+    "inputs": {
+      "value": 1280
+    },
+    "class_type": "easy int",
+    "_meta": {
+      "title": "2、最长边"
+    }
+  }
+}

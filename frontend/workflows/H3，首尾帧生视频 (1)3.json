@@ -1,0 +1,401 @@
+{
+  "114": {
+    "inputs": {
+      "image": "Krea2_RedPro_00220_.png"
+    },
+    "class_type": "LoadImage",
+    "_meta": {
+      "title": "2、首帧"
+    }
+  },
+  "115": {
+    "inputs": {
+      "aspect_ratio": "16:9 (Widescreen)",
+      "megapixels": 0.7,
+      "multiple": 32
+    },
+    "class_type": "ResolutionSelector",
+    "_meta": {
+      "title": "分辨率选择器"
+    }
+  },
+  "119": {
+    "inputs": {
+      "upscale_method": "nearest-exact",
+      "megapixels": 1,
+      "resolution_steps": 32
+    },
+    "class_type": "ImageScaleToTotalPixels",
+    "_meta": {
+      "title": "缩放图像（像素）"
+    }
+  },
+  "120": {
+    "inputs": {
+      "image": [
+        "119",
+        0
+      ]
+    },
+    "class_type": "GetImageSize",
+    "_meta": {
+      "title": "获取图像尺寸"
+    }
+  },
+  "121": {
+    "inputs": {
+      "vae_name": "minimax\\minimax_h3_video_vae_fp16.safetensors"
+    },
+    "class_type": "VAELoader",
+    "_meta": {
+      "title": "加载VAE"
+    }
+  },
+  "122": {
+    "inputs": {
+      "vae_name": "minimax\\minimax_h3_audio_vae_fp32.safetensors"
+    },
+    "class_type": "VAELoader",
+    "_meta": {
+      "title": "加载VAE"
+    }
+  },
+  "123": {
+    "inputs": {
+      "samples": [
+        "127",
+        0
+      ],
+      "vae": [
+        "122",
+        0
+      ]
+    },
+    "class_type": "VAEDecodeAudio",
+    "_meta": {
+      "title": "VAE解码（音频）"
+    }
+  },
+  "124": {
+    "inputs": {
+      "samples": [
+        "127",
+        0
+      ],
+      "vae": [
+        "121",
+        0
+      ]
+    },
+    "class_type": "VAEDecode",
+    "_meta": {
+      "title": "VAE解码"
+    }
+  },
+  "125": {
+    "inputs": {
+      "sampler_name": "res_multistep"
+    },
+    "class_type": "KSamplerSelect",
+    "_meta": {
+      "title": "K采样器选择"
+    }
+  },
+  "126": {
+    "inputs": {
+      "scheduler": "simple",
+      "steps": 6,
+      "denoise": 1,
+      "model": [
+        "159",
+        0
+      ]
+    },
+    "class_type": "BasicScheduler",
+    "_meta": {
+      "title": "基本调度器"
+    }
+  },
+  "127": {
+    "inputs": {
+      "noise": [
+        "131",
+        0
+      ],
+      "guider": [
+        "128",
+        0
+      ],
+      "sampler": [
+        "125",
+        0
+      ],
+      "sigmas": [
+        "126",
+        0
+      ],
+      "latent_image": [
+        "133",
+        1
+      ]
+    },
+    "class_type": "SamplerCustomAdvanced",
+    "_meta": {
+      "title": "自定义采样器（高级）"
+    }
+  },
+  "128": {
+    "inputs": {
+      "model": [
+        "159",
+        0
+      ],
+      "conditioning": [
+        "133",
+        0
+      ]
+    },
+    "class_type": "BasicGuider",
+    "_meta": {
+      "title": "基本引导器"
+    }
+  },
+  "129": {
+    "inputs": {
+      "unet_name": "minimax\\minimax_h3_fl2va_int8_convrot.safetensors",
+      "weight_dtype": "default"
+    },
+    "class_type": "UNETLoader",
+    "_meta": {
+      "title": "UNet加载器"
+    }
+  },
+  "130": {
+    "inputs": {
+      "clip_name": "minimax\\qwen3vl_32b_minimax_h3_int8_convrot.safetensors",
+      "type": "minimax",
+      "device": "default"
+    },
+    "class_type": "CLIPLoader",
+    "_meta": {
+      "title": "加载CLIP"
+    }
+  },
+  "131": {
+    "inputs": {
+      "noise_seed": 9527
+    },
+    "class_type": "RandomNoise",
+    "_meta": {
+      "title": "随机噪波"
+    }
+  },
+  "132": {
+    "inputs": {
+      "fps": 24,
+      "bit_depth": 8,
+      "images": [
+        "124",
+        0
+      ],
+      "audio": [
+        "123",
+        0
+      ]
+    },
+    "class_type": "CreateVideo",
+    "_meta": {
+      "title": "创建视频"
+    }
+  },
+  "133": {
+    "inputs": {
+      "prompt": [
+        "150",
+        0
+      ],
+      "width": [
+        "115",
+        0
+      ],
+      "height": [
+        "115",
+        1
+      ],
+      "length": [
+        "134",
+        1
+      ],
+      "clip": [
+        "130",
+        0
+      ],
+      "vae": [
+        "121",
+        0
+      ],
+      "first_frame": [
+        "179",
+        0
+      ],
+      "last_frame": [
+        "180",
+        0
+      ]
+    },
+    "class_type": "MiniMaxH3ImageToVideo",
+    "_meta": {
+      "title": "MiniMax H3 Image to Video"
+    }
+  },
+  "134": {
+    "inputs": {
+      "expression": "max(5, round(a * 24)) + (5 - (max(5, round(a * 24)) % 17)) % 17",
+      "values.a": [
+        "135",
+        0
+      ]
+    },
+    "class_type": "ComfyMathExpression",
+    "_meta": {
+      "title": "数学表达式"
+    }
+  },
+  "135": {
+    "inputs": {
+      "value": 15
+    },
+    "class_type": "PrimitiveFloat",
+    "_meta": {
+      "title": "Float (duration)"
+    }
+  },
+  "137": {
+    "inputs": {
+      "clean_file_cache": true,
+      "clean_processes": true,
+      "clean_dlls": true,
+      "retry_times": 3,
+      "anything": [
+        "138",
+        0
+      ]
+    },
+    "class_type": "RAMCleanup",
+    "_meta": {
+      "title": "🎈RAM-Cleanup"
+    }
+  },
+  "138": {
+    "inputs": {
+      "offload_model": true,
+      "offload_cache": true,
+      "anything": [
+        "132",
+        0
+      ]
+    },
+    "class_type": "VRAMCleanup",
+    "_meta": {
+      "title": "🎈VRAM-Cleanup"
+    }
+  },
+  "144": {
+    "inputs": {
+      "image": "Krea2_RedPro_00222_.png"
+    },
+    "class_type": "LoadImage",
+    "_meta": {
+      "title": "3、尾帧"
+    }
+  },
+  "145": {
+    "inputs": {
+      "text": "A vertical outdoor digital portrait photograph of one clearly adult woman seated front-facing on pale gray painted metal stairs, her upper body positioned slightly right of center while her raised knees and white-tighted legs dominate the lower half of the frame. She has fair neutral-toned skin, a softly rounded youthful adult face, large dark eyes looking directly toward the camera, lightly flushed cheeks, a small straight nose, closed peach-toned lips, and a quiet slightly hesitant expression. Her short dense black hair forms a rounded chin-length bob with softly curved ends and uneven wispy bangs spreading across her forehead and partially framing her eyes. She wears a white short-sleeved sailor-style blouse with a broad folded collar edged by narrow pale blue parallel stripes, a small dark embroidered motif at the center of the collar, and a deep navy ribbon tied loosely at the chest. The blouse is tucked into a dark navy pleated skirt with muted blue side panels and long folded fabric sections draping over the step beside her right hip. Her knees are drawn closely together in front of her torso, both lower legs extend downward toward the camera, and her feet rest naturally on the lower step inside opaque white footed tights, with the individual toe contours subtly visible beneath the stretched fabric. Both arms descend between and beside the raised knees, the wrists overlapping near the lower left side of her body, while her relaxed fingers cross loosely and point downward. Her head tilts slightly toward her right shoulder, the shoulders remain gently rounded forward, and the compact seated posture creates natural compression through the waist, skirt, hips, knees, and ankles. A neatly paired set of dark brown polished leather loafers sits on the lower-left step beside her feet, aligned side by side with their toes facing the camera. Preserve the exact knee height, straight lower-leg placement, overlapping hands, forward-rounded shoulders, skirt drape, uncovered tighted feet, and spatial relationship between the woman, the shoes, and the stair edges. Use a close seated full-body composition from a nearly frontal viewpoint positioned slightly below her face and gently above the lower steps, with mild foreground enlargement in the knees and feet and stable natural perspective. A pale gray metal railing enters from the lower left and rises diagonally behind her, its evenly spaced vertical bars forming a structured geometric frame around the subject. Dense sunlit green shrubs fill the upper-left and upper-right background, small pink and purple flowers grow in a planter behind the stairs, and modern concrete building beams, white walls, and a shaded passage remain softly visible through the foliage. Bright natural daylight from the upper left and front creates clean highlights across the white blouse, face, knees, and stair surfaces, subtle reflected light beneath the chin and arms, restrained soft shadows between the legs and skirt folds, and small glossy reflections on the loafers and metal railing. Maintain a fresh high-exposure palette of cool gray, white, navy, pale blue, natural green, and muted floral accents, moderate depth of field with the woman, nearby railing, shoes, and front steps clearly resolved while the distant architecture and foliage soften gradually, smooth digital tonal transitions, gently refined skin texture, crisp fabric edges, subdued background contrast, exact single-subject count, coherent adult anatomy, faithful camera angle, unified daylight direction, and no additional people, accessories, furniture, or invented readable text. \n"
+    },
+    "class_type": "CR Text",
+    "_meta": {
+      "title": "文本"
+    }
+  },
+  "150": {
+    "inputs": {
+      "text": "少女向男人泼水，男人起身抓住少女的手臂，把少女转到自己身前，让她背靠着自己的胸膛"
+    },
+    "class_type": "CR Text",
+    "_meta": {
+      "title": "1、提示词"
+    }
+  },
+  "159": {
+    "inputs": {
+      "lora_name": "minimax\\minimax_h3_fl2v_lightx2v_turbo_4step_v0.1_comfy_resized_avg_rank_21_bf16.safetensors",
+      "strength_model": 0.6,
+      "model": [
+        "129",
+        0
+      ]
+    },
+    "class_type": "LoraLoaderModelOnly",
+    "_meta": {
+      "title": "LoRA加载器（仅模型）"
+    }
+  },
+  "178": {
+    "inputs": {
+      "filename_prefix": "video/MiniMax_H3",
+      "format": "auto",
+      "codec": "auto",
+      "video": [
+        "132",
+        0
+      ]
+    },
+    "class_type": "SaveVideo",
+    "_meta": {
+      "title": "保存视频"
+    }
+  },
+  "179": {
+    "inputs": {
+      "aspect_ratio": "original",
+      "proportional_width": 1,
+      "proportional_height": 1,
+      "fit": "letterbox",
+      "method": "lanczos",
+      "round_to_multiple": "8",
+      "scale_to_side": "shortest",
+      "scale_to_length": 1024,
+      "background_color": "#000000",
+      "image": [
+        "114",
+        0
+      ]
+    },
+    "class_type": "LayerUtility: ImageScaleByAspectRatio V2",
+    "_meta": {
+      "title": "图层工具：按宽高比缩放 V2"
+    }
+  },
+  "180": {
+    "inputs": {
+      "aspect_ratio": "original",
+      "proportional_width": 1,
+      "proportional_height": 1,
+      "fit": "letterbox",
+      "method": "lanczos",
+      "round_to_multiple": "8",
+      "scale_to_side": "shortest",
+      "scale_to_length": 1024,
+      "background_color": "#000000",
+      "image": [
+        "144",
+        0
+      ]
+    },
+    "class_type": "LayerUtility: ImageScaleByAspectRatio V2",
+    "_meta": {
+      "title": "图层工具：按宽高比缩放 V2"
+    }
+  }
+}

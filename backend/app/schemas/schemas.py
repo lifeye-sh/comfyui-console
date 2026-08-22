@@ -184,6 +184,7 @@ class TaskOut(BaseModel):
     finished_at: Optional[datetime]
     created_at: datetime
     workflow_param_schema: list[dict] = Field(default_factory=list)
+    workflow_name: Optional[str] = None
 
 class TaskExecuteIn(BaseModel):
     params: dict = Field(default_factory=dict)

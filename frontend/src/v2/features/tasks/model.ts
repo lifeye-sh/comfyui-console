@@ -3,6 +3,7 @@ export type TaskItem = {
   params: Record<string, unknown>; status: string; priority: number; node_id: number | null; prompt_id: string | null
   retries: number; error: string | null; started_at: string | null; finished_at: string | null; created_at: string
   workflow_param_schema?: Array<{ key: string; label?: string; type?: string; options?: Array<{label:string;value:unknown}>; options_from?: string }>
+  workflow_name?: string | null
 }
 export type TaskEvent = { id: number; type: string; progress: number; payload: Record<string, unknown>; created_at: string }
 export type TaskOutput = { id: number; filename: string; media_type: 'image' | 'video' | 'audio'; mime: string; thumbUrl?: string; fileUrl?: string; width?: number | null; height?: number | null; duration?: number | null }

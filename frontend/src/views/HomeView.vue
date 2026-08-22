@@ -82,6 +82,15 @@ function formatTime(value: string | null) {
   return Number.isNaN(date.getTime()) ? value : date.toLocaleString()
 }
 
+function copyPrompt(text: string, e: Event) {
+  const target = e.currentTarget as HTMLElement
+  navigator.clipboard?.writeText(text).then(() => {
+    const original = target.textContent
+    target.textContent = '✓'
+    setTimeout(() => { target.textContent = original }, 1500)
+  }).catch(() => {})
+}
+
 function shortDay(value: string) {
   const date = new Date(`${value}T00:00:00`)
   return `${date.getMonth() + 1}/${date.getDate()}`
@@ -208,6 +217,7 @@ onUnmounted(() => {
               <b>#{{ task.id }}</b>
               <span class="type-name">{{ task.generation_type_name }}</span>
               <span class="prompt">{{ task.prompt || '无提示词' }}</span>
+              <button v-if="task.prompt" type="button" class="copy-btn-v1" @click.stop="copyPrompt(task.prompt, $event)">复制</button>
               <time>{{ formatTime(task.created_at) }}</time>
             </div>
             <div v-if="!data.recent_tasks.length" class="empty-state">暂无任务记录</div>
@@ -260,8 +270,8 @@ onUnmounted(() => {
 .status-summary { display: grid; grid-template-columns: repeat(3, 1fr); margin-top: 22px; padding-top: 18px; border-top: 1px solid #eef2f7; }.status-summary div { display: flex; flex-direction: column; align-items: center; }.status-summary b { font-size: 20px; }.status-summary span { font-size: 11px; color: #64748b; }
 .node-list, .recent-list { display: grid; gap: 3px; }.node-row { display: grid; grid-template-columns: 10px 1fr auto auto; gap: 10px; align-items: center; padding: 10px 4px; border-bottom: 1px solid #f1f5f9; }.node-light { width: 9px; height: 9px; border-radius: 50%; }.node-light.online { background: #22c55e; box-shadow: 0 0 0 4px #dcfce7; }.node-light.offline { background: #94a3b8; }.node-row div { display: flex; flex-direction: column; }.node-row small, .capacity { color: #64748b; font-size: 11px; }
 .readiness { display: flex; align-items: center; justify-content: center; gap: 24px; padding: 10px; }.readiness div { display: flex; flex-direction: column; }.readiness b { font-size: 24px; }.readiness span { max-width: 170px; color: #64748b; font-size: 12px; }.workflow-stats { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 8px 0 14px; }.workflow-stats div { padding: 10px; background: #f8fafc; border-radius: 8px; display: flex; justify-content: space-between; }
-.recent-row { display: grid; grid-template-columns: 55px 48px 100px minmax(80px, 1fr) 145px; align-items: center; gap: 8px; padding: 9px 3px; border-bottom: 1px solid #f1f5f9; cursor: pointer; }.recent-row:hover { background: #f8fafc; }.type-name, .recent-row time { color: #64748b; font-size: 12px; }.prompt { overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }.recent-row time { text-align: right; }
+.recent-row { display: grid; grid-template-columns: 55px 48px 100px minmax(80px, 1fr) auto 145px; align-items: center; gap: 8px; padding: 9px 3px; border-bottom: 1px solid #f1f5f9; cursor: pointer; }.recent-row:hover { background: #f8fafc; }.type-name, .recent-row time { color: #64748b; font-size: 12px; }.prompt { overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }.recent-row time { text-align: right; }.copy-btn-v1 { flex-shrink: 0; padding: 1px 6px; font-size: 11px; color: #94a3b8; background: #f1f5f9; border: 1px solid #e2e8f0; border-radius: 4px; cursor: pointer; white-space: nowrap; }.copy-btn-v1:hover { color: #475569; border-color: #cbd5e1; }
 .quick-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 9px; }.quick-grid button { display: grid; grid-template-columns: 34px 1fr; grid-template-rows: auto auto; gap: 1px 9px; text-align: left; border: 1px solid #e5e7eb; border-radius: 10px; padding: 10px; background: #fff; cursor: pointer; }.quick-grid button:hover { border-color: #14b8a6; background: #f0fdfa; }.quick-grid button > span { grid-row: 1 / 3; width: 34px; height: 34px; display: grid; place-items: center; border-radius: 9px; background: #ecfdf5; color: #047857; font-weight: 700; }.quick-grid small { color: #64748b; }.empty-state { padding: 32px; text-align: center; color: #94a3b8; }
 @media (max-width: 1100px) { .metric-grid { grid-template-columns: repeat(2, 1fr); }.dashboard-grid, .dashboard-grid.lower { grid-template-columns: 1fr; } }
-@media (max-width: 640px) { .hero { align-items: flex-start; flex-direction: column; padding: 17px; }.hero h1 { font-size: 23px; }.hero-actions { width: 100%; justify-content: space-between; }.metric-grid { grid-template-columns: 1fr; }.trend-chart { gap: 5px; }.recent-row { grid-template-columns: 55px 45px 1fr; }.recent-row .prompt, .recent-row time { display: none; }.quick-grid { grid-template-columns: 1fr; } }
+@media (max-width: 640px) { .hero { align-items: flex-start; flex-direction: column; padding: 17px; }.hero h1 { font-size: 23px; }.hero-actions { width: 100%; justify-content: space-between; }.metric-grid { grid-template-columns: 1fr; }.trend-chart { gap: 5px; }.recent-row { grid-template-columns: 55px 45px 1fr; }.recent-row .prompt, .recent-row time, .recent-row .copy-btn-v1 { display: none; }.quick-grid { grid-template-columns: 1fr; } }
 </style>

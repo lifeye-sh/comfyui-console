@@ -186,8 +186,8 @@ async def upload_resource(
         return existing
 
     ext = os.path.splitext(file.filename or "")[1] or ""
-    safe_name = (file.filename or f"{sha[:8]}{ext}").replace("/", "_")
-    key = f"resources/{datetime.now(timezone.utc):%Y-%m}/{sha[:8]}/{safe_name}"
+    safe_name = (file.filename or f"{sha[:16]}{ext}").replace("/", "_")
+    key = f"resources/{datetime.now(timezone.utc):%Y-%m}/{sha[:16]}/{safe_name}"
     get_storage().save_bytes(data, key)
 
     mime = file.content_type or "application/octet-stream"

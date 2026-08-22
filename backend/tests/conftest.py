@@ -3,15 +3,32 @@ from __future__ import annotations
 
 import os
 import shutil
-import tempfile
 from pathlib import Path
+from uuid import uuid4
+
+import pytest
 
 
-TEST_DATA_DIR = Path(tempfile.mkdtemp(prefix="comfyui-console-tests-"))
+TEST_TEMP_ROOT = Path(__file__).resolve().parents[1] / ".test-tmp"
+TEST_TEMP_ROOT.mkdir(exist_ok=True)
+TEST_RUN_ID = uuid4().hex
+TEST_DATABASE_PATH = TEST_TEMP_ROOT / f"comfyui-console-tests-{TEST_RUN_ID}.db"
+TEST_STORAGE_PATH = TEST_TEMP_ROOT / f"resources-{TEST_RUN_ID}"
 os.environ["COMFY_CONSOLE_DATABASE_URL"] = (
-    f"sqlite:///{(TEST_DATA_DIR / 'test.db').as_posix()}"
+    f"sqlite:///{TEST_DATABASE_PATH.as_posix()}"
 )
-os.environ["COMFY_CONSOLE_STORAGE_PATH"] = str(TEST_DATA_DIR / "resources")
+os.environ["COMFY_CONSOLE_STORAGE_PATH"] = str(TEST_STORAGE_PATH)
+
+
+@pytest.fixture
+def tmp_path():  # type: ignore[no-untyped-def]
+    """Workspace-local replacement for pytest's sandbox-inaccessible temp path."""
+    path = TEST_TEMP_ROOT / f"case-{uuid4().hex}"
+    path.mkdir()
+    try:
+        yield path
+    finally:
+        shutil.rmtree(path, ignore_errors=True)
 
 
 def pytest_sessionstart(session) -> None:  # type: ignore[no-untyped-def]
@@ -36,4 +53,9 @@ def pytest_sessionfinish(session, exitstatus) -> None:  # type: ignore[no-untype
 
         engine.dispose()
     finally:
-        shutil.rmtree(TEST_DATA_DIR, ignore_errors=True)
+        TEST_DATABASE_PATH.unlink(missing_ok=True)
+        shutil.rmtree(TEST_STORAGE_PATH, ignore_errors=True)
+        try:
+            TEST_TEMP_ROOT.rmdir()
+        except OSError:
+            pass

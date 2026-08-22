@@ -1,0 +1,171 @@
+{
+  "1": {
+    "inputs": {
+      "anything": [
+        "2",
+        0
+      ]
+    },
+    "class_type": "easy cleanGpuUsed",
+    "_meta": {
+      "title": "清理显存占用"
+    }
+  },
+  "2": {
+    "inputs": {
+      "samples": [
+        "11",
+        0
+      ],
+      "vae": [
+        "10",
+        0
+      ]
+    },
+    "class_type": "VAEDecode",
+    "_meta": {
+      "title": "VAE解码"
+    }
+  },
+  "3": {
+    "inputs": {
+      "clean_file_cache": true,
+      "clean_processes": true,
+      "clean_dlls": true,
+      "retry_times": 3,
+      "anything": [
+        "1",
+        0
+      ]
+    },
+    "class_type": "RAMCleanup",
+    "_meta": {
+      "title": "🎈RAM-Cleanup"
+    }
+  },
+  "5": {
+    "inputs": {
+      "conditioning": [
+        "9",
+        0
+      ]
+    },
+    "class_type": "ConditioningZeroOut",
+    "_meta": {
+      "title": "条件零化"
+    }
+  },
+  "6": {
+    "inputs": {
+      "width": 1024,
+      "height": 1024,
+      "batch_size": 1
+    },
+    "class_type": "EmptyLatentImage",
+    "_meta": {
+      "title": "2、Latent图像"
+    }
+  },
+  "7": {
+    "inputs": {
+      "unet_name": "krea2\\Krea2-MuseByStable_v15Turbo_fp8.safetensors",
+      "weight_dtype": "default"
+    },
+    "class_type": "UNETLoader",
+    "_meta": {
+      "title": "UNet加载器"
+    }
+  },
+  "8": {
+    "inputs": {
+      "clip_name": "krea2\\qwen3vl_4b_bf16.safetensors",
+      "type": "krea2",
+      "device": "default"
+    },
+    "class_type": "CLIPLoader",
+    "_meta": {
+      "title": "加载CLIP"
+    }
+  },
+  "9": {
+    "inputs": {
+      "text": "一位年轻成年幻想女性角色，瓷白奶油肌，冷白通透细腻肌肤，皮肤细微肌理与柔和次表面散射清晰可见，皮肉饱满圆润，神态茫然温顺又娇羞，下垂感无辜眼型，浓密柔软睫毛，极淡内眼线，自然纤长睫毛，玻璃水光唇彩，黑棕色头发露出额头，半扎双马尾，发丝轻触脸颊并带有清透光泽，头部与肩颈为视觉中心，被子遮挡身体，只露出肩膀与锁骨，第一人称超近距离视角，一只纤细的手轻触角色脸颊，角色娇羞看向镜头，夸张近景透视，冷调清雅侧逆光，柔和面部轮廓光，奶白光，柔焦，浅景深，背景大光圈极致虚化，电影级柔和胶片颗粒，干净无噪点，OC渲染器质感，PBR物理高精度材质，发丝通透立体，冷白低饱和柔粉色调，超高清游戏CG人像",
+      "clip": [
+        "8",
+        0
+      ]
+    },
+    "class_type": "CLIPTextEncode",
+    "_meta": {
+      "title": "1、CLIP文本编码"
+    }
+  },
+  "10": {
+    "inputs": {
+      "vae_name": "Qwen\\qwen_image_vae.safetensors"
+    },
+    "class_type": "VAELoader",
+    "_meta": {
+      "title": "加载VAE"
+    }
+  },
+  "11": {
+    "inputs": {
+      "seed": 1037473610997883,
+      "steps": 16,
+      "cfg": 1,
+      "sampler_name": "euler_ancestral",
+      "scheduler": "ddim_uniform",
+      "denoise": 1,
+      "model": [
+        "7",
+        0
+      ],
+      "positive": [
+        "12",
+        0
+      ],
+      "negative": [
+        "5",
+        0
+      ],
+      "latent_image": [
+        "6",
+        0
+      ]
+    },
+    "class_type": "KSampler",
+    "_meta": {
+      "title": "K采样器"
+    }
+  },
+  "12": {
+    "inputs": {
+      "preset": "balanced",
+      "per_layer_weights": "1.0,1.0,1.0,1.0,1.0,1.0,1.0,2.5,5.0,1.1,4.0,1.0",
+      "multiplier": 1,
+      "renormalize": true,
+      "conditioning": [
+        "9",
+        0
+      ]
+    },
+    "class_type": "ConditioningKrea2Rebalance",
+    "_meta": {
+      "title": "🎛️ Krea 2 Conditioning Control"
+    }
+  },
+  "15": {
+    "inputs": {
+      "filename_prefix": "Krea2_img",
+      "images": [
+        "2",
+        0
+      ]
+    },
+    "class_type": "SaveImage",
+    "_meta": {
+      "title": "保存图像"
+    }
+  }
+}

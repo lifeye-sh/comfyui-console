@@ -6,6 +6,7 @@ from datetime import datetime
 from fastapi import APIRouter, Depends, HTTPException, status
 
 from app.core.deps import CurrentUser, DBSession
+from app.models import Task, WorkflowVersion, Workflow
 from app.services import task_service
 from app.schemas.schemas import TaskBulkIn, TaskBulkOut, TaskEventOut, TaskExecuteIn, TaskOut
 
@@ -30,7 +31,24 @@ def list_(
         db, status, batch_id, generation_type_id, active, created_from, created_to, limit, offset,
         None if user.role == "admin" else user.id, keyword,
     )
-    return [TaskOut.model_validate(t) for t in items]
+    # 批量查询工作流名称
+    wv_ids = {t.workflow_version_id for t in items if t.workflow_version_id}
+    wv_map: dict[int, str] = {}
+    if wv_ids:
+        rows = (
+            db.query(WorkflowVersion.id, Workflow.name)
+            .join(Workflow, WorkflowVersion.workflow_id == Workflow.id)
+            .filter(WorkflowVersion.id.in_(wv_ids))
+            .all()
+        )
+        wv_map = {wid: name for wid, name in rows}
+    result = []
+    for t in items:
+        out = TaskOut.model_validate(t)
+        if t.workflow_version_id:
+            out.workflow_name = wv_map.get(t.workflow_version_id)
+        result.append(out)
+    return result
 
 
 @router.post("/bulk/action", response_model=TaskBulkOut)
@@ -260,3 +278,102 @@ def get_outputs(tid: int, user: CurrentUser, db: DBSession) -> list[dict]:
                 "duration": r.duration,
             })
     return result
+
+
+@router.post("/{tid}/recheck", response_model=dict)
+def recheck_task(tid: int, user: CurrentUser, db: DBSession) -> dict:
+    """再检查失败任务：重新获取 ComfyUI history，若找到则回收输出；若仍丢失则按文件名规律搜索输出文件。"""
+    import asyncio, hashlib, os
+    from app.models import Node, Resource, TaskResource, GenerationType
+    from app.services.resource_service import build_image_thumbnail, thumbnail_storage_key
+    from app.storage.local_fs import get_storage
+    from app.comfy.client import ComfyUIClient
+
+    t = task_service.get(db, tid)
+    if not t:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "任务不存在")
+    if t.user_id != user.id and user.role != "admin":
+        raise HTTPException(status.HTTP_403_FORBIDDEN, "无权访问")
+    if t.status != "FAILED":
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, "仅失败任务可再检查")
+
+    node = db.get(Node, t.node_id) if t.node_id else None
+    if not node or not t.prompt_id:
+        return {"ok": False, "message": "任务没有关联节点或 Prompt ID，无法再检查", "status": t.status}
+
+    client = ComfyUIClient(node.id, node.base_url, node.ws_url)
+    try:
+        loop = asyncio.new_event_loop()
+        try:
+            # 1. 重新获取 history
+            hist = loop.run_until_complete(client.get_history(t.prompt_id))
+            entry = hist.get(t.prompt_id)
+            if entry:
+                status_info = entry.get("status", {}) or {}
+                if status_info.get("completed"):
+                    from app.queue.dispatcher import dispatcher
+                    loop2 = asyncio.new_event_loop()
+                    try:
+                        loop2.run_until_complete(dispatcher._collect_outputs(db, t, client, entry.get("outputs", {})))
+                        t.status = "SUCCESS"
+                        t.error = None
+                        from datetime import datetime as dt
+                        t.finished_at = dt.now()
+                        db.commit()
+                    finally:
+                        loop2.close()
+                    return {"ok": True, "message": "已找到任务记录并回收输出", "status": "SUCCESS"}
+                if status_info.get("status_str") == "error":
+                    return {"ok": False, "message": "任务确实执行失败", "status": "FAILED"}
+
+            # 2. history 没找到，按文件名规律搜索 ComfyUI 输出目录
+            for prefix in ["", "ComfyUI_"]:
+                for i in range(100):
+                    for ext, mt in [(".png", "image"), (".mp4", "video"), (".jpg", "image")]:
+                        fname = f"{prefix}{i:05d}{ext}"
+                        try:
+                            data = loop.run_until_complete(client.get_view_bytes(fname, type="output"))
+                            if not data or len(data) < 100:
+                                continue
+                            sha = hashlib.sha256(data).hexdigest()
+                            if db.query(Resource).filter(Resource.sha256 == sha, Resource.deleted_at.is_(None)).first():
+                                continue
+                            key = f"resources/{datetime.now():%Y-%m}/{sha[:16]}/{fname}"
+                            get_storage().save_bytes(data, key)
+                            tk = None
+                            if mt == "image":
+                                try:
+                                    td, _, _ = build_image_thumbnail(data)
+                                    tk = thumbnail_storage_key(key)
+                                    get_storage().save_bytes(td, tk)
+                                except Exception:
+                                    pass
+                            from app.services.resource_folder_service import ensure_task_result_folder
+                            gt = db.get(GenerationType, t.generation_type_id) if t.generation_type_id else None
+                            r = Resource(
+                                owner_id=t.user_id,
+                                folder_id=ensure_task_result_folder(db, t.user_id, t.id, gt.name if gt else "未知类型").id if t.user_id else None,
+                                media_type=mt, direction="output", filename=fname,
+                                mime=f"image/{ext[1:]}" if mt == "image" else "video/mp4",
+                                size=len(data), sha256=sha, storage_key=key, thumb_key=tk, visibility="private",
+                            )
+                            db.add(r); db.flush()
+                            db.add(TaskResource(task_id=t.id, resource_id=r.id, role="output"))
+                            t.status = "SUCCESS"; t.error = None
+                            from datetime import datetime as dt
+                            t.finished_at = dt.now()
+                            db.commit()
+                            return {"ok": True, "message": f"通过文件搜索找到输出：{fname}", "status": "SUCCESS"}
+                        except Exception:
+                            continue
+        finally:
+            loop.close()
+    finally:
+        try:
+            loop3 = asyncio.new_event_loop()
+            loop3.run_until_complete(client.aclose())
+            loop3.close()
+        except Exception:
+            pass
+
+    return {"ok": False, "message": "未找到任务记录或输出文件", "status": t.status}

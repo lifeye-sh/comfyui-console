@@ -114,6 +114,13 @@ def execute_with_params(db: Session, t: Task, params: dict) -> Task:
                 executed_params[key] = t.params[key]
             else:
                 executed_params.pop(key, None)
+            # 保留遮罩关联字段（仅 image 类型）
+            if spec.get("type") == "image":
+                mask_key = f"{key}__mask"
+                if mask_key in (t.params or {}):
+                    executed_params[mask_key] = t.params[mask_key]
+                else:
+                    executed_params.pop(mask_key, None)
     if workflow_version and workflow_version.param_schema:
         from app.services import workflow_service
         executed_params, errors = workflow_service.validate_task_params(

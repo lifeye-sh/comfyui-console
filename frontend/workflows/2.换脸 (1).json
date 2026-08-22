@@ -1,0 +1,410 @@
+{
+  "1": {
+    "inputs": {
+      "combined": true,
+      "crop_factor": 2.5,
+      "bbox_fill": false,
+      "drop_size": 10,
+      "contour_fill": false,
+      "mask": [
+        "15",
+        0
+      ]
+    },
+    "class_type": "MaskToSEGS",
+    "_meta": {
+      "title": "MASK to SEGS"
+    }
+  },
+  "2": {
+    "inputs": {
+      "conditioning": [
+        "12",
+        0
+      ]
+    },
+    "class_type": "ConditioningZeroOut",
+    "_meta": {
+      "title": "条件零化"
+    }
+  },
+  "3": {
+    "inputs": {
+      "clip_name": "qwen\\qwen_3_4b.safetensors",
+      "type": "qwen_image",
+      "device": "default"
+    },
+    "class_type": "CLIPLoader",
+    "_meta": {
+      "title": "加载CLIP"
+    }
+  },
+  "4": {
+    "inputs": {
+      "vae_name": "zimage\\ae.safetensors"
+    },
+    "class_type": "VAELoader",
+    "_meta": {
+      "title": "加载VAE"
+    }
+  },
+  "5": {
+    "inputs": {
+      "shift": 3,
+      "model": [
+        "10",
+        0
+      ]
+    },
+    "class_type": "ModelSamplingAuraFlow",
+    "_meta": {
+      "title": "采样算法（AuraFlow）"
+    }
+  },
+  "6": {
+    "inputs": {
+      "anything": [
+        "22",
+        0
+      ]
+    },
+    "class_type": "easy cleanGpuUsed",
+    "_meta": {
+      "title": "清理显存占用"
+    }
+  },
+  "7": {
+    "inputs": {
+      "images": [
+        "8",
+        0
+      ]
+    },
+    "class_type": "PreviewImage",
+    "_meta": {
+      "title": "预览图像"
+    }
+  },
+  "8": {
+    "inputs": {
+      "mask_opacity": 0.41,
+      "mask_color": "255, 0,0",
+      "pass_through": true,
+      "image": [
+        "9",
+        0
+      ],
+      "mask": [
+        "9",
+        1
+      ]
+    },
+    "class_type": "ImageAndMaskPreview",
+    "_meta": {
+      "title": "ImageAndMaskPreview"
+    }
+  },
+  "9": {
+    "inputs": {
+      "invert_mask": false,
+      "detect": "mask_area",
+      "top_reserve": 20,
+      "bottom_reserve": 20,
+      "left_reserve": 20,
+      "right_reserve": 20,
+      "round_to_multiple": "8",
+      "image": [
+        "27",
+        0
+      ],
+      "mask": [
+        "15",
+        0
+      ]
+    },
+    "class_type": "LayerUtility: CropByMask V2",
+    "_meta": {
+      "title": "图层工具：遮罩裁剪 V2"
+    }
+  },
+  "10": {
+    "inputs": {
+      "lora_name": "huolinger\\huolinger2_zimage_lora_v1_000015000.safetensors",
+      "strength_model": 0.85,
+      "model": [
+        "23",
+        0
+      ]
+    },
+    "class_type": "LoraLoaderModelOnly",
+    "_meta": {
+      "title": "LoRA加载器（仅模型）"
+    }
+  },
+  "12": {
+    "inputs": {
+      "text": [
+        "14",
+        0
+      ],
+      "clip": [
+        "3",
+        0
+      ]
+    },
+    "class_type": "CLIPTextEncode",
+    "_meta": {
+      "title": "CLIP文本编码"
+    }
+  },
+  "13": {
+    "inputs": {
+      "text": "面部特写，写实，光线反射，真实的皮肤（可见毛孔），"
+    },
+    "class_type": "CR Text",
+    "_meta": {
+      "title": "文本"
+    }
+  },
+  "14": {
+    "inputs": {
+      "separator": "，",
+      "text1": [
+        "13",
+        0
+      ],
+      "text2": [
+        "24",
+        0
+      ]
+    },
+    "class_type": "CR Text Concatenate",
+    "_meta": {
+      "title": "文本联结"
+    }
+  },
+  "15": {
+    "inputs": {
+      "grow": 20,
+      "blur": 60,
+      "blur_type": "gaussian",
+      "mask": [
+        "44",
+        0
+      ]
+    },
+    "class_type": "INPAINT_ExpandMask",
+    "_meta": {
+      "title": "Expand Mask"
+    }
+  },
+  "17": {
+    "inputs": {
+      "filename_prefix": "Krea2_fix",
+      "images": [
+        "6",
+        0
+      ]
+    },
+    "class_type": "SaveImage",
+    "_meta": {
+      "title": "保存图像"
+    }
+  },
+  "22": {
+    "inputs": {
+      "guide_size": 1024,
+      "guide_size_for": false,
+      "max_size": 1024,
+      "seed": 1054059550609540,
+      "steps": 10,
+      "cfg": 1,
+      "sampler_name": "euler_ancestral",
+      "scheduler": "ddim_uniform",
+      "denoise": 0.7,
+      "feather": 5,
+      "noise_mask": true,
+      "force_inpaint": true,
+      "wildcard": "",
+      "cycle": 5,
+      "inpaint_model": false,
+      "noise_mask_feather": 20,
+      "tiled_encode": false,
+      "tiled_decode": false,
+      "image": [
+        "27",
+        0
+      ],
+      "segs": [
+        "1",
+        0
+      ],
+      "model": [
+        "5",
+        0
+      ],
+      "clip": [
+        "3",
+        0
+      ],
+      "vae": [
+        "4",
+        0
+      ],
+      "positive": [
+        "12",
+        0
+      ],
+      "negative": [
+        "2",
+        0
+      ]
+    },
+    "class_type": "DetailerForEach",
+    "_meta": {
+      "title": "Detailer (SEGS)"
+    }
+  },
+  "23": {
+    "inputs": {
+      "unet_name": "z-image\\ZIT-moodyPornMix_zitV10R1DPO_fp16.safetensors",
+      "weight_dtype": "default"
+    },
+    "class_type": "UNETLoader",
+    "_meta": {
+      "title": "UNet加载器"
+    }
+  },
+  "24": {
+    "inputs": {
+      "text_0": "模特脸部皮肤白皙透亮，呈现出一种水润、饱满的质感，仿佛刚刚敷过面膜或涂抹了高光，脸颊和鼻梁处有明显的光泽感，显得十分精致。她的神态表情略带一丝慵懒与迷离，眼神清澈而专注地凝视着镜头，嘴唇微微嘟起，带着一丝俏皮和诱惑，整体表情柔和而富有感染力。光影反射在她的脸颊、鼻梁和锁骨处尤为明显，像是被柔和的暖光或闪光灯照亮，营造出一种梦幻、柔焦的氛围，增强了皮肤的立体感和光泽度。\n\n她的头发是深棕色的，柔顺且富有光泽，部分头发被编成一条侧边麻花辫垂在肩前，其余的发丝自然散落，几缕碎发轻柔地贴在额前和脸颊旁，增添了几分随性与温柔的气息。整体造型既甜美又带有一丝性感，与她的妆容和表情相得益彰。",
+      "text": [
+        "25",
+        0
+      ]
+    },
+    "class_type": "ShowText|pysssss",
+    "_meta": {
+      "title": "Show Text 🐍"
+    }
+  },
+  "25": {
+    "inputs": {
+      "preset_prompt": "Normal - Describe",
+      "custom_prompt": "一句话描述图片中模特脸部的皮肤、神态表情、光影反射等状态，以及模特头发的状态",
+      "system_prompt": "",
+      "inference_mode": "one by one",
+      "max_frames": 24,
+      "max_size": 256,
+      "seed": 643521742914303,
+      "force_offload": true,
+      "save_states": false,
+      "llama_model": [
+        "26",
+        0
+      ],
+      "images": [
+        "27",
+        0
+      ]
+    },
+    "class_type": "llama_cpp_instruct_adv",
+    "_meta": {
+      "title": "Llama-cpp Instruct"
+    }
+  },
+  "26": {
+    "inputs": {
+      "model": "Qwen3.5-9B-Uncensored-HauhauCS-Aggressive-Q8_0.gguf",
+      "mmproj": "mmproj-Qwen3.5-9B-Uncensored-HauhauCS-Aggressive-BF16.gguf",
+      "chat_handler": "Qwen3.5",
+      "n_ctx": 8192,
+      "vram_limit": -1,
+      "image_min_tokens": 0,
+      "image_max_tokens": 0,
+      "load_mtp": false
+    },
+    "class_type": "llama_cpp_model_loader",
+    "_meta": {
+      "title": "Llama-cpp Model Loader"
+    }
+  },
+  "27": {
+    "inputs": {
+      "image": "krea2_identity_edit_00021_.png"
+    },
+    "class_type": "LoadImage",
+    "_meta": {
+      "title": "加载图像"
+    }
+  },
+  "37": {
+    "inputs": {
+      "images": [
+        "22",
+        0
+      ]
+    },
+    "class_type": "PreviewImage",
+    "_meta": {
+      "title": "预览图像"
+    }
+  },
+  "42": {
+    "inputs": {
+      "images": [
+        "27",
+        0
+      ]
+    },
+    "class_type": "PreviewImage",
+    "_meta": {
+      "title": "预览图像"
+    }
+  },
+  "43": {
+    "inputs": {
+      "ckpt_name": "sam3.1_multiplex_fp16.safetensors"
+    },
+    "class_type": "CheckpointLoaderSimple",
+    "_meta": {
+      "title": "Checkpoint加载器（简易）"
+    }
+  },
+  "44": {
+    "inputs": {
+      "threshold": 0.5,
+      "refine_iterations": 2,
+      "individual_masks": false,
+      "model": [
+        "43",
+        0
+      ],
+      "image": [
+        "27",
+        0
+      ],
+      "conditioning": [
+        "45",
+        0
+      ]
+    },
+    "class_type": "SAM3_Detect",
+    "_meta": {
+      "title": "SAM3 检测"
+    }
+  },
+  "45": {
+    "inputs": {
+      "text": "face",
+      "clip": [
+        "43",
+        1
+      ]
+    },
+    "class_type": "CLIPTextEncode",
+    "_meta": {
+      "title": "CLIP文本编码"
+    }
+  }
+}
