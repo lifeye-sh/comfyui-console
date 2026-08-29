@@ -129,6 +129,7 @@ export type SourceParagraph = { id: number; paragraph_index: number; text: strin
 export type SourceChapter = { id: number; number: number; title: string | null; char_count: number; paragraphs: SourceParagraph[] }
 export type SourceContent = { document: ShortDramaDocument; chapters: SourceChapter[] }
 export type AIProvider = {id:number;name:string;provider:string;base_url:string;model:string;api_key_hint:string;enabled:boolean;is_default:boolean;timeout_seconds:number;max_tokens:number;created_at:string;updated_at:string}
+export type ImageProvider = {id:number;name:string;provider:'gemini_web2api'|'gemini_proxy';base_url:string;model:string;api_key_hint:string;enabled:boolean;is_default:boolean;timeout_seconds:number;max_concurrency:number;created_at:string;updated_at:string}
 export type NovelAnalysis = {id:number;owner_id:number;project_id:number;document_id:number;generation_record_id:number|null;version:number;status:string;chapter_start:number;chapter_end:number;content:Record<string,any>;validation_errors:Array<Record<string,any>>;confirmed_at:string|null;created_at:string;updated_at:string}
 
 export type AdaptationOption = {
@@ -182,7 +183,7 @@ export type WorldCharacter = {
   negative_traits: string[]; source_references: SourceReference[]; reference_resource_ids: number[]
   primary_resource_id: number | null; status: 'draft' | 'confirmed'; variants: CharacterVariant[]; created_at: string; updated_at: string
 }
-export type CharacterVariant = { id: number; owner_id: number; character_id: number; name: string; description: string; wardrobe: string; hairstyle: string; makeup: string; primary_resource_id: number|null; reference_resource_ids: number[]; source_references: SourceReference[]; created_at: string; updated_at: string }
+export type CharacterVariant = { id: number; owner_id: number; character_id: number; name: string; description: string; wardrobe: string; hairstyle: string; makeup: string; primary_resource_id: number|null; reference_resource_ids: number[]; source_references: SourceReference[]; status:'draft'|'confirmed';version:number;is_default:boolean;created_at: string; updated_at: string }
 export type WorldLocation = {
   id: number; owner_id: number; project_id: number; name: string; description: string; spatial_layout: string
   time_weather: string; lighting: string; color_palette: string[]; fixed_objects: string[]
@@ -218,11 +219,16 @@ export type CompiledShotTask = {shot_id:number;generation_type_id:number;generat
 export type ShotTaskLink = {id:number;owner_id:number;shot_id:number;task_id:number;take_id:number|null;purpose:string;status:string;idempotency_key:string;output_payload:Record<string,any>;sync_error:string|null;sync_attempts:number;next_retry_at:string|null;created_at:string;updated_at:string}
 export type DramaTake = {id:number;owner_id:number;shot_id:number;resource_id:number;source_task_id:number|null;take_no:number;status:string;is_selected:boolean;generation_snapshot:Record<string,any>;review_note:string;resource:{id:number;filename:string;media_type:'image'|'video'|'audio';mime:string;width:number|null;height:number|null;duration:number|null;size:number};created_at:string;updated_at:string}
 export type ShotProduction = {shot:DramaShot;tasks:Array<{link:ShotTaskLink;task_status:string;task_error:string|null;generation_type_id:number|null;workflow_version_id:number|null;params:Record<string,any>;created_at:string}>;takes:DramaTake[]}
+export type EpisodeScript = {episode_id:number;project_id:number;title:string;mode:'novel'|'storyboard';text:string;settings:Record<string,any>;script_revision:number;lock_version:number;updated_at:string;diagnostics:{gates:Array<Record<string,any>>;dialogues:Array<Record<string,any>>;suggestions:Array<Record<string,any>>;summary:Record<string,number>;all_rules_are_advisory:boolean}}
+export type ScriptManifest = {id:number;owner_id:number;project_id:number;episode_id:number;version:number;status:string;source_script_revision:number;mode:'novel'|'storyboard';summary:string;total_duration:number;content:{story_summary:string;scenes:Array<Record<string,any>>;characters:Array<Record<string,any>>;locations:Array<Record<string,any>>;props:Array<Record<string,any>>};validation_errors:Array<{severity:'p0'|'p1'|'p2';path:string;message:string;actionable?:boolean;action?:string;action_label?:string;action_payload?:Record<string,any>}>;lock_version:number;confirmed_at:string|null;created_at:string;updated_at:string}
+export type ProjectAssetVersion = {id:number;owner_id:number;project_id:number;entity_type:'character'|'variant'|'location'|'prop';entity_id:number;version:number;resource_id:number|null;source_task_id:number|null;status:string;is_current:boolean;prompt:string;generation_snapshot:Record<string,any>;created_at:string;updated_at:string}
+export type PhaseOneCasting = {characters:WorldCharacter[];locations:WorldLocation[];props:WorldProp[];asset_versions:ProjectAssetVersion[]}
 
 export const shortDramaApi = {
   status: () => http.get('/short-drama/status', { baseURL: '/api/v2' }).then((r) => r.data as ShortDramaStatus),
   projects: (params?: Record<string, unknown>) => http.get('/short-drama/projects', { baseURL: '/api/v2', params }).then((r) => r.data as { items: ShortDramaProjectSummary[]; total: number; page: number; page_size: number }),
   createProject: (body: Record<string, unknown>) => http.post('/short-drama/projects', body, { baseURL: '/api/v2' }).then((r) => r.data as ShortDramaProject),
+  quickCreateProject: (body: Record<string, unknown>) => http.post('/short-drama/projects/quick-create', body, { baseURL: '/api/v2' }).then((r) => r.data as {project:ShortDramaProject;episode_id:number}),
   project: (id: number) => http.get(`/short-drama/projects/${id}`, { baseURL: '/api/v2' }).then((r) => r.data as ShortDramaProject),
   patchProject: (id: number, body: Record<string, unknown>) => http.patch(`/short-drama/projects/${id}`, body, { baseURL: '/api/v2' }).then((r) => r.data as ShortDramaProject),
   deleteProject: (id: number) => http.delete(`/short-drama/projects/${id}`, { baseURL: '/api/v2' }).then((r) => r.data as ShortDramaProject),
@@ -230,6 +236,16 @@ export const shortDramaApi = {
   brief: (id: number) => http.get(`/short-drama/projects/${id}/brief`, { baseURL: '/api/v2' }).then((r) => r.data as ShortDramaBrief),
   saveBrief: (id: number, body: Record<string, unknown>) => http.put(`/short-drama/projects/${id}/brief`, body, { baseURL: '/api/v2' }).then((r) => r.data as ShortDramaBrief),
   overview: (id: number) => http.get(`/short-drama/projects/${id}/overview`, { baseURL: '/api/v2' }).then((r) => r.data as ShortDramaOverview),
+  episodeScript: (projectId:number,episodeId:number) => http.get(`/short-drama/projects/${projectId}/episodes/${episodeId}/script`,{baseURL:'/api/v2'}).then(r=>r.data as EpisodeScript),
+  saveEpisodeScript: (projectId:number,episodeId:number,body:Record<string,unknown>) => http.patch(`/short-drama/projects/${projectId}/episodes/${episodeId}/script`,body,{baseURL:'/api/v2'}).then(r=>r.data as EpisodeScript),
+  generateScriptManifest: (projectId:number,episodeId:number,body:Record<string,unknown>) => http.post(`/short-drama/projects/${projectId}/episodes/${episodeId}/manifests/generate`,body,{baseURL:'/api/v2'}).then(r=>r.data as CreativeJob),
+  scriptManifests: (projectId:number,episodeId:number) => http.get(`/short-drama/projects/${projectId}/episodes/${episodeId}/manifests`,{baseURL:'/api/v2'}).then(r=>r.data as ScriptManifest[]),
+  saveScriptManifest: (projectId:number,episodeId:number,manifestId:number,body:Record<string,unknown>) => http.patch(`/short-drama/projects/${projectId}/episodes/${episodeId}/manifests/${manifestId}`,body,{baseURL:'/api/v2'}).then(r=>r.data as ScriptManifest),
+  confirmScriptManifest: (projectId:number,episodeId:number,manifestId:number) => http.post(`/short-drama/projects/${projectId}/episodes/${episodeId}/manifests/${manifestId}/confirm`,null,{baseURL:'/api/v2'}).then(r=>r.data as ScriptManifest),
+  phaseOneCasting: (projectId:number) => http.get(`/short-drama/projects/${projectId}/casting`,{baseURL:'/api/v2'}).then(r=>r.data as PhaseOneCasting),
+  createProjectAssetVersion: (projectId:number,entityType:string,entityId:number,body:Record<string,unknown>) => http.post(`/short-drama/projects/${projectId}/assets/${entityType}/${entityId}/versions`,body,{baseURL:'/api/v2'}).then(r=>r.data as ProjectAssetVersion),
+  adoptProjectAssetVersion: (projectId:number,versionId:number) => http.post(`/short-drama/projects/${projectId}/asset-versions/${versionId}/adopt`,null,{baseURL:'/api/v2'}).then(r=>r.data as ProjectAssetVersion),
+  bindShotCharacter: (projectId:number,shotId:number,body:Record<string,unknown>) => http.put(`/short-drama/projects/${projectId}/shots/${shotId}/character-binding`,body,{baseURL:'/api/v2'}).then(r=>r.data),
   documents: (id: number) => http.get(`/short-drama/projects/${id}/documents`, { baseURL: '/api/v2' }).then((r) => r.data as ShortDramaDocument[]),
   importDocument: (id: number, file: File, onProgress?: (percent: number) => void) => {
     const body = new FormData()
@@ -250,6 +266,11 @@ export const shortDramaApi = {
   updateAIProvider: (id:number,body:Record<string,unknown>) => http.put(`/short-drama/ai/providers/${id}`,body,{baseURL:'/api/v2'}).then(r=>r.data as AIProvider),
   deleteAIProvider: (id:number) => http.delete(`/short-drama/ai/providers/${id}`,{baseURL:'/api/v2'}),
   testAIProvider: (id:number) => http.post(`/short-drama/ai/providers/${id}/test`,null,{baseURL:'/api/v2'}).then(r=>r.data as {ok:boolean;model:string;latency_ms:number}),
+  // AI 提示词模板管理
+  promptTemplates: (code?:string) => http.get(`/short-drama/ai/prompt-templates`,{baseURL:'/api/v2',params:code?{code}:{}}).then(r=>r.data as Array<{id:number;code:string;name:string;version:number;system_prompt:string;user_prompt:string;enabled:boolean;created_at:string}>),
+  updatePromptTemplate: (id:number,body:Record<string,unknown>) => http.put(`/short-drama/ai/prompt-templates/${id}`,body,{baseURL:'/api/v2'}).then(r=>r.data as {id:number;code:string;name:string;version:number;system_prompt:string;user_prompt:string}),
+  // AI 调用日志
+  aiRecords: (projectId:number,params?:Record<string,unknown>) => http.get(`/short-drama/projects/${projectId}/ai/records`,{baseURL:'/api/v2',params}).then(r=>r.data as Array<{id:number;operation:string;model:string;status:string;input_tokens:number;output_tokens:number;total_tokens:number;estimated_cost:number;duration_ms:number;error:string|null;request_snapshot:Record<string,unknown>;response_snapshot:Record<string,unknown>;created_at:string;finished_at:string|null}>),
   analyzeNovel: (projectId:number,body:Record<string,unknown>) => http.post(`/short-drama/projects/${projectId}/ai/analyze`,body,{baseURL:'/api/v2'}).then(r=>r.data as CreativeJob),
   novelAnalyses: (projectId:number) => http.get(`/short-drama/projects/${projectId}/ai/analyses`,{baseURL:'/api/v2'}).then(r=>r.data as NovelAnalysis[]),
   confirmNovelAnalysis: (projectId:number,analysisId:number) => http.post(`/short-drama/projects/${projectId}/ai/analyses/${analysisId}/confirm`,null,{baseURL:'/api/v2'}).then(r=>r.data as NovelAnalysis),
@@ -303,6 +324,99 @@ export const shortDramaApi = {
   reviewTake: (projectId:number,takeId:number,review_note:string) => http.patch(`/short-drama/projects/${projectId}/takes/${takeId}/review`,{review_note},{baseURL:'/api/v2'}).then(r=>r.data as DramaTake),
   deleteTake: (projectId:number,takeId:number) => http.delete(`/short-drama/projects/${projectId}/takes/${takeId}`,{baseURL:'/api/v2'}),
   regenerateTake: (projectId:number,takeId:number,body:Record<string,unknown>) => http.post(`/short-drama/projects/${projectId}/takes/${takeId}/regenerate`,body,{baseURL:'/api/v2'}).then(r=>r.data as {task_id:number;link:ShotTaskLink}),
+  // ---- V3 导演前期 ----
+  directorWorkflow: (projectId:number) => http.get(`/short-drama/projects/${projectId}/director/workflow-runs`,{baseURL:'/api/v2'}).then(r=>r.data),
+  directorCreateWorkflow: (projectId:number) => http.post(`/short-drama/projects/${projectId}/director/workflow-runs`,null,{baseURL:'/api/v2'}).then(r=>r.data),
+  directorAdvance: (projectId:number,body:Record<string,unknown>) => http.post(`/short-drama/projects/${projectId}/director/workflow-runs/advance`,body,{baseURL:'/api/v2'}).then(r=>r.data),
+  directorSetGate: (projectId:number,step:number,body:Record<string,unknown>) => http.post(`/short-drama/projects/${projectId}/director/workflow-runs/gates/${step}`,body,{baseURL:'/api/v2'}).then(r=>r.data),
+  directorIdentities: (projectId:number) => http.get(`/short-drama/projects/${projectId}/director/stable-identities`,{baseURL:'/api/v2'}).then(r=>r.data),
+  directorAllocateIdentity: (projectId:number,body:Record<string,unknown>) => http.post(`/short-drama/projects/${projectId}/director/stable-identities`,body,{baseURL:'/api/v2'}).then(r=>r.data),
+  directorRetireIdentity: (projectId:number,identityId:number,body:Record<string,unknown>) => http.post(`/short-drama/projects/${projectId}/director/stable-identities/${identityId}/retire`,body,{baseURL:'/api/v2'}).then(r=>r.data),
+  directorSubmitApproval: (projectId:number,body:Record<string,unknown>) => http.post(`/short-drama/projects/${projectId}/director/approvals`,body,{baseURL:'/api/v2'}).then(r=>r.data),
+  directorApprovals: (projectId:number,params?:Record<string,unknown>) => http.get(`/short-drama/projects/${projectId}/director/approvals`,{baseURL:'/api/v2',params}).then(r=>r.data),
+  directorApprove: (projectId:number,approvalId:number,body:Record<string,unknown>) => http.post(`/short-drama/projects/${projectId}/director/approvals/${approvalId}/approve`,body,{baseURL:'/api/v2'}).then(r=>r.data),
+  directorReject: (projectId:number,approvalId:number,body:Record<string,unknown>) => http.post(`/short-drama/projects/${projectId}/director/approvals/${approvalId}/reject`,body,{baseURL:'/api/v2'}).then(r=>r.data),
+  // V3 故事台账
+  directorGenerateLedger: (projectId:number,body:Record<string,unknown>) => http.post(`/short-drama/projects/${projectId}/director/ledgers/generate`,body,{baseURL:'/api/v2'}).then(r=>r.data as CreativeJob),
+  directorLedgers: (projectId:number) => http.get(`/short-drama/projects/${projectId}/director/ledgers`,{baseURL:'/api/v2'}).then(r=>r.data),
+  directorLedgerDetail: (projectId:number,ledgerId:number) => http.get(`/short-drama/projects/${projectId}/director/ledgers/${ledgerId}`,{baseURL:'/api/v2'}).then(r=>r.data),
+  directorApproveLedger: (projectId:number,ledgerId:number) => http.post(`/short-drama/projects/${projectId}/director/ledgers/${ledgerId}/approve`,null,{baseURL:'/api/v2'}).then(r=>r.data),
+  directorCreateDecision: (projectId:number,ledgerId:number,body:Record<string,unknown>) => http.post(`/short-drama/projects/${projectId}/director/ledgers/${ledgerId}/decisions`,body,{baseURL:'/api/v2'}).then(r=>r.data),
+  directorResolveDecision: (projectId:number,decisionId:number,body:Record<string,unknown>) => http.post(`/short-drama/projects/${projectId}/director/ledger-decisions/${decisionId}/resolve`,body,{baseURL:'/api/v2'}).then(r=>r.data),
+  // V3 场景台账
+  directorSyncSceneLedgers: (projectId:number,body:Record<string,unknown>) => http.post(`/short-drama/projects/${projectId}/director/scene-ledgers/sync`,body,{baseURL:'/api/v2'}).then(r=>r.data as {aligned:number;created:number;retired:number}),
+  directorSceneLedgers: (projectId:number) => http.get(`/short-drama/projects/${projectId}/director/scene-ledgers`,{baseURL:'/api/v2'}).then(r=>r.data),
+  directorSceneLedgerDetail: (projectId:number,stableKey:string) => http.get(`/short-drama/projects/${projectId}/director/scene-ledgers/${stableKey}`,{baseURL:'/api/v2'}).then(r=>r.data),
+  directorContinuityFacts: (projectId:number,params?:Record<string,unknown>) => http.get(`/short-drama/projects/${projectId}/director/continuity-facts`,{baseURL:'/api/v2',params}).then(r=>r.data),
+  directorAddContinuityFact: (projectId:number,body:Record<string,unknown>) => http.post(`/short-drama/projects/${projectId}/director/continuity-facts`,body,{baseURL:'/api/v2'}).then(r=>r.data),
+  directorResolveFact: (projectId:number,factId:number,body:Record<string,unknown>) => http.post(`/short-drama/projects/${projectId}/director/continuity-facts/${factId}/resolve`,body,{baseURL:'/api/v2'}).then(r=>r.data),
+  directorTraceCharacter: (projectId:number,characterKey:string) => http.get(`/short-drama/projects/${projectId}/director/characters/${characterKey}/trace`,{baseURL:'/api/v2'}).then(r=>r.data),
+  // V3 风格圣经
+  directorStyleBibles: (projectId:number) => http.get(`/short-drama/projects/${projectId}/director/style-bibles`,{baseURL:'/api/v2'}).then(r=>r.data),
+  directorCreateStyleBible: (projectId:number,body:Record<string,unknown>) => http.post(`/short-drama/projects/${projectId}/director/style-bibles`,body,{baseURL:'/api/v2'}).then(r=>r.data),
+  directorDeriveStyleBible: (projectId:number,body:Record<string,unknown>) => http.post(`/short-drama/projects/${projectId}/director/style-bibles/derive`,body,{baseURL:'/api/v2'}).then(r=>r.data),
+  directorApproveStyleBible: (projectId:number,styleId:number) => http.post(`/short-drama/projects/${projectId}/director/style-bibles/${styleId}/approve`,null,{baseURL:'/api/v2'}).then(r=>r.data),
+  directorCheckpointB: (projectId:number) => http.get(`/short-drama/projects/${projectId}/director/checkpoint-b`,{baseURL:'/api/v2'}).then(r=>r.data as {passed:boolean;reason?:string;style_id?:number;palette_id?:number}),
+  // V3 锚点
+  directorCharacterAnchors: (projectId:number,params?:Record<string,unknown>) => http.get(`/short-drama/projects/${projectId}/director/character-anchors`,{baseURL:'/api/v2',params}).then(r=>r.data),
+  directorCreateCharAnchor: (projectId:number,body:Record<string,unknown>) => http.post(`/short-drama/projects/${projectId}/director/character-anchors`,body,{baseURL:'/api/v2'}).then(r=>r.data),
+  directorApproveCharAnchor: (projectId:number,anchorId:number) => http.post(`/short-drama/projects/${projectId}/director/character-anchors/${anchorId}/approve`,null,{baseURL:'/api/v2'}).then(r=>r.data),
+  directorPropAnchors: (projectId:number,params?:Record<string,unknown>) => http.get(`/short-drama/projects/${projectId}/director/prop-anchors`,{baseURL:'/api/v2',params}).then(r=>r.data),
+  directorCreatePropAnchor: (projectId:number,body:Record<string,unknown>) => http.post(`/short-drama/projects/${projectId}/director/prop-anchors`,body,{baseURL:'/api/v2'}).then(r=>r.data),
+  directorApprovePropAnchor: (projectId:number,anchorId:number) => http.post(`/short-drama/projects/${projectId}/director/prop-anchors/${anchorId}/approve`,null,{baseURL:'/api/v2'}).then(r=>r.data),
+  directorCheckpointC: (projectId:number) => http.get(`/short-drama/projects/${projectId}/director/checkpoint-c`,{baseURL:'/api/v2'}).then(r=>r.data as {passed:boolean;reason:string;character_total:number;character_approved:number;character_pending:number;prop_total:number;prop_approved:number;prop_pending:number}),
+  // V3 空间资产
+  directorSpatialPlans: (projectId:number) => http.get(`/short-drama/projects/${projectId}/director/spatial-plans`,{baseURL:'/api/v2'}).then(r=>r.data),
+  directorCreateSpatialPlan: (projectId:number,body:Record<string,unknown>) => http.post(`/short-drama/projects/${projectId}/director/spatial-plans`,body,{baseURL:'/api/v2'}).then(r=>r.data),
+  directorApproveSpatialPlan: (projectId:number,planId:number) => http.post(`/short-drama/projects/${projectId}/director/spatial-plans/${planId}/approve`,null,{baseURL:'/api/v2'}).then(r=>r.data),
+  directorLocationViews: (projectId:number,planId:number) => http.get(`/short-drama/projects/${projectId}/director/spatial-plans/${planId}/views`,{baseURL:'/api/v2'}).then(r=>r.data),
+  directorCreateLocationView: (projectId:number,planId:number,body:Record<string,unknown>) => http.post(`/short-drama/projects/${projectId}/director/spatial-plans/${planId}/views`,body,{baseURL:'/api/v2'}).then(r=>r.data),
+  directorApproveLocationView: (projectId:number,viewId:number) => http.post(`/short-drama/projects/${projectId}/director/location-views/${viewId}/approve`,null,{baseURL:'/api/v2'}).then(r=>r.data),
+  // V3 依赖图
+  directorBuildDependencyGraph: (projectId:number) => http.post(`/short-drama/projects/${projectId}/director/dependency-graph/build`,null,{baseURL:'/api/v2'}).then(r=>r.data as {ok:boolean;edges:number}),
+  directorDependencies: (projectId:number) => http.get(`/short-drama/projects/${projectId}/director/dependencies`,{baseURL:'/api/v2'}).then(r=>r.data as Array<{id:number;downstream_type:string;downstream_ref:string;upstream_type:string;upstream_ref:string;dependency_type:string}>),
+  // V3 Stale 记录
+  directorStaleRecords: (projectId:number,status?:string) => http.get(`/short-drama/projects/${projectId}/director/stale-records`,{baseURL:'/api/v2',params:{status}}).then(r=>r.data as Array<{id:number;asset_type:string;asset_ref:string;stale_reason:string;detail:string;status:string;resolution:string}>),
+  directorResolveStale: (projectId:number,staleId:number,body:Record<string,unknown>) => http.post(`/short-drama/projects/${projectId}/director/stale-records/${staleId}/resolve`,body,{baseURL:'/api/v2'}).then(r=>r.data),
+  // V3 Manifest
+  directorBuildManifest: (projectId:number,body:Record<string,unknown>) => http.post(`/short-drama/projects/${projectId}/director/manifests`,body,{baseURL:'/api/v2'}).then(r=>r.data),
+  directorManifests: (projectId:number) => http.get(`/short-drama/projects/${projectId}/director/manifests`,{baseURL:'/api/v2'}).then(r=>r.data as Array<Record<string,unknown>>),
+  directorManifestDetail: (projectId:number,manifestId:number) => http.get(`/short-drama/projects/${projectId}/director/manifests/${manifestId}`,{baseURL:'/api/v2'}).then(r=>r.data),
+  directorApproveManifest: (projectId:number,manifestId:number) => http.post(`/short-drama/projects/${projectId}/director/manifests/${manifestId}/approve`,null,{baseURL:'/api/v2'}).then(r=>r.data),
+  // V3 审计
+  directorCreateAuditRun: (projectId:number,body:Record<string,unknown>) => http.post(`/short-drama/projects/${projectId}/director/audit-runs`,body,{baseURL:'/api/v2'}).then(r=>r.data),
+  directorAuditRuns: (projectId:number) => http.get(`/short-drama/projects/${projectId}/director/audit-runs`,{baseURL:'/api/v2'}).then(r=>r.data as Array<Record<string,unknown>>),
+  directorAuditRunDetail: (projectId:number,runId:number) => http.get(`/short-drama/projects/${projectId}/director/audit-runs/${runId}`,{baseURL:'/api/v2'}).then(r=>r.data),
+  directorRunRuleAudit: (projectId:number,runId:number) => http.post(`/short-drama/projects/${projectId}/director/audit-runs/${runId}/run-rules`,null,{baseURL:'/api/v2'}).then(r=>r.data as {ok:boolean;rule_issues:number}),
+  directorRunLLMAudit: (projectId:number,runId:number) => http.post(`/short-drama/projects/${projectId}/director/audit-runs/${runId}/run-llm`,null,{baseURL:'/api/v2'}).then(r=>r.data as {ok:boolean;llm_issues:number}),
+  directorFinishAudit: (projectId:number,runId:number) => http.post(`/short-drama/projects/${projectId}/director/audit-runs/${runId}/finish`,null,{baseURL:'/api/v2'}).then(r=>r.data),
+  directorWaiveIssue: (projectId:number,issueId:number,body:Record<string,unknown>) => http.post(`/short-drama/projects/${projectId}/director/audit-issues/${issueId}/waive`,body,{baseURL:'/api/v2'}).then(r=>r.data),
+  // V3 检测缺口
+  directorDetectedGaps: (projectId:number) => http.get(`/short-drama/projects/${projectId}/director/detected-gaps`,{baseURL:'/api/v2'}).then(r=>r.data as Array<Record<string,unknown>>),
+  // V3 Manifest 编译（第 8 轮）
+  directorCompileManifestPreview: (projectId:number,manifestId:number,body:Record<string,unknown>) => http.post(`/short-drama/projects/${projectId}/director/manifests/${manifestId}/compile-preview`,body,{baseURL:'/api/v2'}).then(r=>r.data as {manifest_id:number;manifest_version:number;intents:Array<Record<string,unknown>>;total:number;error_count:number;ok_count:number}),
+  directorCreateTasksFromManifest: (projectId:number,manifestId:number,body:Record<string,unknown>) => http.post(`/short-drama/projects/${projectId}/director/manifests/${manifestId}/create-tasks`,body,{baseURL:'/api/v2'}).then(r=>r.data as {manifest_id:number;batch_id:number|null;created:number;reused:number;submitted:boolean}),
+  directorManifestTaskLinks: (projectId:number,manifestId:number) => http.get(`/short-drama/projects/${projectId}/director/manifests/${manifestId}/task-links`,{baseURL:'/api/v2'}).then(r=>r.data as Array<{id:number;manifest_item_id:number;asset_stable_key:string|null;task_id:number;task_status:string|null;task_error:string|null;output_resource_id:number|null;take_id:number|null;link_status:string;sync_error:string}>),
+  directorRefreshManifestStatus: (projectId:number,manifestId:number) => http.post(`/short-drama/projects/${projectId}/director/manifests/${manifestId}/refresh-status`,null,{baseURL:'/api/v2'}).then(r=>r.data as {manifest_id:number;changed_items:number;summary:Record<string,unknown>}),
+  // V3 导演对话/建议/提案（第 9 轮）
+  directorContextSnapshot: (projectId:number,purpose:string) => http.get(`/short-drama/projects/${projectId}/director/context-snapshot`,{baseURL:'/api/v2',params:{purpose}}).then(r=>r.data),
+  directorGuidance: (projectId:number) => http.post(`/short-drama/projects/${projectId}/director/guidance`,null,{baseURL:'/api/v2'}).then(r=>r.data as {suggestions:Array<{kind:string;title:string;detail:string;severity:string}>;revision_hash:string}),
+  directorConversations: (projectId:number) => http.get(`/short-drama/projects/${projectId}/director/conversations`,{baseURL:'/api/v2'}).then(r=>r.data as Array<{id:number;title:string;status:string}>),
+  directorCreateConversation: (projectId:number,body:Record<string,unknown>) => http.post(`/short-drama/projects/${projectId}/director/conversations`,body,{baseURL:'/api/v2'}).then(r=>r.data as {id:number;title:string}),
+  directorConversationDetail: (projectId:number,conversationId:number) => http.get(`/short-drama/projects/${projectId}/director/conversations/${conversationId}`,{baseURL:'/api/v2'}).then(r=>r.data as {id:number;title:string;messages:Array<{id:number;role:string;content:string;revision_hash:string;created_at:string}>}),
+  directorSendChat: (projectId:number,conversationId:number,body:Record<string,unknown>) => http.post(`/short-drama/projects/${projectId}/director/conversations/${conversationId}/messages`,body,{baseURL:'/api/v2'}).then(r=>r.data as {id:number;role:string;content:string;revision_hash:string}),
+  directorProposals: (projectId:number,statusFilter?:string) => http.get(`/short-drama/projects/${projectId}/director/action-proposals`,{baseURL:'/api/v2',params:statusFilter?{status_filter:statusFilter}:{}}).then(r=>r.data as Array<{id:number;action_type:string;action_desc:string;target_type:string;target_ref:string;revision_current:boolean;title:string;rationale:string;changes:Array<{field:string;before:string;after:string}>;impact_refs:string[];status:string;apply_error:string;dismissed_reason:string}>),
+  directorGenerateProposals: (projectId:number) => http.post(`/short-drama/projects/${projectId}/director/action-proposals/generate`,null,{baseURL:'/api/v2'}).then(r=>r.data),
+  directorApplyProposal: (projectId:number,proposalId:number) => http.post(`/short-drama/projects/${projectId}/director/action-proposals/${proposalId}/apply`,null,{baseURL:'/api/v2'}).then(r=>r.data),
+  directorDismissProposal: (projectId:number,proposalId:number,body:Record<string,unknown>) => http.post(`/short-drama/projects/${projectId}/director/action-proposals/${proposalId}/dismiss`,body,{baseURL:'/api/v2'}).then(r=>r.data),
+}
+
+export const imageProviderApi = {
+  list: () => http.get('/image-providers', { baseURL: '/api/v2' }).then(r => r.data as ImageProvider[]),
+  create: (body:Record<string,unknown>) => http.post('/image-providers',body,{baseURL:'/api/v2'}).then(r=>r.data as ImageProvider),
+  update: (id:number,body:Record<string,unknown>) => http.put(`/image-providers/${id}`,body,{baseURL:'/api/v2'}).then(r=>r.data as ImageProvider),
+  remove: (id:number) => http.delete(`/image-providers/${id}`,{baseURL:'/api/v2'}).then(r=>r.data),
+  test: (id:number) => http.post(`/image-providers/${id}/test`,null,{baseURL:'/api/v2'}).then(r=>r.data as {ok:boolean;model:string;model_available:boolean;latency_ms:number}),
 }
 
 export const nodeApi = {

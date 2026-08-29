@@ -1,7 +1,12 @@
 """角色、地点、关系与道具设定候选及人工维护。"""
 from __future__ import annotations
 
-from datetime import UTC, datetime
+try:  # Python 3.11+
+    from datetime import UTC  # type: ignore[attr-defined]
+except ImportError:  # Python 3.10 fallback
+    from datetime import timezone as _tz
+    UTC = _tz.utc  # type: ignore[assignment]
+from datetime import datetime
 from itertools import combinations
 import re
 from typing import Any, TypeVar

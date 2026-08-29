@@ -99,7 +99,8 @@ def generation_info(rid: int, user: CurrentUser, db: DBSession) -> dict:
 @router.get("/{rid}/file")
 def get_file(rid: int, user: CurrentUser, db: DBSession):
     r = resource_service.get(db, rid)
-    if not r or r.deleted_at or r.owner_id != user.id:
+    # 允许访问软删除资源（回收站预览）；owner 校验仍保留
+    if not r or r.owner_id != user.id and user.role != "admin":
         raise HTTPException(status.HTTP_404_NOT_FOUND, "资源不存在")
     storage = get_storage()
     if not storage.exists(r.storage_key):
@@ -114,7 +115,8 @@ def get_file(rid: int, user: CurrentUser, db: DBSession):
 @router.get("/{rid}/thumb")
 def get_thumb(rid: int, user: CurrentUser, db: DBSession):
     r = resource_service.get(db, rid)
-    if not r or r.deleted_at or r.owner_id != user.id:
+    # 允许访问软删除资源（回收站预览）；owner 校验仍保留
+    if not r or r.owner_id != user.id and user.role != "admin":
         raise HTTPException(status.HTTP_404_NOT_FOUND, "资源不存在")
     if not resource_service.ensure_thumbnail(db, r):
         raise HTTPException(status.HTTP_404_NOT_FOUND, "缩略图不存在")
@@ -325,8 +327,10 @@ def extract_frames(
             key = f"resources/frames/{sha[:16]}/frame_{i:04d}.jpg"
             get_storage().save_bytes(frame_data, key)
             from app.models import Resource as R, TaskResource
+            from app.services.resource_folder_service import ensure_upload_folder
             frame_r = R(
                 owner_id=user.id,
+                folder_id=ensure_upload_folder(db, user.id).id,
                 media_type="image",
                 direction="output",
                 filename=f"{r.filename}_frame_{i:04d}.jpg",

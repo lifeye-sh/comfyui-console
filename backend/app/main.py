@@ -15,6 +15,7 @@ from app.queue.dispatcher import dispatcher
 from app.short_drama.worker import story_worker
 from app.short_drama.ai_service import seed_prompts
 from app.services import auth_service, generation_type_service, prompt_service, resource_service, resource_folder_service
+from app.services import image_provider_service
 from app.ws.gateway import init_ws
 
 logging.basicConfig(level=20)
@@ -35,6 +36,9 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
         resource_service.repair_resource_media_types(db)
         resource_folder_service.archive_existing(db)
         seed_prompts(db)
+        from app.models import User
+        admin = db.query(User).filter(User.username == settings.admin_username).first()
+        image_provider_service.seed_from_environment(db, admin.id if admin else None)
     finally:
         db.close()
     # 3. 启动调度器
@@ -91,6 +95,8 @@ from app.api.v1 import (  # noqa: E402
 from app.api.v2 import (  # noqa: E402
     generation_type_configs as _v2_generation_type_configs,
     short_drama as _v2_short_drama,
+    short_drama_director as _v2_short_drama_director,
+    image_providers as _v2_image_providers,
 )
 
 api_prefix = "/api/v1"
@@ -113,6 +119,8 @@ app.include_router(_dashboard.router, prefix=api_prefix)
 app.include_router(_runtime.router, prefix=api_prefix)
 app.include_router(_v2_generation_type_configs.router, prefix="/api/v2")
 app.include_router(_v2_short_drama.router, prefix="/api/v2")
+app.include_router(_v2_short_drama_director.router, prefix="/api/v2")
+app.include_router(_v2_image_providers.router, prefix="/api/v2")
 
 
 @app.get("/health", tags=["meta"])

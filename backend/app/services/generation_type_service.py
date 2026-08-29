@@ -89,6 +89,13 @@ DEFAULT_SELECT_OPTIONS: dict[str, list[dict]] = {
         {"label": value, "value": value}
         for value in H3_ASPECT_RATIO_ALIASES.values()
     ],
+    # 工具类参数选项
+    "img2prompt_type": [
+        {"label": "自然描述（适合文生图）", "value": "natural"},
+        {"label": "详细风格（构图/光影）", "value": "detailed"},
+        {"label": "标签化（关键词）", "value": "tags"},
+        {"label": "艺术描述（画家视角）", "value": "artistic"},
+    ],
 }
 
 # 每个类型的固定基础参数模板（ParamSchema 格式）
@@ -147,7 +154,7 @@ PARAM_TEMPLATES: dict[str, list[dict]] = {
     "t2v": [
         {"key": "prompt", "type": "textarea", "label": "正向提示词"},
         {"key": "negative_prompt", "type": "textarea", "label": "负面提示词"},
-        {"key": "duration", "type": "int", "label": "视频时长", "unit": "秒", "default": 5, "min": 1, "max": 600},
+        {"key": "duration", "type": "int", "label": "视频时长（建议单次≤15秒）", "unit": "秒", "default": 5, "min": 1, "max": 600},
         {"key": "width", "type": "select", "label": "宽度", "options_from": "video_width", "default": 480},
         {"key": "height", "type": "select", "label": "高度", "options_from": "video_height", "default": 720},
         {"key": "length", "type": "select", "label": "帧数", "options_from": "video_length", "default": 81},
@@ -157,7 +164,7 @@ PARAM_TEMPLATES: dict[str, list[dict]] = {
     "i2v": [
         {"key": "prompt", "type": "textarea", "label": "正向提示词"},
         {"key": "negative_prompt", "type": "textarea", "label": "负面提示词"},
-        {"key": "duration", "type": "int", "label": "视频时长", "unit": "秒", "default": 5, "min": 1, "max": 600},
+        {"key": "duration", "type": "int", "label": "视频时长（建议单次≤15秒）", "unit": "秒", "default": 5, "min": 1, "max": 600},
         {"key": "input_image", "type": "image", "label": "首帧/参考图"},
         {"key": "width", "type": "select", "label": "宽度", "options_from": "video_width", "default": 480},
         {"key": "height", "type": "select", "label": "高度", "options_from": "video_height", "default": 720},
@@ -168,7 +175,7 @@ PARAM_TEMPLATES: dict[str, list[dict]] = {
     "start_end": [
         {"key": "prompt", "type": "textarea", "label": "转场提示词"},
         {"key": "negative_prompt", "type": "textarea", "label": "负面提示词"},
-        {"key": "duration", "type": "int", "label": "视频时长", "unit": "秒", "default": 5, "min": 1, "max": 600},
+        {"key": "duration", "type": "int", "label": "视频时长（建议单次≤15秒）", "unit": "秒", "default": 5, "min": 1, "max": 600},
         {"key": "first_frame", "type": "image", "label": "首帧"},
         {"key": "last_frame", "type": "image", "label": "尾帧"},
         {"key": "width", "type": "select", "label": "宽度", "options_from": "video_width", "default": 480},
@@ -180,7 +187,7 @@ PARAM_TEMPLATES: dict[str, list[dict]] = {
     "reference": [
         {"key": "prompt", "type": "textarea", "label": "正向提示词"},
         {"key": "negative_prompt", "type": "textarea", "label": "负面提示词"},
-        {"key": "duration", "type": "int", "label": "视频时长", "unit": "秒", "default": 5, "min": 1, "max": 600},
+        {"key": "duration", "type": "int", "label": "视频时长（建议单次≤15秒）", "unit": "秒", "default": 5, "min": 1, "max": 600},
         {"key": "ref_image", "type": "image", "label": "参考图"},
         {"key": "ref_video", "type": "video", "label": "参考视频"},
         {"key": "width", "type": "select", "label": "宽度", "options_from": "video_width", "default": 480},
@@ -191,7 +198,7 @@ PARAM_TEMPLATES: dict[str, list[dict]] = {
     ],
     "digital_human": [
         {"key": "prompt", "type": "textarea", "label": "正向提示词"},
-        {"key": "duration", "type": "int", "label": "视频时长", "unit": "秒", "default": 5, "min": 1, "max": 600},
+        {"key": "duration", "type": "int", "label": "视频时长（建议单次≤15秒）", "unit": "秒", "default": 5, "min": 1, "max": 600},
         {"key": "ref_image", "type": "image", "label": "参考人物图"},
         {"key": "ref_video", "type": "video", "label": "参考视频"},
         {"key": "audio_1", "type": "audio", "label": "音频1"},
@@ -235,7 +242,7 @@ PARAM_TEMPLATES: dict[str, list[dict]] = {
         {"key": "reference_image_5", "type": "image", "label": "多参图5"},
     ],
     "person_replace": [
-        {"key": "duration", "type": "int", "label": "视频时长", "unit": "秒", "default": 5, "min": 1, "max": 600},
+        {"key": "duration", "type": "int", "label": "视频时长（建议单次≤15秒）", "unit": "秒", "default": 5, "min": 1, "max": 600},
         {"key": "source_video", "type": "video", "label": "原始视频", "required": True},
         {"key": "target_image", "type": "image", "label": "目标人物图", "required": True},
         {"key": "prompt", "type": "textarea", "label": "替换要求"},
@@ -283,6 +290,42 @@ PARAM_TEMPLATES: dict[str, list[dict]] = {
         {"key": "sample_rate", "type": "int", "label": "采样率", "default": 44100},
         {"key": "seed", "type": "seed", "label": "随机种子", "random": True},
     ],
+    # 工具类（不归入 image/video/audio 分组）：图片反推和中英互译
+    "img2prompt": [
+        {"key": "input_image", "type": "image", "label": "输入图片", "required": True, "group": "media", "media_order": 1},
+        {"key": "prompt_type", "type": "select", "label": "提示词类型", "options_from": "img2prompt_type", "default": "natural"},
+        {"key": "max_length", "type": "int", "label": "最大长度", "default": 200, "min": 50, "max": 500},
+        {"key": "language", "type": "select", "label": "输出语言", "options": [
+            {"label": "中文", "value": "zh"},
+            {"label": "英文", "value": "en"},
+        ], "default": "zh"},
+        {"key": "seed", "type": "seed", "label": "随机种子", "default": 0},
+    ],
+    "translate": [
+        {"key": "input_text", "type": "textarea", "label": "输入文本", "required": True, "default": ""},
+        {"key": "source_lang", "type": "select", "label": "源语言", "options": [
+            {"label": "自动检测", "value": "auto"},
+            {"label": "中文", "value": "zh"},
+            {"label": "英文", "value": "en"},
+            {"label": "日文", "value": "ja"},
+            {"label": "韩文", "value": "ko"},
+            {"label": "法语", "value": "fr"},
+        ], "default": "auto"},
+        {"key": "target_lang", "type": "select", "label": "目标语言", "options": [
+            {"label": "中文", "value": "zh"},
+            {"label": "英文", "value": "en"},
+            {"label": "日文", "value": "ja"},
+            {"label": "韩文", "value": "ko"},
+            {"label": "法语", "value": "fr"},
+        ], "default": "en"},
+        {"key": "domain", "type": "select", "label": "领域", "options": [
+            {"label": "通用", "value": "general"},
+            {"label": "影视/短剧", "value": "drama"},
+            {"label": "电商", "value": "ecommerce"},
+            {"label": "技术文档", "value": "tech"},
+        ], "default": "general"},
+        {"key": "preserve_format", "type": "bool", "label": "保留格式/换行", "default": True},
+    ],
 }
 
 BUILTIN_TYPES = [
@@ -301,6 +344,8 @@ BUILTIN_TYPES = [
     ("audio", "tts", "文生语音", 30),
     ("audio", "music", "音乐生成", 31),
     ("audio", "convert", "音频转换", 32),
+    ("tool", "img2prompt", "图片反推", 40),
+    ("tool", "translate", "中英互译", 41),
 ]
 
 # 选择项维护 key 的标签（供前端设置页显示）
@@ -635,7 +680,7 @@ def menu_tree(db: Session) -> dict:
         if t.media_type == "video" and t.code != "motion_transfer" and not any(p.get("key") == "duration" for p in param_schema):
             param_schema = [
                 *param_schema,
-                {"key": "duration", "type": "int", "label": "视频时长", "unit": "秒", "default": 5, "min": 1, "max": 600},
+                {"key": "duration", "type": "int", "label": "视频时长（建议单次≤15秒）", "unit": "秒", "default": 5, "min": 1, "max": 600},
             ]
         # 把 options_from 解析成实际 options
         resolved = []

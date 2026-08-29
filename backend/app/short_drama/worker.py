@@ -3,7 +3,12 @@ from __future__ import annotations
 
 import asyncio
 import logging
-from datetime import UTC, datetime, timedelta
+try:  # Python 3.11+
+    from datetime import UTC  # type: ignore[attr-defined]
+except ImportError:  # Python 3.10 fallback
+    from datetime import timezone as _tz
+    UTC = _tz.utc  # type: ignore[assignment]
+from datetime import datetime, timedelta
 
 from sqlalchemy.orm import Session
 
@@ -14,7 +19,7 @@ from app.short_drama.parsers import ParserError, parse_document
 from app.storage.local_fs import get_storage
 
 logger = logging.getLogger(__name__)
-SUPPORTED_JOB_TYPES = ("parse_document", "analyze_novel", "generate_adaptation", "generate_episode_screenplay")
+SUPPORTED_JOB_TYPES = ("parse_document", "analyze_novel", "generate_adaptation", "generate_episode_screenplay", "generate_script_manifest", "director_story_ledger")
 
 
 def _now() -> datetime:

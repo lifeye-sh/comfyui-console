@@ -1,7 +1,13 @@
 """Scene-to-shot suggestions and manually controlled storyboard editing."""
 from __future__ import annotations
 
-from datetime import UTC, datetime
+try:  # Python 3.11+
+    from datetime import UTC  # type: ignore[attr-defined]
+except ImportError:  # Python 3.10 fallback
+    from datetime import timezone as _tz
+    UTC = _tz.utc  # type: ignore[assignment]
+from datetime import datetime
+from math import ceil
 from typing import Any
 
 from sqlalchemy import func
@@ -69,20 +75,41 @@ def _duration_target(db: Session, scene: Scene) -> float:
     return max(1.0, float(episode.target_duration if episode else 60) / scene_count)
 
 
+def _director_scene_profile(elements: list[dict[str, Any]]) -> dict[str, Any]:
+    text = "\n".join(str(item.get("text") or "") for item in elements)
+    dialogue_count = sum(1 for item in elements if item.get("type") == "dialogue")
+    action_hits = sum(text.count(word) for word in ("打", "追", "冲", "砍", "爆炸", "闪避", "撞", "飞", "杀"))
+    scene_type = "action" if action_hits >= 2 else "dialogue" if dialogue_count >= max(1, len(elements) / 2) else "mixed"
+    intensity = "R3" if action_hits >= 6 else "R2" if action_hits >= 3 else "R1"
+    reason = {"action": "动作/受力词密度较高，建议优先保证空间轴线和动作因果。", "dialogue": "对白占比高，建议用正反打、反应镜头和微表情承载潜台词。", "mixed": "动作与对白并存，建议按信息变化点切镜。"}[scene_type]
+    return {"scene_type": scene_type, "action_intensity": intensity if scene_type == "action" else None,
+            "classification_reason": reason, "advisory_only": True}
+
+
 def create_candidate(db: Session, owner_id: int, project_id: int, scene_id: int, version_id: int | None) -> StoryboardCandidate:
     project_service.owned_project(db, owner_id, project_id); scene = _owned_scene(db, owner_id, project_id, scene_id); version = _version(db, owner_id, project_id, version_id)
     source = _snapshot_scene(scene, version); elements = list(source.get("elements") or [])
     if not elements:
         elements = [{"type": "action", "text": source.get("content") or source.get("heading") or "场景建立"}]
-    target = _duration_target(db, scene); count = len(elements); base_duration = round(target / count, 2)
+    target = _duration_target(db, scene)
+    profile = _director_scene_profile(elements)
+    count = (15 if len(elements) >= 15 else 14) if abs(target - 180) < 0.1 else max(len(elements), ceil(target / 15))
+    base_duration = round(target / count, 2)
     names = {item.name: item.id for item in db.query(Character).filter(Character.owner_id == owner_id, Character.project_id == project_id).all()}
     props = db.query(Prop).filter(Prop.owner_id == owner_id, Prop.project_id == project_id).all()
     sizes = ("全景", "中景", "近景", "特写")
     shots: list[dict[str, Any]] = []
-    for index, element in enumerate(elements):
-        text = str(element.get("text", "")).strip(); element_type = element.get("type", "action")
-        speaker = str(element.get("speaker", "")).strip(); character_ids = [names[speaker]] if speaker in names else list(source.get("character_ids") or scene.character_ids or [])
+    for index in range(count):
+        start = min(len(elements) - 1, index * len(elements) // count)
+        end = min(len(elements), max(start + 1, (index + 1) * len(elements) // count))
+        group = elements[start:end]
+        text = "\n".join(str(item.get("text", "")).strip() for item in group if str(item.get("text", "")).strip())
+        element_type = "dialogue" if group and all(item.get("type") == "dialogue" for item in group) else "action"
+        speakers = [str(item.get("speaker", "")).strip() for item in group if str(item.get("speaker", "")).strip()]
+        speaker = "、".join(dict.fromkeys(speakers))
+        character_ids = sorted({names[value] for value in speakers if value in names}) or list(source.get("character_ids") or scene.character_ids or [])
         prop_ids = [item.id for item in props if item.name and item.name in text]
+        shot_jobs = ["推进动作" if element_type != "dialogue" else "改变情绪", "施加压力"]
         shots.append({
             "purpose": "推进对白" if element_type == "dialogue" else "呈现场景动作",
             "visual_description": text, "action": text if element_type != "dialogue" else "", "expression": "",
@@ -92,14 +119,17 @@ def create_candidate(db: Session, owner_id: int, project_id: int, scene_id: int,
             "composition": "主体居中", "transition": "切", "duration": base_duration,
             "first_frame_resource_id": None, "last_frame_resource_id": None, "pose_resource_id": None,
             "reference_video_resource_id": None, "reference_audio_resource_id": None, "reference_resource_ids": [],
-            "status": "draft", "production_settings": {},
+            "status": "draft", "production_settings": {"director_profile": profile, "shot_jobs": shot_jobs,
+                "selection_reason": "按场景信息变化与视频单组建议时长拆分", "eye_trace": {"in": "继承上一镜主体视觉落点", "out": "落在下一镜关键信息区域"},
+                "micro_expression_timeline": ({"0-30%": "接收信息", "30-70%": "压抑或处理反应", "70-100%": "泄露真实态度"} if element_type == "dialogue" else {}),
+                "rules_are_advisory": True},
         })
     if shots: shots[-1]["duration"] = round(target - sum(item["duration"] for item in shots[:-1]), 2)
     warnings: list[dict[str, Any]] = []
     existing_ready = db.query(func.count(Shot.id)).filter(Shot.scene_id == scene.id, Shot.status == "ready").scalar() or 0
     if existing_ready: warnings.append({"code": "confirmed_preserved", "message": f"重新拆镜时将保留 {existing_ready} 个已确认镜头"})
     if abs(sum(item["duration"] for item in shots) - target) > 0.1: warnings.append({"code": "duration_mismatch", "message": "镜头总时长与场景目标时长不一致"})
-    candidate = StoryboardCandidate(owner_id=owner_id, project_id=project_id, scene_id=scene.id, story_version_id=version.id, status="pending", payload={"shots": shots, "target_duration": target, "existing_shots": db.query(func.count(Shot.id)).filter(Shot.scene_id == scene.id).scalar() or 0}, validation_warnings=warnings)
+    candidate = StoryboardCandidate(owner_id=owner_id, project_id=project_id, scene_id=scene.id, story_version_id=version.id, status="pending", payload={"shots": shots, "target_duration": target, "existing_shots": db.query(func.count(Shot.id)).filter(Shot.scene_id == scene.id).scalar() or 0, "director_profile": profile}, validation_warnings=warnings)
     db.add(candidate); _audit(db, owner_id, "short_drama.storyboard.preview", project_id, f"scene={scene.id};version={version.id}"); db.commit(); db.refresh(candidate); return candidate
 
 
@@ -182,9 +212,10 @@ def merge_shots(db: Session, owner_id: int, project_id: int, shot_ids: list[int]
     items = [_owned_shot(db, owner_id, project_id, item_id) for item_id in dict.fromkeys(shot_ids)]
     if len(items) < 2 or len({item.scene_id for item in items}) != 1: raise StoryboardValidationError("只能合并同一场景中的多个镜头")
     items.sort(key=lambda item: item.sort_order); first = items[0]
+    merged_duration = round(sum(item.duration for item in items), 2)
     first.visual_description = "\n".join(filter(None, (item.visual_description for item in items)))
     first.action = "\n".join(filter(None, (item.action for item in items))); first.dialogue = "\n".join(filter(None, (item.dialogue for item in items)))
-    first.duration = round(sum(item.duration for item in items), 2); first.character_ids = sorted({value for item in items for value in (item.character_ids or [])}); first.prop_ids = sorted({value for item in items for value in (item.prop_ids or [])}); first.status = "draft"; first.lock_version += 1
+    first.duration = merged_duration; first.character_ids = sorted({value for item in items for value in (item.character_ids or [])}); first.prop_ids = sorted({value for item in items for value in (item.prop_ids or [])}); first.status = "draft"; first.lock_version += 1
     for item in items[1:]: db.delete(item)
     db.flush(); _renumber(db, first.scene_id); db.commit(); db.refresh(first); return first
 

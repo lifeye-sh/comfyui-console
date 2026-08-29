@@ -88,6 +88,10 @@ class Episode(Base, TimestampMixin):
     sort_order: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
     status: Mapped[str] = mapped_column(String(24), default="draft", nullable=False, index=True)
     lock_version: Mapped[int] = mapped_column(Integer, default=1, nullable=False)
+    script_mode: Mapped[str] = mapped_column(String(24), default="novel", nullable=False)
+    script_text: Mapped[str] = mapped_column(Text, default="", nullable=False)
+    script_settings: Mapped[dict[str, Any]] = mapped_column(JSON, default=dict, nullable=False)
+    script_revision: Mapped[int] = mapped_column(Integer, default=1, nullable=False)
 
     project: Mapped["ShortDramaProject"] = relationship(back_populates="episodes")
     scenes: Mapped[list["Scene"]] = relationship(back_populates="episode", order_by="Scene.sort_order")
@@ -285,6 +289,9 @@ class CharacterVariant(Base, TimestampMixin):
     )
     reference_resource_ids: Mapped[list[int]] = mapped_column(JSON, default=list, nullable=False)
     source_references: Mapped[list[dict[str, Any]]] = mapped_column(JSON, default=list, nullable=False)
+    status: Mapped[str] = mapped_column(String(24), default="draft", nullable=False)
+    version: Mapped[int] = mapped_column(Integer, default=1, nullable=False)
+    is_default: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
 
     character: Mapped["Character"] = relationship(back_populates="variants")
 
@@ -339,6 +346,64 @@ class Prop(Base, TimestampMixin):
     )
 
     project: Mapped["ShortDramaProject"] = relationship(back_populates="props")
+
+
+class ScriptManifestVersion(Base, TimestampMixin):
+    """BigBanana 拍摄清单候选；确认前不改写场景和镜头。"""
+    __tablename__ = "script_manifest_versions"
+    __table_args__ = (
+        UniqueConstraint("episode_id", "version", name="uq_script_manifest_episode_version"),
+        Index("ix_script_manifest_episode_status", "episode_id", "status"),
+    )
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    owner_id: Mapped[int] = mapped_column(Integer, ForeignKey("users.id"), nullable=False, index=True)
+    project_id: Mapped[int] = mapped_column(Integer, ForeignKey("short_drama_projects.id", ondelete="CASCADE"), nullable=False, index=True)
+    episode_id: Mapped[int] = mapped_column(Integer, ForeignKey("drama_episodes.id", ondelete="CASCADE"), nullable=False, index=True)
+    version: Mapped[int] = mapped_column(Integer, nullable=False)
+    status: Mapped[str] = mapped_column(String(24), default="draft", nullable=False)
+    source_script_revision: Mapped[int] = mapped_column(Integer, nullable=False)
+    mode: Mapped[str] = mapped_column(String(24), default="novel", nullable=False)
+    summary: Mapped[str] = mapped_column(Text, default="", nullable=False)
+    total_duration: Mapped[float] = mapped_column(Float, default=0, nullable=False)
+    content: Mapped[dict[str, Any]] = mapped_column(JSON, default=dict, nullable=False)
+    validation_errors: Mapped[list[dict[str, Any]]] = mapped_column(JSON, default=list, nullable=False)
+    lock_version: Mapped[int] = mapped_column(Integer, default=1, nullable=False)
+    confirmed_at: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
+
+
+class ProjectAssetVersion(Base, TimestampMixin):
+    """角色、服装、场景、道具统一素材版本，resource 指向现有素材库。"""
+    __tablename__ = "project_asset_versions"
+    __table_args__ = (
+        UniqueConstraint("entity_type", "entity_id", "version", name="uq_project_asset_entity_version"),
+        Index("ix_project_asset_project_entity", "project_id", "entity_type", "entity_id"),
+    )
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    owner_id: Mapped[int] = mapped_column(Integer, ForeignKey("users.id"), nullable=False, index=True)
+    project_id: Mapped[int] = mapped_column(Integer, ForeignKey("short_drama_projects.id", ondelete="CASCADE"), nullable=False, index=True)
+    entity_type: Mapped[str] = mapped_column(String(24), nullable=False)
+    entity_id: Mapped[int] = mapped_column(Integer, nullable=False)
+    version: Mapped[int] = mapped_column(Integer, nullable=False)
+    resource_id: Mapped[Optional[int]] = mapped_column(Integer, ForeignKey("resources.id", ondelete="SET NULL"), nullable=True)
+    source_task_id: Mapped[Optional[int]] = mapped_column(Integer, ForeignKey("tasks.id", ondelete="SET NULL"), nullable=True)
+    status: Mapped[str] = mapped_column(String(24), default="draft", nullable=False)
+    is_current: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
+    prompt: Mapped[str] = mapped_column(Text, default="", nullable=False)
+    generation_snapshot: Mapped[dict[str, Any]] = mapped_column(JSON, default=dict, nullable=False)
+
+
+class ShotCharacterBinding(Base, TimestampMixin):
+    __tablename__ = "shot_character_bindings"
+    __table_args__ = (UniqueConstraint("shot_id", "character_id", name="uq_shot_character_binding"),)
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    owner_id: Mapped[int] = mapped_column(Integer, ForeignKey("users.id"), nullable=False, index=True)
+    shot_id: Mapped[int] = mapped_column(Integer, ForeignKey("drama_shots.id", ondelete="CASCADE"), nullable=False, index=True)
+    character_id: Mapped[int] = mapped_column(Integer, ForeignKey("drama_characters.id", ondelete="CASCADE"), nullable=False)
+    variant_id: Mapped[Optional[int]] = mapped_column(Integer, ForeignKey("character_variants.id", ondelete="SET NULL"), nullable=True)
+    inheritance_source: Mapped[str] = mapped_column(String(24), default="character_default", nullable=False)
 
 
 class CharacterRelationship(Base, TimestampMixin):

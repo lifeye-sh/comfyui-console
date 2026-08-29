@@ -8,7 +8,7 @@ from typing import Optional
 
 from sqlalchemy.orm import Session
 
-from app.models import Batch, GenerationType, Resource, Task, Workflow, WorkflowVersion
+from app.models import Batch, GenerationType, ImageProviderConfig, Resource, Task, Workflow, WorkflowVersion
 from app.schemas.schemas import BatchCreateIn, BatchRowIn
 from app.services import workflow_service
 
@@ -127,6 +127,37 @@ def submit_batch(db: Session, batch: Batch) -> dict:
     for t in batch.tasks:
         if t.status != "DRAFT":
             continue
+        if (t.params or {}).get("__execution_provider") == "gemini_image":
+            provider_id = int((t.params or {}).get("__provider_config_id") or 0)
+            image_provider = db.get(ImageProviderConfig, provider_id)
+            generation_type = db.get(GenerationType, t.generation_type_id or batch.generation_type_id) if (t.generation_type_id or batch.generation_type_id) else None
+            if not image_provider or not image_provider.enabled:
+                t.error = "Gemini Image 提供方不存在或已停用"
+                invalid += 1
+                continue
+            if not generation_type or generation_type.code != "mixed":
+                t.error = "Gemini Image 只允许用于混合生图"
+                invalid += 1
+                continue
+            if not str((t.params or {}).get("prompt") or "").strip():
+                t.error = "请填写图片提示词"
+                invalid += 1
+                continue
+            reference_ids = (t.params or {}).get("reference_resource_ids") or []
+            if not isinstance(reference_ids, list):
+                reference_ids = [reference_ids]
+                t.params = {**(t.params or {}), "reference_resource_ids": reference_ids}
+            invalid_reference = next((rid for rid in reference_ids if not db.get(Resource, int(rid))), None)
+            if invalid_reference is not None:
+                t.error = f"参考图片不存在：#{invalid_reference}"
+                invalid += 1
+                continue
+            t.config_version_id = generation_type.published_config_version_id
+            t.workflow_version_id = None
+            t.status = "PENDING"
+            t.error = None
+            enqueued += 1
+            continue
         wv = _resolve_workflow_version(db, batch, t)
         if not wv:
             t.error = "未配置可用工作流"
@@ -135,9 +166,12 @@ def submit_batch(db: Session, batch: Batch) -> dict:
         t.workflow_version_id = wv
         version = db.get(WorkflowVersion, wv)
         if version and version.param_schema:
+            reserved_context = (t.params or {}).get("__asset_context")
             clean_params, validation_errors = workflow_service.validate_task_params(
                 db, version, t.params or {}, t.user_id
             )
+            if isinstance(reserved_context, dict):
+                clean_params["__asset_context"] = reserved_context
         elif version:
             # Legacy workflow versions may not have a schema snapshot yet.
             clean_params, validation_errors = dict(t.params or {}), []

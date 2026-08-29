@@ -1,5 +1,7 @@
 let ws: WebSocket | null = null
 let reconnectTimer: number | null = null
+let currentToken: string | null = null
+const subscribedProjects = new Set<number>()
 
 const handlers = new Set<(e: any) => void>()
 
@@ -25,12 +27,40 @@ function notifyTaskComplete(taskId: number, type: string) {
   }
 }
 
+function sendRaw(msg: Record<string, unknown>) {
+  if (ws && ws.readyState === WebSocket.OPEN) {
+    ws.send(JSON.stringify(msg))
+  }
+}
+
+/** 订阅项目导演频道（服务端校验归属，越权订阅会被拒绝） */
+export function subscribeDirector(projectId: number) {
+  subscribedProjects.add(projectId)
+  sendRaw({ type: 'subscribe', project_id: projectId })
+}
+
+export function unsubscribeDirector(projectId: number) {
+  subscribedProjects.delete(projectId)
+  sendRaw({ type: 'unsubscribe', project_id: projectId })
+}
+
 export function connectWs() {
   const token = localStorage.getItem('cc_access_token')
-  if (!token || ws) return
+  if (!token || ws) {
+    currentToken = token
+    return
+  }
+  currentToken = token
 
   const protocol = location.protocol === 'https:' ? 'wss' : 'ws'
   ws = new WebSocket(`${protocol}://${location.host}/ws/events?token=${encodeURIComponent(token)}`)
+
+  ws.onopen = () => {
+    // 重连后恢复项目订阅
+    for (const projectId of subscribedProjects) {
+      sendRaw({ type: 'subscribe', project_id: projectId })
+    }
+  }
 
   ws.onmessage = (event) => {
     try {
@@ -60,6 +90,7 @@ export function disconnectWs() {
     clearTimeout(reconnectTimer)
     reconnectTimer = null
   }
+  subscribedProjects.clear()
   ws?.close()
   ws = null
 }

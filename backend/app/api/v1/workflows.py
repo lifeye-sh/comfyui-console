@@ -163,6 +163,7 @@ def get_version_detail(workflow_id: int, version_id: int, user: CurrentUser, db:
         "api_json": v.api_json,
         "param_schema": v.param_schema or [],
         "output_mapping": v.output_mapping or {},
+        "text_output_config": v.text_output_config or {},
         "nodes": auto["nodes"],
     }
 
@@ -185,6 +186,8 @@ def update_version(
         v.output_mapping = body["output_mapping"]
     if "api_json" in body:
         v.api_json = body["api_json"]
+    if "text_output_config" in body:
+        v.text_output_config = body["text_output_config"]
     db.commit()
     db.refresh(v)
     return {"ok": True, "id": v.id}

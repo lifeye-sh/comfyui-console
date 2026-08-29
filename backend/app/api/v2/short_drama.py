@@ -1,7 +1,9 @@
 """V2.1 AI 短剧模块入口。"""
 from __future__ import annotations
 
-from typing import Literal, TypedDict
+from typing import Literal
+
+from typing_extensions import TypedDict
 
 from fastapi import APIRouter, File, HTTPException, Query, UploadFile, status
 
@@ -47,10 +49,14 @@ from app.schemas.short_drama import (
     CompiledShotTaskOut, ShotProductionCompileIn, ShotProductionCreateIn,
     ShotProductionCreateOut, ShotProductionOut, ShotTaskLinkOut, TakeOut,
     TakeRegenerateIn, TakeReviewIn,
-    AIAdaptationIn, AIProviderInput, AIProviderOut, EpisodeAIGenerateIn, NovelAnalyzeIn, NovelAnalysisOut,
+    AIAdaptationIn, AIGenerationRecordOut, AIProviderInput, AIProviderOut, AIPromptTemplateOut, AIPromptTemplateUpdateIn, EpisodeAIGenerateIn, NovelAnalyzeIn, NovelAnalysisOut,
     ScreenplayRevisionCandidateOut,
+    ProjectQuickCreateIn, ProjectQuickCreateOut, EpisodeScriptPatchIn, EpisodeScriptOut,
+    ScriptManifestGenerateIn, ScriptManifestPatchIn, ScriptManifestOut,
+    PhaseOneCastingOut, ProjectAssetVersionCreateIn, ProjectAssetVersionOut,
+    ShotCharacterBindingIn, ShotCharacterBindingOut,
 )
-from app.short_drama import ai_service, document_service, production_service, project_service, screenplay_service, storyboard_service, world_service
+from app.short_drama import ai_service, document_service, phase1_service, production_service, project_service, screenplay_service, storyboard_service, world_service
 
 router = APIRouter(prefix="/short-drama", tags=["v2-short-drama"])
 
@@ -138,6 +144,13 @@ def create_project(body: ProjectCreateIn, user: CurrentUser, db: DBSession) -> P
     return ProjectOut.model_validate(project_service.create_project(db, user.id, body))
 
 
+@router.post("/projects/quick-create", response_model=ProjectQuickCreateOut, status_code=status.HTTP_201_CREATED)
+def quick_create_project(body: ProjectQuickCreateIn, user: CurrentUser, db: DBSession) -> ProjectQuickCreateOut:
+    _require_enabled()
+    project, episode = phase1_service.quick_create(db, user.id, body)
+    return ProjectQuickCreateOut(project=ProjectOut.model_validate(project), episode_id=episode.id)
+
+
 @router.get("/projects/{project_id}", response_model=ProjectOut)
 def get_project(project_id: int, user: CurrentUser, db: DBSession) -> ProjectOut:
     _require_enabled()
@@ -213,6 +226,84 @@ def overview(project_id: int, user: CurrentUser, db: DBSession) -> ProjectOvervi
     except project_service.ProjectNotFoundError as exc:
         raise _not_found_or_conflict(exc)
     return ProjectOverviewOut.model_validate(data)
+
+
+@router.get("/projects/{project_id}/episodes/{episode_id}/script", response_model=EpisodeScriptOut)
+def get_episode_script(project_id: int, episode_id: int, user: CurrentUser, db: DBSession) -> EpisodeScriptOut:
+    _require_enabled()
+    try: return EpisodeScriptOut.model_validate(phase1_service.get_script(db, user.id, project_id, episode_id))
+    except project_service.ProjectNotFoundError as exc: raise _not_found_or_conflict(exc)
+
+
+@router.patch("/projects/{project_id}/episodes/{episode_id}/script", response_model=EpisodeScriptOut)
+def patch_episode_script(project_id: int, episode_id: int, body: EpisodeScriptPatchIn, user: CurrentUser, db: DBSession) -> EpisodeScriptOut:
+    _require_enabled()
+    try:
+        result = phase1_service.update_script(db, user.id, project_id, episode_id, lock_version=body.lock_version, mode=body.mode, text=body.text, settings=body.settings)
+        return EpisodeScriptOut.model_validate(result)
+    except (project_service.ProjectNotFoundError, project_service.ProjectConflictError) as exc: raise _not_found_or_conflict(exc)
+
+
+@router.post("/projects/{project_id}/episodes/{episode_id}/manifests/generate", response_model=CreativeJobOut, status_code=status.HTTP_202_ACCEPTED)
+def generate_script_manifest(project_id: int, episode_id: int, body: ScriptManifestGenerateIn, user: CurrentUser, db: DBSession) -> CreativeJobOut:
+    """提交后台 AI 拍摄清单任务，避免长模型请求占用 HTTP 连接。"""
+    _require_enabled()
+    try:
+        if body.provider_config_id:
+            return CreativeJobOut.model_validate(ai_service.create_script_manifest_job(db, user.id, project_id, episode_id, provider_config_id=body.provider_config_id, idempotency_key=body.idempotency_key))
+        # 未配置模型时仍保留本地规则降级，但用已完成作业统一前端契约。
+        manifest = phase1_service.generate_manifest(db, user.id, project_id, episode_id)
+        return CreativeJobOut.model_validate(ai_service.completed_local_job(db, user.id, project_id, episode_id, body.idempotency_key, manifest.id))
+    except (project_service.ProjectNotFoundError, project_service.ProjectConflictError, ai_service.AIConfigurationError, ai_service.AIResponseError) as exc: raise _not_found_or_conflict(exc)
+
+
+@router.get("/projects/{project_id}/episodes/{episode_id}/manifests", response_model=list[ScriptManifestOut])
+def list_script_manifests(project_id: int, episode_id: int, user: CurrentUser, db: DBSession) -> list[ScriptManifestOut]:
+    _require_enabled()
+    try: return [ScriptManifestOut.model_validate(x) for x in phase1_service.list_manifests(db, user.id, project_id, episode_id)]
+    except project_service.ProjectNotFoundError as exc: raise _not_found_or_conflict(exc)
+
+
+@router.patch("/projects/{project_id}/episodes/{episode_id}/manifests/{manifest_id}", response_model=ScriptManifestOut)
+def patch_script_manifest(project_id: int, episode_id: int, manifest_id: int, body: ScriptManifestPatchIn, user: CurrentUser, db: DBSession) -> ScriptManifestOut:
+    _require_enabled()
+    try: return ScriptManifestOut.model_validate(phase1_service.patch_manifest(db, user.id, project_id, episode_id, manifest_id, lock_version=body.lock_version, summary=body.summary, content=body.content))
+    except (project_service.ProjectNotFoundError, project_service.ProjectConflictError) as exc: raise _not_found_or_conflict(exc)
+
+
+@router.post("/projects/{project_id}/episodes/{episode_id}/manifests/{manifest_id}/confirm", response_model=ScriptManifestOut)
+def confirm_script_manifest(project_id: int, episode_id: int, manifest_id: int, user: CurrentUser, db: DBSession) -> ScriptManifestOut:
+    _require_enabled()
+    try: return ScriptManifestOut.model_validate(phase1_service.confirm_manifest(db, user.id, project_id, episode_id, manifest_id))
+    except (project_service.ProjectNotFoundError, project_service.ProjectConflictError) as exc: raise _not_found_or_conflict(exc)
+
+
+@router.get("/projects/{project_id}/casting", response_model=PhaseOneCastingOut)
+def phase_one_casting(project_id: int, user: CurrentUser, db: DBSession) -> PhaseOneCastingOut:
+    _require_enabled()
+    try: return PhaseOneCastingOut.model_validate(phase1_service.casting(db, user.id, project_id))
+    except project_service.ProjectNotFoundError as exc: raise _not_found_or_conflict(exc)
+
+
+@router.post("/projects/{project_id}/assets/{entity_type}/{entity_id}/versions", response_model=ProjectAssetVersionOut, status_code=status.HTTP_201_CREATED)
+def create_project_asset_version(project_id: int, entity_type: str, entity_id: int, body: ProjectAssetVersionCreateIn, user: CurrentUser, db: DBSession) -> ProjectAssetVersionOut:
+    _require_enabled()
+    try: return ProjectAssetVersionOut.model_validate(phase1_service.create_asset_version(db, user.id, project_id, entity_type, entity_id, **body.model_dump()))
+    except (project_service.ProjectNotFoundError, project_service.ProjectConflictError) as exc: raise _not_found_or_conflict(exc)
+
+
+@router.post("/projects/{project_id}/asset-versions/{version_id}/adopt", response_model=ProjectAssetVersionOut)
+def adopt_project_asset_version(project_id: int, version_id: int, user: CurrentUser, db: DBSession) -> ProjectAssetVersionOut:
+    _require_enabled()
+    try: return ProjectAssetVersionOut.model_validate(phase1_service.adopt_asset_version(db, user.id, project_id, version_id))
+    except (project_service.ProjectNotFoundError, project_service.ProjectConflictError) as exc: raise _not_found_or_conflict(exc)
+
+
+@router.put("/projects/{project_id}/shots/{shot_id}/character-binding", response_model=ShotCharacterBindingOut)
+def bind_shot_character(project_id: int, shot_id: int, body: ShotCharacterBindingIn, user: CurrentUser, db: DBSession) -> ShotCharacterBindingOut:
+    _require_enabled()
+    try: return ShotCharacterBindingOut.model_validate(phase1_service.bind_character(db, user.id, project_id, shot_id, body.character_id, body.variant_id))
+    except (project_service.ProjectNotFoundError, project_service.ProjectConflictError) as exc: raise _not_found_or_conflict(exc)
 
 
 @router.post(
@@ -339,6 +430,83 @@ def test_ai_provider(provider_id: int, admin: AdminUser, db: DBSession) -> dict:
     except Exception as exc: raise HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY, f"连接测试失败：{exc}")
 
 
+# ---- AI 提示词模板管理 ----
+
+@router.get("/ai/prompt-templates", response_model=list[AIPromptTemplateOut])
+def list_prompt_templates(db: DBSession, code: str | None = None) -> list[AIPromptTemplateOut]:
+    _require_enabled()
+    from app.models import AIPromptTemplate
+    q = db.query(AIPromptTemplate).filter(AIPromptTemplate.enabled.is_(True))
+    if code:
+        q = q.filter(AIPromptTemplate.code == code)
+    items = q.order_by(AIPromptTemplate.code, AIPromptTemplate.version.desc()).all()
+    # 每个 code 只返回最新版本
+    seen: set[str] = set()
+    result: list[AIPromptTemplateOut] = []
+    for item in items:
+        if item.code in seen:
+            continue
+        seen.add(item.code)
+        result.append(AIPromptTemplateOut.model_validate(item))
+    return result
+
+
+@router.put("/ai/prompt-templates/{template_id}", response_model=AIPromptTemplateOut)
+def update_prompt_template(template_id: int, body: AIPromptTemplateUpdateIn, admin: AdminUser, db: DBSession) -> AIPromptTemplateOut:
+    _require_enabled()
+    from app.models import AIPromptTemplate
+    item = db.get(AIPromptTemplate, template_id)
+    if not item:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "提示词模板不存在")
+    # 不修改原始 v1 种子模板，而是创建新版本
+    latest = (
+        db.query(AIPromptTemplate)
+        .filter(AIPromptTemplate.code == item.code)
+        .order_by(AIPromptTemplate.version.desc())
+        .first()
+    )
+    new_version = (latest.version + 1) if latest else item.version + 1
+    # 旧版本禁用
+    db.query(AIPromptTemplate).filter(
+        AIPromptTemplate.code == item.code, AIPromptTemplate.enabled.is_(True)
+    ).update({AIPromptTemplate.enabled: False}, synchronize_session=False)
+    new_item = AIPromptTemplate(
+        code=item.code, name=item.name, version=new_version,
+        system_prompt=body.system_prompt, user_prompt=body.user_prompt,
+        response_schema=item.response_schema, enabled=True, created_by=admin.id,
+    )
+    db.add(new_item)
+    db.commit()
+    db.refresh(new_item)
+    return AIPromptTemplateOut.model_validate(new_item)
+
+
+@router.get("/projects/{project_id}/ai/records", response_model=list[AIGenerationRecordOut])
+def list_ai_records(
+    project_id: int,
+    user: CurrentUser,
+    db: DBSession,
+    limit: int = Query(default=100, ge=1, le=500),
+    offset: int = Query(default=0, ge=0),
+) -> list[AIGenerationRecordOut]:
+    """列出项目的 AI 调用日志（按时间倒序）。"""
+    _require_enabled()
+    try:
+        project_service.owned_project(db, user.id, project_id)
+    except project_service.ProjectNotFoundError as exc:
+        raise _screenplay_error(exc)
+    from app.models import AIGenerationRecord
+    items = (
+        db.query(AIGenerationRecord)
+        .filter(AIGenerationRecord.project_id == project_id)
+        .order_by(AIGenerationRecord.id.desc())
+        .offset(offset)
+        .limit(limit)
+        .all()
+    )
+    return [AIGenerationRecordOut.model_validate(item) for item in items]
+
+
 @router.post("/projects/{project_id}/ai/analyze", response_model=CreativeJobOut, status_code=status.HTTP_202_ACCEPTED)
 def analyze_novel(project_id: int, body: NovelAnalyzeIn, user: CurrentUser, db: DBSession) -> CreativeJobOut:
     _require_enabled()
@@ -362,7 +530,6 @@ def confirm_novel_analysis(project_id: int, analysis_id: int, user: CurrentUser,
     except project_service.ProjectNotFoundError as exc: raise _screenplay_error(exc)
     item=db.query(NovelAnalysisVersion).filter(NovelAnalysisVersion.id==analysis_id,NovelAnalysisVersion.owner_id==user.id,NovelAnalysisVersion.project_id==project_id).first()
     if not item: raise HTTPException(status.HTTP_404_NOT_FOUND,"小说分析版本不存在")
-    if item.validation_errors: raise HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY,"分析结果校验未通过")
     db.query(NovelAnalysisVersion).filter(NovelAnalysisVersion.project_id==project_id,NovelAnalysisVersion.status=="confirmed").update({NovelAnalysisVersion.status:"candidate",NovelAnalysisVersion.confirmed_at:None},synchronize_session=False)
     item.status="confirmed";item.confirmed_at=ai_service._now();db.commit();db.refresh(item);return NovelAnalysisOut.model_validate(item)
 

@@ -98,6 +98,15 @@ class ProjectOverviewOut(BaseModel):
     active_job_count: int
 
 
+class ProjectQuickCreateIn(ProjectCreateIn):
+    episode_title: str = Field(default="第 1 集", min_length=1, max_length=160)
+
+
+class ProjectQuickCreateOut(BaseModel):
+    project: ProjectOut
+    episode_id: int
+
+
 class SourceDocumentOut(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
@@ -175,6 +184,38 @@ class AIProviderOut(BaseModel):
     id: int; name: str; provider: str; base_url: str; model: str; api_key_hint: str
     enabled: bool; is_default: bool; timeout_seconds: int; max_tokens: int
     created_at: datetime; updated_at: datetime
+
+
+class AIPromptTemplateOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+    id: int; code: str; name: str; version: int
+    system_prompt: str; user_prompt: str
+    enabled: bool
+    created_at: datetime; updated_at: datetime
+
+
+class AIPromptTemplateUpdateIn(BaseModel):
+    system_prompt: str = Field(min_length=1)
+    user_prompt: str = Field(min_length=1)
+
+
+class AIGenerationRecordOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+    id: int
+    project_id: int | None = None
+    operation: str
+    model: str
+    status: str
+    input_tokens: int
+    output_tokens: int
+    total_tokens: int
+    estimated_cost: float
+    duration_ms: int
+    error: str | None = None
+    request_snapshot: dict[str, Any] = Field(default_factory=dict)
+    response_snapshot: dict[str, Any] = Field(default_factory=dict)
+    created_at: datetime
+    finished_at: datetime | None = None
 
 
 class NovelAnalyzeIn(BaseModel):
@@ -335,6 +376,70 @@ class EpisodeOut(EpisodeCreateIn):
     scenes: list[SceneOut] = Field(default_factory=list)
 
 
+class EpisodeScriptPatchIn(BaseModel):
+    lock_version: int = Field(ge=1)
+    mode: Literal["novel", "storyboard"]
+    text: str = Field(default="", max_length=200000)
+    settings: dict[str, Any] = Field(default_factory=dict)
+
+
+class EpisodeScriptOut(BaseModel):
+    episode_id: int
+    project_id: int
+    title: str
+    mode: Literal["novel", "storyboard"]
+    text: str
+    settings: dict[str, Any]
+    script_revision: int
+    lock_version: int
+    updated_at: datetime
+    diagnostics: dict[str, Any] = Field(default_factory=dict)
+
+
+class ScriptManifestGenerateIn(BaseModel):
+    idempotency_key: str = Field(min_length=1, max_length=128)
+    provider_config_id: int | None = None
+
+
+class ScriptManifestPatchIn(BaseModel):
+    lock_version: int = Field(ge=1)
+    summary: str | None = Field(default=None, max_length=10000)
+    content: dict[str, Any] | None = None
+
+
+class ScriptManifestOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+    id: int; owner_id: int; project_id: int; episode_id: int; version: int
+    status: str; source_script_revision: int; mode: str; summary: str
+    total_duration: float; content: dict[str, Any]; validation_errors: list[dict[str, Any]]
+    lock_version: int; confirmed_at: datetime | None; created_at: datetime; updated_at: datetime
+
+
+class ProjectAssetVersionCreateIn(BaseModel):
+    resource_id: int | None = None
+    source_task_id: int | None = None
+    prompt: str = Field(default="", max_length=20000)
+    generation_snapshot: dict[str, Any] = Field(default_factory=dict)
+
+
+class ProjectAssetVersionOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+    id: int; owner_id: int; project_id: int; entity_type: str; entity_id: int; version: int
+    resource_id: int | None; source_task_id: int | None; status: str; is_current: bool
+    prompt: str; generation_snapshot: dict[str, Any]; created_at: datetime; updated_at: datetime
+
+
+class ShotCharacterBindingIn(BaseModel):
+    character_id: int
+    variant_id: int | None = None
+
+
+class ShotCharacterBindingOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+    id: int; owner_id: int; shot_id: int; character_id: int; variant_id: int | None
+    inheritance_source: str; created_at: datetime; updated_at: datetime
+
+
 class EpisodeAIGenerateIn(BaseModel):
     provider_config_id: int | None = None
     instruction: str = Field(default="", max_length=4000)
@@ -436,6 +541,9 @@ class CharacterVariantInput(BaseModel):
     primary_resource_id: int | None = None
     reference_resource_ids: list[int] = Field(default_factory=list)
     source_references: list[dict[str, Any]] = Field(default_factory=list)
+    status: str = Field(default="draft", pattern="^(draft|confirmed)$")
+    version: int = Field(default=1, ge=1)
+    is_default: bool = False
 
 
 class CharacterVariantOut(CharacterVariantInput):
@@ -501,6 +609,13 @@ class RelationshipOut(RelationshipInput):
 
 class WorldOverviewOut(BaseModel):
     characters: list[CharacterOut]; locations: list[LocationOut]; props: list[PropOut]; relationships: list[RelationshipOut]
+
+
+class PhaseOneCastingOut(BaseModel):
+    characters: list[CharacterOut]
+    locations: list[LocationOut]
+    props: list[PropOut]
+    asset_versions: list[ProjectAssetVersionOut]
 
 
 class ResourceUsageOut(BaseModel):

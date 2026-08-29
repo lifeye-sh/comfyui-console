@@ -83,6 +83,10 @@ class WorkflowVersion(Base, TimestampMixin):
     api_json: Mapped[Dict] = mapped_column(JSON, nullable=False)
     param_schema: Mapped[List] = mapped_column(JSON, default=list)
     output_mapping: Mapped[Dict] = mapped_column(JSON, default=dict)
+    # 文本输出配置：{"node_id": "5", "field": "text"}，
+    # 指定从工作流输出节点的哪个字段提取文本（如翻译/图片反推结果）。
+    # field 为 "*" 时自动探测节点输出中的所有字符串字段。
+    text_output_config: Mapped[Optional[Dict]] = mapped_column(JSON, nullable=True)
 
     workflow: Mapped["Workflow"] = relationship(back_populates="versions")
 

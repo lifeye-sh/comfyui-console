@@ -70,6 +70,7 @@ class WorkflowVersionIn(BaseModel):
     api_json: dict
     param_schema: list[dict] = Field(default_factory=list)
     output_mapping: dict = Field(default_factory=dict)
+    text_output_config: Optional[dict] = None
 
 class WorkflowCreateIn(BaseModel):
     name: str
@@ -99,6 +100,7 @@ class WorkflowVersionOut(BaseModel):
     version: int
     param_schema: list[dict]
     output_mapping: dict
+    text_output_config: Optional[dict] = None
 
 # ---- generation types ----
 class GenerationTypeOut(BaseModel):

@@ -330,6 +330,7 @@ onBeforeUnmount(() => {
             <div class="tool-section">
               <label>裁剪</label>
               <div class="crop-tip">点击比例按钮快速裁剪，或拖动裁剪框边缘/四角调整大小</div>
+              <button class="tool-btn-wide" @click="editing = !editing">{{ editing ? '完成裁剪' : '开始裁剪' }}</button>
             </div>
             <div class="tool-section">
               <button class="primary-btn" :disabled="saving" @click="save">{{ saving ? '保存中…' : '💾 保存为新素材' }}</button>
@@ -359,7 +360,6 @@ onBeforeUnmount(() => {
                   </div>
                 </div>
               </div>
-              <button v-if="srcUrl && !editing" class="start-crop-btn" @click="editing = true">开始裁剪</button>
             </div>
             <div v-if="!srcUrl && !error" class="ie-loading">加载图片中…</div>
           </div>
@@ -393,6 +393,8 @@ onBeforeUnmount(() => {
 .aspect-grid button.active { color: #fff; background: rgba(130,149,255,.35); border-color: rgba(130,149,255,.6); }
 .crop-tip { font-size: 11px; color: #7a85a8; padding: 6px 8px; background: rgba(255,255,255,.03); border-radius: 6px; }
 .reset-btn { padding: 6px 10px; font-size: 11px; color: #7a85a8; background: transparent; border: 1px solid rgba(130,149,255,.15); border-radius: 7px; cursor: pointer; }
+.tool-btn-wide { padding: 8px 12px; font-size: 12px; color: #c8d0ee; background: rgba(130,149,255,.1); border: 1px solid rgba(130,149,255,.2); border-radius: 8px; cursor: pointer; text-align: center; }
+.tool-btn-wide:hover { background: rgba(130,149,255,.2); }
 .reset-btn:hover { color: #c8d0ee; }
 .primary-btn { padding: 10px; font-size: 13px; color: #fff; background: linear-gradient(135deg, #8295ff, #865fee); border: 0; border-radius: 10px; cursor: pointer; }
 .primary-btn:hover:not(:disabled) { filter: brightness(1.1); }
@@ -414,7 +416,6 @@ onBeforeUnmount(() => {
 .crop-overlay .handle.s { bottom: -8px; left: 50%; margin-left: -8px; cursor: ns-resize; }
 .crop-overlay .handle.e { right: -8px; top: 50%; margin-top: -8px; cursor: ew-resize; }
 .crop-overlay .handle.w { left: -8px; top: 50%; margin-top: -8px; cursor: ew-resize; }
-.start-crop-btn { position: absolute; bottom: 16px; left: 50%; transform: translateX(-50%); padding: 8px 16px; font-size: 12px; color: #fff; background: rgba(130,149,255,.8); border: 1px solid #8295ff; border-radius: 8px; cursor: pointer; z-index: 10; }
 .ie-loading { color: #7a85a8; font-size: 14px; }
 
 @media (max-width: 760px) {

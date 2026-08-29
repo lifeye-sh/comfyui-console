@@ -28,6 +28,25 @@ class AIProviderConfig(Base, TimestampMixin):
     created_by: Mapped[Optional[int]] = mapped_column(Integer, ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
 
 
+class ImageProviderConfig(Base, TimestampMixin):
+    """Image generation/edit provider independent from screenplay LLM providers."""
+    __tablename__ = "image_provider_configs"
+    __table_args__ = (UniqueConstraint("name", name="uq_image_provider_name"),)
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    name: Mapped[str] = mapped_column(String(128), nullable=False)
+    provider: Mapped[str] = mapped_column(String(32), default="gemini_web2api", nullable=False)
+    base_url: Mapped[str] = mapped_column(String(512), nullable=False)
+    model: Mapped[str] = mapped_column(String(128), nullable=False)
+    api_key_encrypted: Mapped[str] = mapped_column(Text, nullable=False)
+    api_key_hint: Mapped[str] = mapped_column(String(32), default="", nullable=False)
+    enabled: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False, index=True)
+    is_default: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False, index=True)
+    timeout_seconds: Mapped[int] = mapped_column(Integer, default=300, nullable=False)
+    max_concurrency: Mapped[int] = mapped_column(Integer, default=1, nullable=False)
+    created_by: Mapped[Optional[int]] = mapped_column(Integer, ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
+
+
 class AIPromptTemplate(Base, TimestampMixin):
     __tablename__ = "ai_prompt_templates"
     __table_args__ = (UniqueConstraint("code", "version", name="uq_ai_prompt_code_version"),)
@@ -107,4 +126,4 @@ class ScreenplayRevisionCandidate(Base, TimestampMixin):
     confirmed_at: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
 
 
-__all__ = ["AIProviderConfig", "AIPromptTemplate", "AIGenerationRecord", "NovelAnalysisVersion", "ScreenplayRevisionCandidate"]
+__all__ = ["AIProviderConfig", "ImageProviderConfig", "AIPromptTemplate", "AIGenerationRecord", "NovelAnalysisVersion", "ScreenplayRevisionCandidate"]

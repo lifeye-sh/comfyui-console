@@ -1,0 +1,519 @@
+{
+  "6": {
+    "inputs": {
+      "fl2va_model": "minimax/minimax_h3_fl2va_int8_convrot.safetensors",
+      "ref2va_model": "minimax/minimax_h3_ref2va_pruned_zs05_int8_convrot.safetensors",
+      "text_encoder": "minimax/qwen3vl_32b_minimax_h3_int8_convrot.safetensors",
+      "video_vae": "minimax/minimax_h3_video_vae_fp16.safetensors",
+      "audio_vae": "minimax/minimax_h3_audio_vae_fp32.safetensors"
+    },
+    "class_type": "MiniMaxH3EasyLoader",
+    "_meta": {
+      "title": "MiniMax H3 Easy 加载器"
+    }
+  },
+  "7": {
+    "inputs": {
+      "mode": "reference",
+      "prompt": [
+        "125",
+        0
+      ],
+      "resolution": "480P",
+      "aspect_ratio": "16:9",
+      "width": 1344,
+      "height": 768,
+      "seconds": [
+        "138",
+        0
+      ],
+      "advanced": true,
+      "fps": 24,
+      "keyframe_role": "first",
+      "ref_image_size": "1.5k",
+      "reference_mention_mode": "index",
+      "prompt_optimizer_settings": false,
+      "prompt_optimizer_scene_guide": "none",
+      "h3_bundle": [
+        "6",
+        0
+      ],
+      "media_1": [
+        "18",
+        0
+      ],
+      "media_type_1": "image",
+      "media_2": [
+        "35",
+        0
+      ],
+      "media_type_2": "image",
+      "media_3": [
+        "36",
+        0
+      ],
+      "media_type_3": "image",
+      "media_4": [
+        "37",
+        0
+      ],
+      "media_type_4": "image",
+      "media_5": [
+        "38",
+        0
+      ],
+      "media_type_5": "image",
+      "prompt_optimizer_resources": "[{\"type\":\"image\",\"tag\":\"<Picture 1>\",\"name\":\"Gemini_Generated_Image_26evh926evh926ev.jpeg\",\"asset\":{\"filename\":\"Gemini_Generated_Image_26evh926evh926ev.jpeg\",\"subfolder\":\"\",\"storage\":\"input\"}},{\"type\":\"image\",\"tag\":\"<Picture 2>\",\"name\":\"Gemini_Generated_Image_eep6qmeep6qmeep6.jpeg\",\"asset\":{\"filename\":\"Gemini_Generated_Image_eep6qmeep6qmeep6.jpeg\",\"subfolder\":\"\",\"storage\":\"input\"}},{\"type\":\"image\",\"tag\":\"<Picture 3>\",\"name\":\"Gemini_Generated_Image_b1yc1mb1yc1mb1yc.jpeg\",\"asset\":{\"filename\":\"Gemini_Generated_Image_b1yc1mb1yc1mb1yc.jpeg\",\"subfolder\":\"\",\"storage\":\"input\"}},{\"type\":\"video\",\"tag\":\"<Video 1>\",\"name\":\"1视编\",\"asset\":null},{\"type\":\"image\",\"tag\":\"<Picture 4>\",\"name\":\"Gemini_Generated_Image_9jdkxj9jdkxj9jdk.jpeg\",\"asset\":{\"filename\":\"Gemini_Generated_Image_9jdkxj9jdkxj9jdk.jpeg\",\"subfolder\":\"\",\"storage\":\"input\"}},{\"type\":\"image\",\"tag\":\"<Picture 5>\",\"name\":\"None\",\"asset\":{\"filename\":\"None\",\"subfolder\":\"\",\"storage\":\"input\"}},{\"type\":\"image\",\"tag\":\"<Picture 6>\",\"name\":\"None\",\"asset\":{\"filename\":\"None\",\"subfolder\":\"\",\"storage\":\"input\"}},{\"type\":\"video\",\"tag\":\"<Video 2>\",\"name\":\"2视编\",\"asset\":null},{\"type\":\"video\",\"tag\":\"<Video 3>\",\"name\":\"3视编\",\"asset\":null},{\"type\":\"audio\",\"tag\":\"<Audio 1>\",\"name\":\"1音编\",\"asset\":null},{\"type\":\"audio\",\"tag\":\"<Audio 2>\",\"name\":\"2音编\",\"asset\":null},{\"type\":\"audio\",\"tag\":\"<Audio 3>\",\"name\":\"3音编\",\"asset\":null}]",
+      "prompt_optimizer_marker": "{\"context_sha256\":\"3c5216d1d9e02db8b4f771a3ed336330591d00c847396c6c9a3a63384698b25b\",\"prompt_sha256\":\"1ae73d83bf825987b018af98b244381028b818cbb632aa2612745bc95cbd44b6\",\"version\":1}",
+      "prompt_optimizer_prompt_connected": true
+    },
+    "class_type": "MiniMaxH3Easy",
+    "_meta": {
+      "title": "MiniMax H3 Easy"
+    }
+  },
+  "18": {
+    "inputs": {
+      "image": "Gemini_Generated_Image_26evh926evh926ev.jpeg"
+    },
+    "class_type": "LoadImage",
+    "_meta": {
+      "title": "1图"
+    }
+  },
+  "35": {
+    "inputs": {
+      "image": "Gemini_Generated_Image_eep6qmeep6qmeep6.jpeg"
+    },
+    "class_type": "LoadImage",
+    "_meta": {
+      "title": "2图"
+    }
+  },
+  "36": {
+    "inputs": {
+      "image": "Gemini_Generated_Image_b1yc1mb1yc1mb1yc.jpeg"
+    },
+    "class_type": "LoadImage",
+    "_meta": {
+      "title": "3图"
+    }
+  },
+  "37": {
+    "inputs": {
+      "image": "Gemini_Generated_Image_9jdkxj9jdkxj9jdk.jpeg"
+    },
+    "class_type": "LoadImage",
+    "_meta": {
+      "title": "4图"
+    }
+  },
+  "38": {
+    "inputs": {
+      "image": "None"
+    },
+    "class_type": "LoadImage",
+    "_meta": {
+      "title": "5图"
+    }
+  },
+  "93": {
+    "inputs": {
+      "frame_rate": [
+        "142:8",
+        4
+      ],
+      "loop_count": 0,
+      "filename_prefix": "YZ-H3-2采",
+      "format": "video/h264-mp4",
+      "pix_fmt": "yuv420p",
+      "crf": 19,
+      "save_metadata": true,
+      "trim_to_audio": false,
+      "pingpong": false,
+      "save_output": true,
+      "images": [
+        "142:72",
+        0
+      ],
+      "audio": [
+        "142:69",
+        0
+      ]
+    },
+    "class_type": "VHS_VideoCombine",
+    "_meta": {
+      "title": "Video Combine 🎥🅥🅗🅢"
+    }
+  },
+  "125": {
+    "inputs": {
+      "prompt": "图1是首帧图，图2是尾帧图。\n叶修（图3）与苏沐橙（图4）激情不断热吻，身体也紧紧贴在一起。"
+    },
+    "class_type": "CR Prompt Text",
+    "_meta": {
+      "title": "1、提示词"
+    }
+  },
+  "138": {
+    "inputs": {
+      "value": 15
+    },
+    "class_type": "PrimitiveFloat",
+    "_meta": {
+      "title": "2、秒数"
+    }
+  },
+  "142:11": {
+    "inputs": {
+      "model": [
+        "142:115",
+        0
+      ],
+      "conditioning": [
+        "142:8",
+        0
+      ]
+    },
+    "class_type": "BasicGuider",
+    "_meta": {
+      "title": "基本引导器"
+    }
+  },
+  "142:14": {
+    "inputs": {
+      "noise_seed": 671189328780695
+    },
+    "class_type": "RandomNoise",
+    "_meta": {
+      "title": "随机噪波"
+    }
+  },
+  "142:112": {
+    "inputs": {
+      "anything": [
+        "142:72",
+        0
+      ]
+    },
+    "class_type": "easy cleanGpuUsed",
+    "_meta": {
+      "title": "清理显存占用"
+    }
+  },
+  "142:114": {
+    "inputs": {
+      "shift_video": 12,
+      "shift_audio": 3,
+      "model": [
+        "142:9",
+        0
+      ]
+    },
+    "class_type": "MiniMaxH3SigmaShift",
+    "_meta": {
+      "title": "ModelSamplingMiniMaxH3"
+    }
+  },
+  "142:12": {
+    "inputs": {
+      "sampler_name": "euler"
+    },
+    "class_type": "KSamplerSelect",
+    "_meta": {
+      "title": "K采样器选择"
+    }
+  },
+  "142:13": {
+    "inputs": {
+      "scheduler": "simple",
+      "steps": 8,
+      "denoise": 1,
+      "model": [
+        "142:115",
+        0
+      ]
+    },
+    "class_type": "BasicScheduler",
+    "_meta": {
+      "title": "基本调度器"
+    }
+  },
+  "142:148": {
+    "inputs": {
+      "model_name": "minimax_h3_latent_upscaler_3d_fp16.safetensors",
+      "mode": "scale by multiplier",
+      "mode.scale": 1.5,
+      "align": 32,
+      "enable_chunking": true,
+      "device": "cuda",
+      "precision": "fp16",
+      "latent": [
+        "142:155",
+        0
+      ]
+    },
+    "class_type": "MinimaxH3LatentUpscaler3D",
+    "_meta": {
+      "title": "Minimax H3 Latent Upscaler (3D)"
+    }
+  },
+  "142:115": {
+    "inputs": {
+      "attention": "comfy kitchen attention",
+      "model": [
+        "142:116",
+        0
+      ]
+    },
+    "class_type": "ModelAttentionBackend",
+    "_meta": {
+      "title": "ModelAttentionBackend"
+    }
+  },
+  "142:8": {
+    "inputs": {
+      "h3_context": [
+        "7",
+        1
+      ]
+    },
+    "class_type": "MiniMaxH3EasyOutput",
+    "_meta": {
+      "title": "MiniMax H3 Easy 输出"
+    }
+  },
+  "142:72": {
+    "inputs": {
+      "samples": [
+        "142:68",
+        0
+      ],
+      "vae": [
+        "142:8",
+        2
+      ]
+    },
+    "class_type": "VAEDecode",
+    "_meta": {
+      "title": "VAE解码"
+    }
+  },
+  "142:69": {
+    "inputs": {
+      "samples": [
+        "142:68",
+        0
+      ],
+      "vae": [
+        "142:8",
+        3
+      ]
+    },
+    "class_type": "VAEDecodeAudio",
+    "_meta": {
+      "title": "VAE解码（音频）"
+    }
+  },
+  "142:68": {
+    "inputs": {
+      "noise": [
+        "142:60",
+        0
+      ],
+      "guider": [
+        "142:66",
+        0
+      ],
+      "sampler": [
+        "142:61",
+        0
+      ],
+      "sigmas": [
+        "142:157",
+        1
+      ],
+      "latent_image": [
+        "142:154",
+        0
+      ]
+    },
+    "class_type": "SamplerCustomAdvanced",
+    "_meta": {
+      "title": "自定义采样器（高级）"
+    }
+  },
+  "142:156": {
+    "inputs": {
+      "extra_steps": 1,
+      "start_at_sigma": 0.7,
+      "end_at_sigma": 0,
+      "spacing": "cosine",
+      "sigmas": [
+        "142:13",
+        0
+      ]
+    },
+    "class_type": "H3SigmaRefiner",
+    "_meta": {
+      "title": "H3 Sigma Refiner"
+    }
+  },
+  "142:154": {
+    "inputs": {
+      "video_latent": [
+        "142:148",
+        0
+      ],
+      "audio_latent": [
+        "142:155",
+        1
+      ]
+    },
+    "class_type": "LTXVConcatAVLatent",
+    "_meta": {
+      "title": "LTXVConcatAVLatent"
+    }
+  },
+  "142:157": {
+    "inputs": {
+      "step": 4,
+      "sigmas": [
+        "142:156",
+        0
+      ]
+    },
+    "class_type": "SplitSigmas",
+    "_meta": {
+      "title": "分离Sigma"
+    }
+  },
+  "142:10": {
+    "inputs": {
+      "noise": [
+        "142:14",
+        0
+      ],
+      "guider": [
+        "142:11",
+        0
+      ],
+      "sampler": [
+        "142:12",
+        0
+      ],
+      "sigmas": [
+        "142:157",
+        0
+      ],
+      "latent_image": [
+        "142:8",
+        1
+      ]
+    },
+    "class_type": "SamplerCustomAdvanced",
+    "_meta": {
+      "title": "自定义采样器（高级）"
+    }
+  },
+  "142:155": {
+    "inputs": {
+      "av_latent": [
+        "142:10",
+        1
+      ]
+    },
+    "class_type": "LTXVSeparateAVLatent",
+    "_meta": {
+      "title": "LTXV分离音视频潜空间"
+    }
+  },
+  "142:66": {
+    "inputs": {
+      "model": [
+        "142:115",
+        0
+      ],
+      "conditioning": [
+        "142:149",
+        0
+      ]
+    },
+    "class_type": "BasicGuider",
+    "_meta": {
+      "title": "基本引导器"
+    }
+  },
+  "142:61": {
+    "inputs": {
+      "sampler_name": "euler"
+    },
+    "class_type": "KSamplerSelect",
+    "_meta": {
+      "title": "K采样器选择"
+    }
+  },
+  "142:60": {
+    "inputs": {
+      "noise_seed": 489988449632928
+    },
+    "class_type": "RandomNoise",
+    "_meta": {
+      "title": "随机噪波"
+    }
+  },
+  "142:149": {
+    "inputs": {
+      "h3_context": [
+        "7",
+        1
+      ],
+      "second_pass_video_latent": [
+        "142:148",
+        0
+      ]
+    },
+    "class_type": "MiniMaxH3EasySecondPassConditioning",
+    "_meta": {
+      "title": "MiniMax H3 Easy Second Pass Conditioning"
+    }
+  },
+  "142:9": {
+    "inputs": {
+      "lora_name": "minimax\\minimax_h3_turbo_4step_10ErosMax_test4_pruned_curveproj1025_exp_v001-T8.safetensors",
+      "strength_model": 1,
+      "model": [
+        "7",
+        0
+      ]
+    },
+    "class_type": "LoraLoaderModelOnly",
+    "_meta": {
+      "title": "LoRA加载器（仅模型）"
+    }
+  },
+  "142:116": {
+    "inputs": {
+      "tau": 1.3,
+      "start_percent": 0.2,
+      "end_percent": 0.9,
+      "min_tokens": 4096,
+      "int8_qk": true,
+      "sink_conditioning": "exact_kv_and_rows",
+      "morton": false,
+      "morton_curve": "2d_frame",
+      "int8_pv": true,
+      "verbose": false,
+      "use_tma": false,
+      "dense_blocks": "",
+      "model": [
+        "142:114",
+        0
+      ]
+    },
+    "class_type": "SolAttnPatch",
+    "_meta": {
+      "title": "Patch Sol-Attn"
+    }
+  }
+}

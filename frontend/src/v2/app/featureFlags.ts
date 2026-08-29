@@ -39,3 +39,10 @@ export function setUiPreference(version: 'v1' | 'v2'): void {
 export function isShortDramaEnabled(): boolean {
   return isV2Enabled() && envFlag(import.meta.env.VITE_UI_V2_1_SHORT_DRAMA_ENABLED, true)
 }
+
+/**
+ * V3 AI 导演前期制作模块（实验）。默认关闭，灰度开放。
+ */
+export function isV3DirectorEnabled(): boolean {
+  return isShortDramaEnabled() && envFlag(import.meta.env.VITE_V3_DIRECTOR_ENABLED, false)
+}

@@ -18,6 +18,10 @@ const expanded = ref(new Set(['drama', 'creation', 'creation-image', 'tasks', 'a
 const generationMenu = ref<Partial<GenerationMenu>>({})
 const mobileGenerationOpen = ref(false)
 const profileOpen = ref(false)
+const dramaWorkspace = computed(() =>
+  /^\/v2\/drama\/projects\/\d+\/episodes\/\d+\/(script|manifest)$/.test(route.path)
+  || /^\/v2\/drama\/projects\/\d+\/(assets|storyboard|production)$/.test(route.path),
+)
 
 const menu = computed(() => filterV2Menu(buildV2Menu(generationMenu.value), auth.user?.role))
 const generationItems = computed(() => menu.value.find((item) => item.key === 'creation')?.children || [])
@@ -53,7 +57,7 @@ function logout() { disconnectWs(); auth.logout(); router.push('/login') }
 </script>
 
 <template>
-  <div class="v2-app v2-theme" :class="{ 'sidebar-collapsed': collapsed }">
+  <div class="v2-app v2-theme" :class="{ 'sidebar-collapsed': collapsed, 'drama-workspace': dramaWorkspace }">
     <div class="ambient ambient-one" /><div class="ambient ambient-two" />
     <aside class="desktop-sidebar" aria-label="V2 主导航">
       <div class="brand"><span class="brand-mark">C</span><div class="brand-copy"><strong>Comfy Console</strong><small>CREATIVE OS · V2</small></div></div>
@@ -107,7 +111,9 @@ function logout() { disconnectWs(); auth.logout(); router.push('/login') }
 .app-stage { min-height:100vh; margin-left:var(--v2-sidebar-width); position:relative; transition:margin .2s ease; }.topbar { height:var(--v2-topbar-height); padding:0 24px; display:flex; align-items:center; justify-content:space-between; gap:16px; background:rgba(7,17,31,.58); border-bottom:1px solid var(--v2-border); backdrop-filter:blur(var(--v2-blur)); position:sticky; top:0; z-index:15; }.topbar > div:first-child { display:grid; gap:4px; }.top-actions { display:flex; align-items:center; gap:8px; position:relative; }.avatar-button { width:40px; height:40px; color:#fff; font-weight:700; background:linear-gradient(135deg,#6078f7,#895de8); border:1px solid rgba(255,255,255,.2); border-radius:12px; cursor:pointer; }.profile-menu { position:absolute; top:50px; right:0; width:190px; padding:16px; display:grid; gap:7px; background:var(--v2-surface-strong); border:1px solid var(--v2-border); border-radius:14px; box-shadow:var(--v2-shadow); backdrop-filter:blur(var(--v2-blur)); }.profile-menu small { color:var(--v2-text-muted); }.profile-menu button,.mobile-profile button { padding:9px 0; color:var(--v2-text-muted); background:transparent; border:0; border-top:1px solid var(--v2-border); cursor:pointer; text-align:left; }.content { padding:clamp(18px,3vw,36px); position:relative; z-index:1; }
 .sidebar-collapsed .desktop-sidebar { width:var(--v2-sidebar-collapsed); }.sidebar-collapsed .app-stage { margin-left:var(--v2-sidebar-collapsed); }.sidebar-collapsed .brand-copy,.sidebar-collapsed .nav-label,.sidebar-collapsed .nav-caret { display:none; }.sidebar-collapsed .brand { padding:0 22px; }.sidebar-collapsed .nav-item { justify-content:center; padding:0; }.sidebar-collapsed .sidebar-foot .nav-icon { transform:rotate(180deg); }
 .mobile-header,.mobile-tabs,.mobile-profile { display:none; }.category-button{display:flex!important;align-items:center;gap:7px!important;color:var(--v2-text-muted)!important}.category-button span{width:18px}.category-button i{margin-left:auto;font-style:normal}.nav-grandchildren{margin:0 0 5px 19px;padding-left:10px;display:grid;border-left:1px solid var(--v2-border)}.nav-grandchildren button{min-height:31px!important}.generation-list { display:grid; gap:16px; }.generation-list section{display:grid;gap:8px}.generation-list h3{margin:0;color:var(--v2-text-muted);font-size:13px}.generation-list button { min-height:68px; padding:12px 14px; display:flex; align-items:center; gap:14px; color:var(--v2-text); background:var(--v2-surface-soft); border:1px solid var(--v2-border); border-radius:14px; cursor:pointer; text-align:left; }.generation-list button > span { width:36px; height:36px; display:grid; place-items:center; background:rgba(130,149,255,.13); border-radius:10px; }.generation-list button div { flex:1; display:grid; gap:4px; }.generation-list small { color:var(--v2-text-muted); }
+.drama-workspace>.desktop-sidebar,.drama-workspace>.app-stage>.topbar{display:none}.drama-workspace>.app-stage{margin-left:0}.drama-workspace>.app-stage>.content{padding:0}
 @media (max-width: 760px) {
   .desktop-sidebar,.topbar { display:none; }.app-stage { margin:0; padding-top:64px; padding-bottom:76px; }.content { padding:16px 14px 24px; }.mobile-header { position:fixed; inset:0 0 auto 0; z-index:30; height:64px; padding:0 14px; display:flex; align-items:center; justify-content:space-between; background:rgba(7,17,31,.82); border-bottom:1px solid var(--v2-border); backdrop-filter:blur(var(--v2-blur)); }.mobile-header > div { display:grid; gap:3px; }.mobile-tabs { position:fixed; inset:auto 8px 8px; z-index:30; height:64px; padding:6px; display:grid; grid-template-columns:repeat(5,1fr); background:rgba(16,31,57,.9); border:1px solid var(--v2-border); border-radius:18px; box-shadow:var(--v2-shadow); backdrop-filter:blur(var(--v2-blur)); }.mobile-tabs button { display:grid; place-items:center; gap:1px; color:var(--v2-text-subtle); font-size:10px; background:transparent; border:0; border-radius:12px; cursor:pointer; }.mobile-tabs button span { font-size:18px; }.mobile-tabs button.active { color:var(--v2-text); background:rgba(130,149,255,.14); }.mobile-profile { position:fixed; right:14px; bottom:82px; z-index:35; width:210px; padding:16px; display:grid; gap:8px; background:var(--v2-surface-strong); border:1px solid var(--v2-border); border-radius:16px; box-shadow:var(--v2-shadow); backdrop-filter:blur(var(--v2-blur)); }.mobile-profile span { color:var(--v2-text-muted); font-size:12px; }
+  .drama-workspace>.app-stage{padding:0}.drama-workspace>.mobile-header,.drama-workspace>.mobile-tabs{display:none}.drama-workspace>.app-stage>.content{padding:0}
 }
 </style>

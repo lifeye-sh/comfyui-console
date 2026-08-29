@@ -7,6 +7,8 @@ from __future__ import annotations
 import asyncio
 import logging
 import mimetypes
+import os
+import hashlib
 import threading
 from datetime import datetime, timedelta, timezone
 
@@ -16,7 +18,7 @@ from app.comfy.client import ComfyUIClient
 from app.comfy.prompt_builder import build_prompt
 from app.core.events import publish_task_event
 from app.db import SessionLocal
-from app.models import GenerationType, Node, Resource, ShotTaskLink, Task, TaskResource, WorkflowVersion
+from app.models import GenerationType, ImageProviderConfig, Node, Resource, ShotTaskLink, Task, TaskResource, Workflow, WorkflowVersion
 from app.storage.local_fs import get_storage
 from app.services import node_service
 
@@ -79,6 +81,8 @@ class Dispatcher:
         self._node_probe_interval_seconds = max(1.0, node_probe_interval_seconds)
         self._orphan_timeout_seconds = max(30.0, orphan_timeout_seconds)
         self._clients: dict[int, ComfyUIClient] = {}
+        self._gemini_jobs: dict[int, tuple[int, asyncio.Task[None]]] = {}
+        self._gemini_recovery_done = False
         self._thread: threading.Thread | None = None
         self._stop_event = threading.Event()
         self._web_loop: asyncio.AbstractEventLoop | None = None
@@ -123,12 +127,23 @@ class Dispatcher:
         finally:
             db.close()
         thread = self._thread
+        active_model_channels: dict[int, int] = {}
+        for model_config_id, job in self._gemini_jobs.values():
+            if not job.done():
+                active_model_channels[model_config_id] = active_model_channels.get(model_config_id, 0) + 1
         return {
             "running": bool(thread and thread.is_alive()), "thread_name": thread.name if thread else None,
             "started_at": self._started_at, "last_heartbeat_at": self._last_heartbeat_at,
             "last_tick_at": self._last_tick_at, "last_probe_at": self._last_probe_at,
             "last_error": self._last_error,
             "counters": {"ticks": self._ticks, "submitted": self._submitted, "completed": self._completed, "failed": self._failed},
+            "gemini": {
+                "active": sum(active_model_channels.values()),
+                "model_channels": [
+                    {"model_config_id": model_config_id, "active": active}
+                    for model_config_id, active in sorted(active_model_channels.items())
+                ],
+            },
             "tasks": counts,
         }
 
@@ -152,26 +167,33 @@ class Dispatcher:
                     logger.exception("调度循环异常: %s", e)
                 await asyncio.sleep(1.0)
         finally:
+            jobs = [job for _, job in self._gemini_jobs.values() if not job.done()]
+            for job in jobs:
+                job.cancel()
+            if jobs:
+                await asyncio.gather(*jobs, return_exceptions=True)
+            self._gemini_jobs.clear()
             for client in self._clients.values():
                 await client.aclose()
             self._clients.clear()
 
-    async def _publish(self, task_id: int, event_type: str, progress: int, payload: dict) -> None:
+    async def _publish(self, task_id: int, event_type: str, progress: int, payload: dict, owner_id: int | None = None) -> None:
         """Publish websocket events on FastAPI's loop from the worker thread."""
         web_loop = self._web_loop
         if web_loop and web_loop.is_running() and asyncio.get_running_loop() is not web_loop:
             future = asyncio.run_coroutine_threadsafe(
-                publish_task_event(task_id, event_type, progress, payload),
+                publish_task_event(task_id, event_type, progress, payload, owner_id=owner_id),
                 web_loop,
             )
             await asyncio.wrap_future(future)
             return
-        await publish_task_event(task_id, event_type, progress, payload)
+        await publish_task_event(task_id, event_type, progress, payload, owner_id=owner_id)
 
     async def _tick(self) -> None:
         db = self._session_factory()
         try:
             now = datetime.now(timezone.utc)
+            await self._submit_gemini_pending(db)
             if not self._last_probe_at or (now - self._last_probe_at).total_seconds() >= self._node_probe_interval_seconds:
                 await self._probe_nodes(db)
                 self._last_probe_at = now
@@ -193,15 +215,80 @@ class Dispatcher:
             await asyncio.sleep(0)
 
     # ---------- 提交 ----------
+    def _cleanup_gemini_jobs(self) -> None:
+        for task_id, (_, job) in list(self._gemini_jobs.items()):
+            if not job.done():
+                continue
+            try:
+                job.exception()
+            except (asyncio.CancelledError, Exception):
+                pass
+            self._gemini_jobs.pop(task_id, None)
+
+    async def _submit_gemini_pending(self, db: Session) -> None:
+        """Launch Gemini tasks in per-model-config lanes, independent of ComfyUI nodes."""
+        self._cleanup_gemini_jobs()
+        if not self._gemini_recovery_done:
+            # A process restart cancels in-memory HTTP calls. Put those tasks back
+            # into the Gemini lane instead of leaving them as orphaned RUNNING rows.
+            changed = False
+            for task in db.query(Task).filter(Task.status.in_(["DISPATCHING", "QUEUED", "RUNNING"])).all():
+                if (task.params or {}).get("__execution_provider") != "gemini_image" or task.id in self._gemini_jobs:
+                    continue
+                task.status = "PENDING"
+                task.node_id = None
+                task.prompt_id = None
+                task.error = "服务重启，Gemini 任务已自动恢复排队"
+                changed = True
+            if changed:
+                db.commit()
+            self._gemini_recovery_done = True
+
+        providers = {
+            item.id: item for item in db.query(ImageProviderConfig).filter(ImageProviderConfig.enabled.is_(True)).all()
+        }
+        # ImageProviderConfig.id is the lane identity. Configurations that share
+        # a provider kind or base URL still have completely independent limits.
+        active_by_model_config: dict[int, int] = {}
+        for provider_id, job in self._gemini_jobs.values():
+            if not job.done():
+                active_by_model_config[provider_id] = active_by_model_config.get(provider_id, 0) + 1
+
+        pending = db.query(Task).filter(Task.status == "PENDING").order_by(Task.priority.desc(), Task.id).all()
+        for task in pending:
+            if task.id in self._gemini_jobs or (task.params or {}).get("__execution_provider") != "gemini_image":
+                continue
+            provider_id = int((task.params or {}).get("__provider_config_id") or 0)
+            provider = providers.get(provider_id)
+            if not provider:
+                task.status = "FAILED"
+                task.error = "Gemini Image 提供方不存在或已停用"
+                task.finished_at = datetime.now(timezone.utc)
+                db.commit()
+                continue
+            active = active_by_model_config.get(provider_id, 0)
+            if active >= max(1, provider.max_concurrency):
+                continue
+            job = asyncio.create_task(self._run_gemini_task(task.id), name=f"gemini-image-{task.id}")
+            self._gemini_jobs[task.id] = (provider_id, job)
+            active_by_model_config[provider_id] = active + 1
+            self._submitted += 1
+
+    async def _run_gemini_task(self, task_id: int) -> None:
+        db = self._session_factory()
+        try:
+            task = db.get(Task, task_id)
+            if not task or task.status != "PENDING":
+                return
+            await self._dispatch_gemini_image(db, task)
+        finally:
+            db.close()
+
     async def _submit_pending(self, db: Session) -> None:
-        """取 PENDING 任务，按打分选最优节点提交。"""
+        """Submit only ComfyUI tasks; Gemini has its own independent lane."""
         for _ in range(self._max_submissions_per_tick):
-            t = (
-                db.query(Task)
-                .filter(Task.status == "PENDING")
-                .order_by(Task.priority.desc(), Task.id)
-                .first()
-            )
+            t = next((task for task in db.query(Task).filter(Task.status == "PENDING").order_by(Task.priority.desc(), Task.id).all()
+                      if (task.params or {}).get("__execution_provider") != "gemini_image"), None)
             if not t:
                 return
             node = self._pick_node(db, t)
@@ -212,6 +299,99 @@ class Dispatcher:
             # Some local ComfyUI calls finish immediately. Explicitly give the
             # web server a chance to service pending HTTP requests between jobs.
             await asyncio.sleep(0)
+
+    async def _dispatch_gemini_image(self, db: Session, t: Task) -> None:
+        """Execute Gemini image generation/edit while preserving the normal task/resource lifecycle."""
+        from app.services import image_provider_service
+        from app.services.resource_folder_service import ensure_task_result_folder
+        from app.services.resource_service import build_image_thumbnail, thumbnail_storage_key
+
+        t.status = "RUNNING"
+        t.started_at = datetime.now(timezone.utc)
+        db.commit()
+        await self._publish(t.id, "status", 5, {"status": "RUNNING", "provider": "gemini_image"}, owner_id=t.user_id)
+        try:
+            provider_id = int((t.params or {}).get("__provider_config_id") or 0)
+            config = image_provider_service.get_enabled(db, provider_id)
+            from app.services import generation_type_service
+            maintained_sizes = {
+                str(item.get("value")) for item in generation_type_service.get_select_options(db, "image_size")
+                if isinstance(item, dict) and item.get("value")
+            }
+            requested_size = str(
+                (t.params or {}).get("size")
+                or generation_type_service.get_select_default(db, "image_size")
+                or "1024x1024"
+            )
+            if requested_size not in maintained_sizes:
+                raise RuntimeError(f"图片尺寸不在系统维护项中：{requested_size}")
+            reference_ids = [int(value) for value in ((t.params or {}).get("reference_resource_ids") or []) if value]
+            references: list[tuple[bytes, str]] = []
+            for resource_id in reference_ids:
+                resource = db.get(Resource, resource_id)
+                if not resource or resource.media_type != "image":
+                    raise RuntimeError(f"参考图片不存在或类型不正确：#{resource_id}")
+                if t.user_id and resource.owner_id not in (None, t.user_id):
+                    raise RuntimeError(f"无权使用参考图片：#{resource_id}")
+                references.append((await asyncio.to_thread(get_storage().read, resource.storage_key), resource.mime or "image/png"))
+                if not db.query(TaskResource.id).filter(TaskResource.task_id == t.id, TaskResource.resource_id == resource.id, TaskResource.role == "input").first():
+                    db.add(TaskResource(task_id=t.id, resource_id=resource.id, role="input", slot_key="reference_resource_ids"))
+            await self._publish(t.id, "progress", 20, {"mode": "edit" if references else "generate"}, owner_id=t.user_id)
+            generated = await image_provider_service.generate(
+                config,
+                str((t.params or {}).get("prompt") or "").strip(),
+                references,
+                requested_size,
+            )
+            sha = hashlib.sha256(generated.data).hexdigest()
+            ext = mimetypes.guess_extension(generated.mime) or ".png"
+            filename = f"gemini_{'edit' if references else 'generate'}_{t.id}{ext}"
+            key = f"resources/{datetime.now(timezone.utc):%Y-%m}/{sha[:16]}/{filename}"
+            storage = get_storage()
+            storage.save_bytes(generated.data, key)
+            thumb_data, width, height = build_image_thumbnail(generated.data)
+            thumb_key = thumbnail_storage_key(key)
+            storage.save_bytes(thumb_data, thumb_key)
+            generation_type = db.get(GenerationType, t.generation_type_id) if t.generation_type_id else None
+            resource = Resource(
+                owner_id=t.user_id,
+                folder_id=ensure_task_result_folder(db, t.user_id, t.id, generation_type.name if generation_type else "Gemini 图片").id if t.user_id else None,
+                media_type="image", direction="output", filename=filename, mime=generated.mime,
+                size=len(generated.data), sha256=sha, storage_key=key, thumb_key=thumb_key,
+                width=width, height=height, visibility="private",
+                meta={"provider": "gemini_image", "provider_config_id": config.id, "model": config.model, "image_size": requested_size, "mode": "edit" if references else "generate", "note": generated.note},
+            )
+            db.add(resource)
+            db.flush()
+            db.add(TaskResource(task_id=t.id, resource_id=resource.id, role="output"))
+            asset_context = (t.params or {}).get("__asset_context")
+            if isinstance(asset_context, dict) and t.user_id:
+                try:
+                    from app.short_drama import phase1_service
+                    snapshot = {"provider": "gemini_image", "provider_config_id": config.id, "model": config.model, "image_size": requested_size, "purpose": asset_context.get("purpose", "default"), "reference_resource_ids": reference_ids}
+                    creator = phase1_service.auto_link_turnaround if asset_context.get("purpose") in {"asset_turnaround", "character_turnaround"} else phase1_service.create_asset_version
+                    creator(db, t.user_id, int(asset_context["project_id"]), str(asset_context["entity_type"]), int(asset_context["entity_id"]),
+                        resource_id=resource.id, source_task_id=t.id, prompt=str((t.params or {}).get("prompt") or ""), generation_snapshot=snapshot)
+                except Exception as asset_exc:  # result is still valid even if project-candidate linking needs repair
+                    logger.warning("Gemini 输出关联项目资产失败 task=%s: %s", t.id, asset_exc)
+            t.status = "SUCCESS"
+            t.error = None
+            t.finished_at = datetime.now(timezone.utc)
+            db.commit()
+            await self._publish(t.id, "completed", 100, {"status": "SUCCESS", "resource_id": resource.id}, owner_id=t.user_id)
+            self._completed += 1
+        except Exception as exc:  # noqa: BLE001
+            db.rollback()
+            task = db.get(Task, t.id)
+            if task:
+                task.status = "FAILED"
+                task.error = str(exc)
+                task.retries += 1
+                task.finished_at = datetime.now(timezone.utc)
+                db.commit()
+            await self._publish(t.id, "failed", 0, {"error": str(exc)}, owner_id=t.user_id)
+            self._failed += 1
+            logger.warning("Gemini Image 任务 %s 失败: %s", t.id, exc)
 
     def _pick_node(self, db: Session, t: Task) -> Node | None:
         """按标签匹配 + 加权打分选最优节点。返回 None 表示无可用节点。"""
@@ -245,7 +425,7 @@ class Dispatcher:
         t.status = "DISPATCHING"
         t.node_id = node.id
         db.commit()
-        await self._publish(t.id, "status", 0, {"status": "DISPATCHING"})
+        await self._publish(t.id, "status", 0, {"status": "DISPATCHING"}, owner_id=t.user_id)
 
         try:
             wv = db.get(WorkflowVersion, t.workflow_version_id)
@@ -259,14 +439,14 @@ class Dispatcher:
             t.status = "QUEUED"
             t.started_at = datetime.now(timezone.utc)
             db.commit()
-            await self._publish(t.id, "status", 0, {"status": "QUEUED", "prompt_id": resp["prompt_id"]})
+            await self._publish(t.id, "status", 0, {"status": "QUEUED", "prompt_id": resp["prompt_id"]}, owner_id=t.user_id)
         except Exception as e:  # noqa: BLE001
             db.rollback()
             t.status = "FAILED"
             t.error = str(e)
             t.retries += 1
             db.commit()
-            await self._publish(t.id, "failed", 0, {"error": str(e)})
+            await self._publish(t.id, "failed", 0, {"error": str(e)}, owner_id=t.user_id)
             self._failed += 1
             logger.warning("任务 %s 提交失败: %s", t.id, e)
 
@@ -430,7 +610,7 @@ class Dispatcher:
                             production_service.mark_sync_failed(db, t.id, str(sync_exc))
                             sync_pending = True
                             logger.exception("shot output sync failed task=%s", t.id)
-                    await self._publish(t.id, "completed", 100, {"take_sync_pending": sync_pending})
+                    await self._publish(t.id, "completed", 100, {"take_sync_pending": sync_pending}, owner_id=t.user_id)
                     self._completed += 1
                 except Exception as e:  # noqa: BLE001
                     db.rollback()
@@ -442,21 +622,21 @@ class Dispatcher:
                         db.commit()
                         production_service.mark_output_payload(db, t.id, entry.get("outputs", {}))
                         production_service.mark_sync_failed(db, t.id, str(e), "output_collect_failed")
-                        await self._publish(t.id, "completed", 100, {"take_sync_pending": True, "sync_error": str(e)})
+                        await self._publish(t.id, "completed", 100, {"take_sync_pending": True, "sync_error": str(e)}, owner_id=t.user_id)
                         self._completed += 1
                     else:
                         t.status = "FAILED"
                         t.error = f"输出回收失败: {e}"
                         t.finished_at = datetime.now(timezone.utc)
                         db.commit()
-                        await self._publish(t.id, "failed", 0, {"error": str(e)})
+                        await self._publish(t.id, "failed", 0, {"error": str(e)}, owner_id=t.user_id)
                         self._failed += 1
             elif status_info.get("status_str") == "error":
                 t.status = "FAILED"
                 t.error = str(status_info.get("messages"))[:500]
                 t.finished_at = datetime.now(timezone.utc)
                 db.commit()
-                await self._publish(t.id, "failed", 0, {"error": t.error})
+                await self._publish(t.id, "failed", 0, {"error": t.error}, owner_id=t.user_id)
                 self._failed += 1
             # History may be served from a local cache without yielding. Keep
             # the API responsive even while many completed jobs are collected.
@@ -525,7 +705,7 @@ class Dispatcher:
         task.finished_at = now
         db.commit()
         self._failed += 1
-        await self._publish(task.id, "failed", 0, {"error": task.error, "recovered": True})
+        await self._publish(task.id, "failed", 0, {"error": task.error, "recovered": True}, owner_id=task.user_id)
 
     async def _collect_outputs(self, db: Session, t: Task, client: ComfyUIClient, outputs: dict) -> None:
         seen: set[tuple[str, str, str]] = set()
@@ -536,8 +716,14 @@ class Dispatcher:
                 ("videos", "video"),
                 ("audio", "audio"),
                 ("audios", "audio"),
+                ("text", "text"),
+                ("texts", "text"),
             ):
                 for item in out.get(output_key, []) or []:
+                    # 某些自定义节点会直接输出字符串（如内联文本），
+                    # 它们没有 filename/subfolder/type，无法通过 /view 下载，跳过。
+                    if not isinstance(item, dict):
+                        continue
                     identity = (
                         str(item.get("filename", "")),
                         str(item.get("subfolder", "")),
@@ -547,6 +733,100 @@ class Dispatcher:
                         continue
                     seen.add(identity)
                     await self._save_output(db, t, client, item, media_type=media_type, ext_key=output_key)
+        # 根据工作流版本的文本输出配置，提取指定节点的内联文本（如翻译/图片反推结果）
+        try:
+            wv = db.get(WorkflowVersion, t.workflow_version_id) if t.workflow_version_id else None
+            if wv and wv.text_output_config:
+                cfg = wv.text_output_config
+                node_id = str(cfg.get("node_id") or "")
+                field = cfg.get("field") or "*"
+                node_out = outputs.get(node_id)
+                if node_out and isinstance(node_out, dict):
+                    text = self._extract_text(node_out, field)
+                    if text:
+                        await self._save_text_output(db, t, text)
+        except Exception as exc:  # noqa: BLE001
+            logger.warning("文本输出提取失败 task=%s: %s", t.id, exc)
+        self._auto_link_turnaround_output(db, t)
+
+    @staticmethod
+    def _auto_link_turnaround_output(db: Session, task: Task) -> None:
+        context = (task.params or {}).get("__asset_context")
+        if not isinstance(context, dict) or context.get("purpose") not in {"asset_turnaround", "character_turnaround"} or not task.user_id:
+            return
+        output = (db.query(Resource).join(TaskResource, TaskResource.resource_id == Resource.id)
+            .filter(TaskResource.task_id == task.id, TaskResource.role == "output", Resource.media_type == "image")
+            .order_by(Resource.id.desc()).first())
+        if not output:
+            return
+        try:
+            from app.short_drama import phase1_service
+            phase1_service.auto_link_turnaround(db, task.user_id, int(context["project_id"]), str(context["entity_type"]),
+                int(context["entity_id"]), output.id, task.id, str((task.params or {}).get("prompt") or ""),
+                {"provider": "comfyui", "purpose": context.get("purpose"), "workflow_version_id": task.workflow_version_id})
+        except Exception as exc:  # noqa: BLE001
+            logger.warning("ComfyUI 三视图自动关联失败 task=%s: %s", task.id, exc)
+
+    @staticmethod
+    def _extract_text(node_out: dict, field: str) -> str:
+        """从节点输出中提取文本内容。field 为 '*' 时自动探测所有字符串字段。"""
+        def _to_str(value: object) -> str | None:
+            if isinstance(value, str):
+                return value if value.strip() else None
+            if isinstance(value, (list, tuple)):
+                parts = []
+                for v in value:
+                    if isinstance(v, str) and v.strip():
+                        parts.append(v)
+                    elif isinstance(v, dict) and v.get("filename"):
+                        return None  # 文件类型，忽略
+                return "\n".join(parts) if parts else None
+            return None
+
+        if field and field != "*":
+            if field in node_out:
+                return _to_str(node_out[field]) or ""
+        # 自动探测：优先 text/texts/result/output/string/translation，否则找第一个字符串值
+        for key in ("text", "texts", "result", "output", "string", "translation", "response", "content"):
+            if key in node_out:
+                s = _to_str(node_out[key])
+                if s:
+                    return s
+        for value in node_out.values():
+            s = _to_str(value)
+            if s:
+                return s
+        return ""
+
+    async def _save_text_output(self, db: Session, t: Task, text: str) -> None:
+        """把内联文本保存为 text 类型 Resource。"""
+        from app.models import Resource
+        from app.services.resource_folder_service import ensure_task_result_folder
+
+        data = text.encode("utf-8")
+        import hashlib, os
+        sha = hashlib.sha256(data).hexdigest()
+        fname = f"text_output_{datetime.now(timezone.utc):%Y%m%d%H%M%S}.txt"
+        key = f"resources/{datetime.now(timezone.utc):%Y-%m}/{sha[:16]}/{fname}"
+        get_storage().save_bytes(data, key)
+        generation_type = db.get(GenerationType, t.generation_type_id) if t.generation_type_id else None
+        r = Resource(
+            owner_id=t.user_id,
+            folder_id=ensure_task_result_folder(
+                db, t.user_id, t.id, generation_type.name if generation_type else "未知类型"
+            ).id if t.user_id else None,
+            media_type="text",
+            direction="output",
+            filename=fname,
+            mime="text/plain",
+            size=len(data),
+            sha256=sha,
+            storage_key=key,
+            visibility="private",
+        )
+        db.add(r)
+        db.flush()
+        db.add(TaskResource(task_id=t.id, resource_id=r.id, role="output"))
 
     async def _save_output(self, db: Session, t: Task, client: ComfyUIClient, item: dict, media_type: str, ext_key: str) -> None:
         from app.models import Resource
@@ -581,6 +861,7 @@ class Dispatcher:
             "image": "image/png",
             "video": "video/mp4",
             "audio": "audio/wav",
+            "text": "text/plain",
         }.get(media_type, "application/octet-stream")
         media_type = infer_media_type(fname, mime, media_type)
         thumb_key = None
@@ -597,6 +878,11 @@ class Dispatcher:
                 width, height, duration = probe_media_metadata(storage.abs_path(key))
             except Exception as exc:  # noqa: BLE001
                 logger.warning("输出媒体元数据读取失败 task=%s file=%s: %s", t.id, fname, exc)
+        elif media_type == "text":
+            # 文本输出（如图片反推、翻译结果），写入 .txt 文件，无需缩略图
+            if not ext:
+                key = key + ".txt"
+                mime = "text/plain"
         generation_type = db.get(GenerationType, t.generation_type_id) if t.generation_type_id else None
         r = Resource(
             owner_id=t.user_id,

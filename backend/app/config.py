@@ -34,6 +34,9 @@ class Settings(BaseSettings):
     story_worker_timeout_seconds: int = 300
     story_worker_max_retries: int = 2
 
+    # V3 AI 导演前期制作模块（实验）；默认关闭，灰度开放。
+    v3_director_enabled: bool = False
+
     # 数据库
     database_url: str = f"sqlite:///{(BACKEND_DIR / 'data' / 'app.db').as_posix()}"
 

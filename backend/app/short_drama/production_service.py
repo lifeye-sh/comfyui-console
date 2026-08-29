@@ -2,7 +2,7 @@
 from __future__ import annotations
 
 from copy import deepcopy
-from datetime import UTC, datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from typing import Any
 
 from sqlalchemy import func
@@ -14,10 +14,18 @@ from app.models import (
     Scene, ShortDramaProject, Shot, ShotTaskLink, Take, Task, TaskResource, Workflow, WorkflowVersion,
 )
 from app.schemas.short_drama import ShotProductionCompileIn, ShotProductionCreateIn
+from app.services.video_rules import duration_errors
 from app.short_drama import project_service, storyboard_service
 
 
 class ProductionValidationError(ValueError): pass
+
+
+try:  # Python 3.11+
+    from datetime import UTC  # type: ignore[attr-defined]
+except ImportError:  # Python 3.10 fallback
+    from datetime import timezone as _tz
+    UTC = _tz.utc  # type: ignore[assignment]
 
 
 def _now() -> datetime: return datetime.now(UTC).replace(tzinfo=None)
@@ -90,6 +98,21 @@ def _resources(db: Session, shot: Shot, project_id: int, owner_id: int) -> dict[
 
 
 def _mapping_exists(api_json: dict[str, Any], spec: dict[str, Any]) -> bool:
+    if not isinstance(spec, dict):
+        return False
+    # size 类型：复合参数（宽×高），映射信息在 targets.width / targets.height
+    if spec.get("type") == "size":
+        targets = spec.get("targets")
+        if not isinstance(targets, dict):
+            return False
+        w = targets.get("width")
+        h = targets.get("height")
+        if not isinstance(w, dict) or not isinstance(h, dict):
+            return False
+        return (
+            _mapping_exists(api_json, {**w, "type": "int", "key": "width"})
+            and _mapping_exists(api_json, {**h, "type": "int", "key": "height"})
+        )
     node = api_json.get(str(spec.get("node") or ""))
     if not isinstance(node, dict): return False
     parts = [part for part in str(spec.get("path") or "").split(".") if part]
@@ -98,11 +121,24 @@ def _mapping_exists(api_json: dict[str, Any], spec: dict[str, Any]) -> bool:
         if not isinstance(target, dict) or not isinstance(target.get(part), dict): return False
         target = target[part]
     if parts and isinstance(target, dict) and parts[-1] in target: return True
-    if spec.get("type") in {"image", "video", "audio"}:
-        inputs = node.get("inputs")
-        if not isinstance(inputs, dict): return False
-        kind = str(spec.get("type"))
-        return any(key in inputs for key in (kind, f"input_{kind}", f"{kind}_path", "filename")) or any(kind in key.lower() for key in inputs)
+    inputs = node.get("inputs")
+    if not isinstance(inputs, dict): return False
+    kind = str(spec.get("type"))
+    param_key = str(spec.get("key") or "")
+    # 多媒体类型：按 image/video/audio 相关字段名模糊匹配
+    if kind in {"image", "video", "audio"}:
+        return any(k in inputs for k in (kind, f"input_{kind}", f"{kind}_path", "filename")) or any(kind in field.lower() for field in inputs)
+    # 其他类型（select/int/float/text 等）：path 最后一段命中 inputs 即通过
+    leaf = parts[-1] if parts else param_key
+    if leaf and leaf in inputs:
+        return True
+    # 兜底：inputs 字段名与参数 key 精确归一化匹配（忽略大小写、下划线/连字符/空格）
+    if param_key:
+        norm_key = param_key.lower().replace("_", "").replace("-", "").replace(" ", "")
+        if norm_key:
+            for field in inputs:
+                if str(field).lower().replace("_", "").replace("-", "").replace(" ", "") == norm_key:
+                    return True
     return False
 
 
@@ -130,6 +166,9 @@ def _compile_one(db: Session, owner_id: int, project_id: int, shot_id: int, gene
         elif kind == "audio": value = shot.reference_audio_resource_id if shot.reference_audio_resource_id in resources["audio"] else (resources["audio"][0] if resources["audio"] else None)
         params[key] = value
     params.update(overrides)
+    for message in duration_errors(generation_type.media_type, params):
+        warnings.append({"path": "duration", "code": "video_duration_advice", "message": message,
+                         "actionable": True, "action": "set_duration", "action_label": "调整为15秒"})
     schema_keys = {str(item.get("key")) for item in version.param_schema or []}
     for key in overrides:
         if key not in schema_keys: warnings.append({"path": key, "code": "unknown_override", "message": "覆盖参数不在工作流映射中"})

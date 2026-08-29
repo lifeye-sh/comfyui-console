@@ -43,6 +43,8 @@ def infer_media_type(filename: str, mime: str, fallback: str = "image") -> str:
         return "video"
     if normalized_mime.startswith("audio/") or extension in AUDIO_EXTENSIONS:
         return "audio"
+    if normalized_mime.startswith("text/") or extension in {".txt", ".json", ".md", ".csv", ".xml", ".yaml", ".yml"}:
+        return "text"
     if normalized_mime.startswith("image/"):
         return "image"
     return fallback

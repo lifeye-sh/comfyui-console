@@ -58,6 +58,7 @@ def add_version(db: Session, workflow_id: int, body: WorkflowVersionIn) -> Workf
         api_json=body.api_json,
         param_schema=body.param_schema,
         output_mapping=body.output_mapping,
+        text_output_config=body.text_output_config,
     )
     db.add(v)
     db.flush()
@@ -222,7 +223,10 @@ async def test_execute(db: Session, version_id: int, node_id: int, params: dict,
 
     client = ComfyUIClient(node.id, node.base_url, node.ws_url)
     try:
-        prompt = build_prompt(v.api_json, v.param_schema, params)
+        clean_params, errors = validate_task_params(db, v, params, user_id)
+        if errors:
+            raise ValueError("；".join(errors))
+        prompt = build_prompt(v.api_json, v.param_schema, clean_params)
         client_id = f"console-test-v{version_id}-u{user_id}"
         resp = await client.post_prompt(prompt, client_id)
         prompt_id = resp["prompt_id"]

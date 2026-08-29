@@ -1,0 +1,112 @@
+{
+  "44": {
+    "inputs": {
+      "text": "A young Asian woman with long black hair stands in a sun-dappled forest; her hair flows freely over her shoulders, styled into a loose braided ponytail secured with a purple ribbon. She has fair skin and a gentle smile, with her expression soft and inviting. She wears a white off-the-shoulder top with delicate lace trim along the neckline and cuffs, featuring a bow at the center and a tight flare at the bottom that reveals a purple belt; a thin gold chain hangs around her neck, adorned with an oval-shaped purple gemstone pendant. In her right hand, she gently holds a purple wind lily vine with petals unfurling and slender stems bearing green leaves. Soft golden sunlight filters through the leaves on the left, casting a dreamy, warm, and natural atmosphere. The background is a soft, misty green shadow and a blur of scattered light, capturing the essence of a serene and magical setting.",
+      "anything": [
+        "46:17",
+        0
+      ]
+    },
+    "class_type": "easy showAnything",
+    "_meta": {
+      "title": "展示任何"
+    }
+  },
+  "45": {
+    "inputs": {
+      "text": "一位黑色长发的年轻亚洲女子站在阳光斑驳的森林中，头发自然披散在肩头并编成一条松散的长辫，用紫色发圈固定。她的皮肤白皙，嘴唇微张，笑容甜美，表情温柔。她身穿一袭白色露肩上衣，领口和袖口饰有精致蕾丝花边，胸前系着蝴蝶结，下摆微微收紧露出紫色腰带；脖子上戴着一条金色细链，坠着一枚椭圆形紫色宝石吊坠。她的右手轻轻捏住一朵紫色风铃草，花瓣舒展，花茎细长带有绿色叶片。柔和的金色阳光从左侧树叶间洒落，背景是朦胧的绿色树影与散景光点，整体画面呈现温暖、自然且梦幻的氛围。"
+    },
+    "class_type": "CR Text",
+    "_meta": {
+      "title": "🔤 CR Text"
+    }
+  },
+  "46:32": {
+    "inputs": {
+      "switch": true,
+      "on_false": [
+        "46:35",
+        0
+      ],
+      "on_true": [
+        "46:36",
+        0
+      ]
+    },
+    "class_type": "ComfySwitchNode",
+    "_meta": {
+      "title": "切换"
+    }
+  },
+  "46:36": {
+    "inputs": {
+      "text": "翻译成英文"
+    },
+    "class_type": "CR Text",
+    "_meta": {
+      "title": "🔤 CR Text"
+    }
+  },
+  "46:18": {
+    "inputs": {
+      "模型系列": "Qwen3.5-VL",
+      "主模型": "Qwen3.5-0.8B-UD-Q4_K_XL.gguf",
+      "视觉投影mmproj": "无",
+      "启用思考": false,
+      "保留历史think": false,
+      "上下文长度": 8192,
+      "GPU层数": -1,
+      "KV缓存K类型": "默认(F16)",
+      "KV缓存V类型": "默认(F16)",
+      "MoE专家上CPU": false,
+      "前N层专家上CPU": 0,
+      "Qwen3.8推理强度": "low"
+    },
+    "class_type": "QwenTE_ModelLoader",
+    "_meta": {
+      "title": "Qwen llama TE 模型加载器"
+    }
+  },
+  "46:35": {
+    "inputs": {
+      "text": "翻译成中文"
+    },
+    "class_type": "CR Text",
+    "_meta": {
+      "title": "🔤 CR Text"
+    }
+  },
+  "46:17": {
+    "inputs": {
+      "输入模式": "文本",
+      "提示词": [
+        "45",
+        0
+      ],
+      "系统提示词": [
+        "46:32",
+        0
+      ],
+      "最多帧数": 24,
+      "最大边长": 1024,
+      "最大生成token": 8192,
+      "温度": 0.7,
+      "top_p": 0.9,
+      "top_k": 20,
+      "重复惩罚": 1,
+      "频率惩罚": 0,
+      "存在惩罚": 0,
+      "seed": 973083919433276,
+      "输出think块": false,
+      "生成后自动卸载模型": true,
+      "qwen模型": [
+        "46:18",
+        0
+      ]
+    },
+    "class_type": "QwenTE_ImageInfer",
+    "_meta": {
+      "title": "Qwen llama TE 图像推理"
+    }
+  }
+}

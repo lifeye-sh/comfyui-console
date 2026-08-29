@@ -45,7 +45,13 @@ def init_db() -> None:
         db_dir = os.path.dirname(db_file)
         if db_dir:
             os.makedirs(db_dir, exist_ok=True)
-    Base.metadata.create_all(bind=engine)
+    # Alembic 已接管的数据库不能再由 create_all 抢先创建未来版本的表。
+    # 否则版本号仍在旧 revision，而新表已经存在，下一次 upgrade 会在
+    # create_table 时失败。无 alembic_version 的测试库/首次开发库仍保留
+    # 原有的零配置建库行为。
+    versioned_database = inspect(engine).has_table("alembic_version")
+    if not versioned_database:
+        Base.metadata.create_all(bind=engine)
     # 开发态兼容升级：create_all 不会为已有 SQLite 表增加字段。
     if settings.database_url.startswith("sqlite"):
         resource_columns = {column["name"] for column in inspect(engine).get_columns("resources")}
@@ -66,6 +72,11 @@ def init_db() -> None:
             with engine.begin() as connection:
                 connection.execute(text("ALTER TABLE tasks ADD COLUMN config_version_id INTEGER"))
                 connection.execute(text("CREATE INDEX IF NOT EXISTS ix_tasks_config_version_id ON tasks (config_version_id)"))
+        if "workflow_versions" in inspect(engine).get_table_names():
+            wv_columns = {column["name"] for column in inspect(engine).get_columns("workflow_versions")}
+            if "text_output_config" not in wv_columns:
+                with engine.begin() as connection:
+                    connection.execute(text("ALTER TABLE workflow_versions ADD COLUMN text_output_config JSON"))
         node_columns = {column["name"] for column in inspect(engine).get_columns("nodes")}
         for column_name, definition in (
             ("last_probe_at", "DATETIME"),

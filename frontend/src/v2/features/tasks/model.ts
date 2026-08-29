@@ -6,7 +6,7 @@ export type TaskItem = {
   workflow_name?: string | null
 }
 export type TaskEvent = { id: number; type: string; progress: number; payload: Record<string, unknown>; created_at: string }
-export type TaskOutput = { id: number; filename: string; media_type: 'image' | 'video' | 'audio'; mime: string; thumbUrl?: string; fileUrl?: string; width?: number | null; height?: number | null; duration?: number | null }
+export type TaskOutput = { id: number; filename: string; media_type: 'image' | 'video' | 'audio' | 'text'; mime: string; thumbUrl?: string; fileUrl?: string; width?: number | null; height?: number | null; duration?: number | null; content?: string }
 export type GenerationTypeItem = { id: number; code: string; name: string; media_type: string; param_schema?: Array<{ key: string; label?: string; type?: string; options?: Array<{label:string;value:unknown}>; options_from?: string }> }
 export type DashboardSummary = {
   generated_at: string
@@ -26,4 +26,4 @@ function localDateInput(date: Date) { return `${date.getFullYear()}-${String(dat
 function parseServerDate(value: string) { return new Date(/[zZ]|[+-]\d\d:\d\d$/.test(value) ? value : `${value}Z`) }
 export function formatDate(value?: string | null) { if (!value) return '—'; const date = parseServerDate(value); return Number.isNaN(date.getTime()) ? value : date.toLocaleString('zh-CN', { hour12:false }) }
 export function todayRange() { const from = new Date(); from.setHours(0,0,0,0); const to = new Date(from); to.setDate(to.getDate()+1); return { from: from.toISOString(), to: to.toISOString(), date: localDateInput(from) } }
-export function flattenGenerationMenu(menu: Record<string, GenerationTypeItem[]>): GenerationTypeItem[] { return [...(menu.image||[]),...(menu.video||[]),...(menu.audio||[])] }
+export function flattenGenerationMenu(menu: Record<string, GenerationTypeItem[]>): GenerationTypeItem[] { return [...(menu.image||[]),...(menu.video||[]),...(menu.audio||[]),...(menu.tool||[])] }

@@ -4,6 +4,7 @@ import { useRouter } from 'vue-router'
 import { getAccessToken } from '@/api/client'
 import { resourceApi, genTypeApi } from '@/api/modules'
 import ImageEditor from './ImageEditor.vue'
+import CopyButton from './CopyButton.vue'
 import type { ResourceItem } from '@/v2/features/assets/model'
 import type { TaskOutput, GenerationTypeItem } from '@/v2/features/tasks/model'
 import { flattenGenerationMenu } from '@/v2/features/tasks/model'
@@ -23,6 +24,19 @@ let pinchDist=0, pinchScale=1, pinchCenterX=0, pinchCenterY=0, pinchOriginX=0, p
 const isImage = computed(() => props.output?.media_type === 'image' || (!!props.output?.mime && props.output.mime.startsWith('image/')))
 const isVideo = computed(() => props.output?.media_type === 'video' || (!!props.output?.mime && props.output.mime.startsWith('video/')))
 const isAudio = computed(() => props.output?.media_type === 'audio' || (!!props.output?.mime && props.output.mime.startsWith('audio/')))
+const isText = computed(() => props.output?.media_type === 'text' || (!!props.output?.mime && props.output.mime.startsWith('text/')))
+const textContent = ref('')
+const textLoading = ref(false)
+async function loadTextContent() {
+  if (!isText.value || !props.output) return
+  textLoading.value = true
+  try {
+    const r = await fetch(resourceApi.fileUrl(props.output.id), { headers: { Authorization: `Bearer ${getAccessToken() || ''}` } })
+    if (r.ok) textContent.value = await r.text()
+  } catch { /* ignore */ }
+  finally { textLoading.value = false }
+}
+watch(() => [props.open, props.output?.id, isText.value], () => { if (props.open && isText.value) loadTextContent() })
 const mediaInfo = computed(() => { const output=metadata.value||props.output;if(!output)return[];const info:Array<{label:string;value:string}>=[];if(output.width&&output.height)info.push({label:output.media_type==='image'?'图片尺寸':'视频尺寸',value:`${output.width} × ${output.height}`});if((output.media_type==='video'||output.media_type==='audio')&&output.duration!=null)info.push({label:'时长',value:formatDuration(output.duration)});return info })
 
 /** 图片操作菜单 */
@@ -153,10 +167,10 @@ onUnmounted(() => window.removeEventListener('keydown', onKeydown))
       <header class="mv-header">
         <span class="mv-title">{{ output?.filename || '媒体预览' }}</span>
         <div class="mv-actions">
-          <V2Button v-if="isImage" variant="ghost" @click="zoom(-.25)">－</V2Button>
-          <span v-if="isImage" class="mv-zoom">{{ Math.round(scale*100) }}%</span>
-          <V2Button v-if="isImage" variant="ghost" @click="zoom(.25)">＋</V2Button>
-          <V2Button v-if="isImage" variant="ghost" @click="reset">重置</V2Button>
+          <V2Button v-if="isImage" variant="ghost" class="mobile-hidden" @click="zoom(-.25)">－</V2Button>
+          <span v-if="isImage" class="mv-zoom mobile-hidden">{{ Math.round(scale*100) }}%</span>
+          <V2Button v-if="isImage" variant="ghost" class="mobile-hidden" @click="zoom(.25)">＋</V2Button>
+          <V2Button v-if="isImage" variant="ghost" class="mobile-hidden" @click="reset">重置</V2Button>
           <V2Button v-if="isImage" @click="openActionMenu('image_ops')">图片操作</V2Button>
           <V2Button v-if="isImage" @click="openActionMenu('gen_video')">生成视频</V2Button>
           <V2Button v-if="isImage" @click="openEditor">编辑</V2Button>
@@ -205,13 +219,14 @@ onUnmounted(() => window.removeEventListener('keydown', onKeydown))
           </div>
         </div>
         <!-- 音频 -->
+        <div v-else-if="isText" class="mv-text"><div class="mv-text-header">📄 {{ output?.filename }} <CopyButton v-if="textContent" :text="textContent" /></div><pre v-if="textLoading" class="mv-text-loading">加载中…</pre><pre v-else-if="textContent" class="mv-text-content">{{ textContent }}</pre><div v-else class="mv-text-empty">无内容</div></div>
         <div v-else class="mv-audio"><span>♪</span><audio :src="url" controls autoplay /></div>
       </div>
       <div v-else class="mv-state">资源加载失败</div>
 
       <!-- 底部信息 -->
       <footer v-if="showInfo && url" class="mv-footer">
-        <span><small>类型</small><b>{{ isImage?'图片':isVideo?'视频':'音频' }}</b></span>
+        <span><small>类型</small><b>{{ isImage?'图片':isVideo?'视频':isAudio?'音频':isText?'文本':'文件' }}</b></span>
         <span v-for="item in mediaInfo" :key="item.label"><small>{{ item.label }}</small><b>{{ item.value }}</b></span>
       </footer>
 
@@ -295,6 +310,10 @@ onUnmounted(() => window.removeEventListener('keydown', onKeydown))
 .trim-row .trim-btn:disabled { opacity: 0.5; cursor: not-allowed; }
 .mv-audio { display: grid; place-items: center; gap: 20px; color: #7a85a8; font-size: 60px; }
 .mv-audio audio { max-width: 400px; width: 90vw; }
+.mv-text { width: min(820px, 92vw); max-height: 70vh; background: #0d1424; border: 1px solid rgba(130,149,255,0.2); border-radius: 14px; display: flex; flex-direction: column; overflow: hidden; }
+.mv-text-header { padding: 12px 16px; display: flex; align-items: center; justify-content: space-between; gap: 12px; color: #c8d0ee; font-size: 13px; border-bottom: 1px solid rgba(130,149,255,0.15); }
+.mv-text-loading, .mv-text-empty { padding: 40px; text-align: center; color: #7a85a8; }
+.mv-text-content { margin: 0; padding: 18px; white-space: pre-wrap; word-break: break-word; color: #c8d0ee; font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 13px; line-height: 1.7; overflow-y: auto; max-height: calc(70vh - 56px); }
 
 .mv-footer {
   flex-shrink: 0; padding: 8px 16px;
@@ -346,6 +365,9 @@ onUnmounted(() => window.removeEventListener('keydown', onKeydown))
   .mv-title { font-size: 11px; max-width: 40vw; }
   .mv-actions { gap: 4px; }
   .mv-actions :deep(.v2-button) { min-height: 28px; padding: 0 8px; font-size: 11px; }
+  /* 移动端隐藏缩放按钮和重置，保留图片操作/生成视频/编辑/下载/关闭 */
+  .mv-actions :deep(.mobile-hidden) { display: none; }
+  .mv-close { width: 32px; height: 32px; font-size: 16px; }
   .mv-footer { padding: 6px 10px; gap: 10px; }
 }
 </style>

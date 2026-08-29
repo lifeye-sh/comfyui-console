@@ -1,7 +1,12 @@
 """短剧编排候选、人工草稿和不可变版本管理。"""
 from __future__ import annotations
 
-from datetime import UTC, datetime
+try:  # Python 3.11+
+    from datetime import UTC  # type: ignore[attr-defined]
+except ImportError:  # Python 3.10 fallback
+    from datetime import timezone as _tz
+    UTC = _tz.utc  # type: ignore[assignment]
+from datetime import datetime
 from math import floor
 from typing import Any
 
@@ -126,20 +131,40 @@ def _validate_option(option: dict[str, Any], document: SourceDocument) -> list[d
         return [{"path": "episodes", "message": "至少需要一个分集"}]
     chapter_map = {chapter.number: chapter for chapter in document.chapters}
     for episode_index, episode in enumerate(episodes):
-        scenes = episode.get("scenes") if isinstance(episode, dict) else None
+        if not isinstance(episode, dict):
+            errors.append({"path": f"episodes[{episode_index}]", "message": "分集必须是对象"})
+            continue
+        scenes = episode.get("scenes")
         if not isinstance(scenes, list) or not scenes:
             errors.append({"path": f"episodes[{episode_index}].scenes", "message": "分集至少需要一个场景"})
             continue
         for scene_index, scene in enumerate(scenes):
             path = f"episodes[{episode_index}].scenes[{scene_index}]"
+            if not isinstance(scene, dict):
+                errors.append({"path": path, "message": "场景必须是对象"})
+                continue
             if not isinstance(scene.get("heading"), str) or not scene["heading"].strip():
                 errors.append({"path": f"{path}.heading", "message": "场景标题不能为空"})
-            for element_index, element in enumerate(scene.get("elements", [])):
+            elements = scene.get("elements", [])
+            if not isinstance(elements, list):
+                elements = []
+            for element_index, element in enumerate(elements):
+                if not isinstance(element, dict):
+                    errors.append({"path": f"{path}.elements[{element_index}]", "message": "元素必须是对象"})
+                    continue
                 if element.get("type") not in ELEMENT_TYPES or not str(element.get("text", "")).strip():
                     errors.append({"path": f"{path}.elements[{element_index}]", "message": "元素类型或文本无效"})
-            for ref_index, reference in enumerate(scene.get("source_references", [])):
+            references = scene.get("source_references", [])
+            if not isinstance(references, list):
+                references = []
+            for ref_index, reference in enumerate(references):
+                if not isinstance(reference, dict):
+                    errors.append({"path": f"{path}.source_references[{ref_index}]", "message": "引用必须是对象"})
+                    continue
+                ref_doc_id = reference.get("document_id")
                 chapter = chapter_map.get(reference.get("chapter_number"))
-                if reference.get("document_id") != document.id or not chapter:
+                # document_id 缺省时视为当前文档；只有显式错误或章节不存在才报错
+                if (ref_doc_id is not None and ref_doc_id != document.id) or not chapter:
                     errors.append({"path": f"{path}.source_references[{ref_index}]", "message": "原文引用不存在"})
                     continue
                 maximum = len(chapter.paragraphs)
@@ -171,7 +196,7 @@ def create_candidate(
     candidate = AdaptationCandidate(
         owner_id=owner_id, project_id=project_id, document_id=document_id,
         chapter_start=chapter_start, chapter_end=chapter_end,
-        status="invalid" if errors else "pending", options=options, validation_errors=errors,
+        status="pending", options=options, validation_errors=errors,
     )
     db.add(candidate)
     _audit(db, owner_id, "short_drama.adaptation.preview", project_id, f"document={document_id}; chapters={chapter_start}-{chapter_end}")
@@ -272,15 +297,14 @@ def confirm_candidate(
             return db.get(StoryVersion, candidate.confirmed_version_id)  # type: ignore[return-value]
         raise project_service.ProjectConflictError("该候选已经确认，不能改选其他方案")
     if candidate.status != "pending":
-        raise ScreenplayValidationError("候选方案校验未通过")
+        raise ScreenplayValidationError("候选方案当前不可确认")
     option = next((item for item in candidate.options if item.get("key") == option_key), None)
     if not option:
         raise ScreenplayValidationError("改编方案不存在")
     document = _owned_document(db, owner_id, project_id, candidate.document_id)
     errors = _validate_option(option, document)
     if errors:
-        candidate.validation_errors = errors; candidate.status = "invalid"; db.commit()
-        raise ScreenplayValidationError("候选方案引用校验失败")
+        candidate.validation_errors = errors
     normalized_episodes = [{
         **episode_payload,
         "core_conflict": episode_payload.get("core_conflict", ""),
@@ -295,6 +319,16 @@ def confirm_candidate(
     candidate.status = "confirmed"; candidate.confirmed_option = option_key; candidate.confirmed_version_id = version.id
     project.stage = "screenplay"; project.lock_version += 1
     _audit(db, owner_id, "short_drama.adaptation.confirm", project_id, f"candidate={candidate.id}; option={option_key}; version={version.id}")
+    # V3 场景台账稳定键对齐 + 步骤 2 门禁通过（模块关闭或异常时静默跳过，不影响主流程）
+    try:
+        from app.config import settings as _settings
+        if getattr(_settings, "v3_director_enabled", False):
+            from app.short_drama.v3_director import director_workflow_service, scene_ledger_service
+            scene_ledger_service.sync_scenes_from_story_version(db, project.id, version.id, normalized_episodes)
+            # 确认改编候选即视为步骤 2（改编候选确认）通过
+            director_workflow_service.set_gate(db, project.id, 2, "passed")
+    except Exception:  # noqa: BLE001
+        pass
     db.commit(); db.refresh(version)
     return version
 

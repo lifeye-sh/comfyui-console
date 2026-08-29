@@ -110,6 +110,7 @@ def test_video_generation_types_expose_duration_except_motion_transfer() -> None
         duration = next(item for item in generation_type_service.PARAM_TEMPLATES[code] if item["key"] == "duration")
         assert duration["unit"] == "秒"
         assert duration["default"] == 5
+        assert duration["max"] == 15
 
 
 def test_unmapped_video_params_do_not_override_workflow_owned_values() -> None:

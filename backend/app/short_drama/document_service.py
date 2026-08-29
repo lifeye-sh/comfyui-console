@@ -1,7 +1,12 @@
 """源文档导入、CreativeJob 控制与所有权隔离。"""
 from __future__ import annotations
 
-from datetime import UTC, datetime
+try:  # Python 3.11+
+    from datetime import UTC  # type: ignore[attr-defined]
+except ImportError:  # Python 3.10 fallback
+    from datetime import timezone as _tz
+    UTC = _tz.utc  # type: ignore[assignment]
+from datetime import datetime
 from pathlib import Path
 
 from fastapi import UploadFile

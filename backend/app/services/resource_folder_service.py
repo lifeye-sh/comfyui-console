@@ -211,25 +211,29 @@ def delete(db: Session, owner_id: int, folder_id: int) -> int:
 
 def archive_existing(db: Session) -> int:
     changed = 0
-    # 所有任务输出（包括旧任务编号目录中的素材）迁入对应日期目录。
-    links = db.query(TaskResource).filter(TaskResource.role == "output").order_by(TaskResource.id).all()
+    # 只归档从未分配目录或在旧 media 目录的任务输出，不移动用户已手动归类的资源。
+    links = db.query(TaskResource).filter(TaskResource.role == 'output').order_by(TaskResource.id).all()
     linked_resource_ids: set[int] = set()
+    # 收集旧 media 目录 ID，这些是遗留目录，其中的资源可以安全归档
+    old_media_ids = {folder.id for folder in db.query(ResourceFolder).filter(ResourceFolder.folder_type == 'media').all()}
     for link in links:
         resource = db.get(Resource, link.resource_id)
         task = db.get(Task, link.task_id)
         if not resource or not task or not resource.owner_id or resource.deleted_at:
             continue
+        linked_resource_ids.add(resource.id)
+        # 只归档 folder_id 为 None 或在旧 media 目录的资源
+        if resource.folder_id is not None and resource.folder_id not in old_media_ids:
+            continue  # 用户已手动移动到自定义目录，不强制移回
         generation_type = db.get(GenerationType, task.generation_type_id) if task.generation_type_id else None
         folder = ensure_task_result_folder(
-            db, resource.owner_id, task.id, generation_type.name if generation_type else "未知类型",
+            db, resource.owner_id, task.id, generation_type.name if generation_type else '未知类型',
             task.finished_at or resource.created_at,
         )
-        linked_resource_ids.add(resource.id)
         if resource.folder_id != folder.id:
             resource.folder_id = folder.id
             changed += 1
-    # 非任务素材若未归档或仍在旧媒体目录，统一归入“上传素材”。
-    old_media_ids = {folder.id for folder in db.query(ResourceFolder).filter(ResourceFolder.folder_type == "media").all()}
+    # 非任务素材若未归档或仍在旧媒体目录，统一归入上传素材。
     for resource in db.query(Resource).filter(Resource.owner_id.is_not(None), Resource.deleted_at.is_(None)).all():
         if resource.id in linked_resource_ids:
             continue

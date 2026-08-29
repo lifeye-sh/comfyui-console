@@ -18,7 +18,7 @@ export function useTaskOutputThumbs() {
 
   async function withThumbs(items: TaskOutput[]): Promise<TaskOutput[]> {
     return Promise.all(items.map(item => limited(async () => {
-      if (item.media_type === 'audio') return item
+      if (item.media_type === 'audio' || item.media_type === 'text') return item
       try {
         const options: RequestInit = { headers: { Authorization: `Bearer ${getAccessToken() || ''}` }, cache: 'default' }
         const response = await fetch(resourceApi.thumbUrl(item.id), options)
