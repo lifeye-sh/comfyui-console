@@ -97,6 +97,7 @@ from app.api.v2 import (  # noqa: E402
     short_drama as _v2_short_drama,
     short_drama_director as _v2_short_drama_director,
     image_providers as _v2_image_providers,
+    structured_imports as _v2_structured_imports,
 )
 
 api_prefix = "/api/v1"
@@ -121,6 +122,7 @@ app.include_router(_v2_generation_type_configs.router, prefix="/api/v2")
 app.include_router(_v2_short_drama.router, prefix="/api/v2")
 app.include_router(_v2_short_drama_director.router, prefix="/api/v2")
 app.include_router(_v2_image_providers.router, prefix="/api/v2")
+app.include_router(_v2_structured_imports.router, prefix="/api/v2")
 
 
 @app.get("/health", tags=["meta"])
@@ -131,3 +133,6 @@ async def health() -> dict[str, str]:
 @app.get("/", tags=["meta"])
 async def root() -> dict[str, str]:
     return {"app": settings.app_name, "version": settings.version, "docs": "/docs"}
+
+from app.api.v2 import director_workspace as _director_workspace
+app.include_router(_director_workspace.router, prefix="/api/v2")

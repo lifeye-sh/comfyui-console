@@ -159,6 +159,10 @@ def delete_task(db: Session, t: Task) -> None:
             db.flush()
         db.query(TaskResource).filter(TaskResource.task_id == t.id).delete(synchronize_session=False)
         db.query(TaskEvent).filter(TaskEvent.task_id == t.id).delete(synchronize_session=False)
+        # 漫剧镜头任务链接与生成记录指向本任务（RESTRICT），必须先解除引用才能删任务。
+        from app.models import ShotTaskLink, Take
+        db.query(ShotTaskLink).filter(ShotTaskLink.task_id == t.id).delete(synchronize_session=False)
+        db.query(Take).filter(Take.source_task_id == t.id).update({Take.source_task_id: None}, synchronize_session=False)
         db.delete(t)
         db.commit()
     except Exception:

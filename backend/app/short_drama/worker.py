@@ -19,7 +19,7 @@ from app.short_drama.parsers import ParserError, parse_document
 from app.storage.local_fs import get_storage
 
 logger = logging.getLogger(__name__)
-SUPPORTED_JOB_TYPES = ("parse_document", "analyze_novel", "generate_adaptation", "generate_episode_screenplay", "generate_script_manifest", "director_story_ledger")
+SUPPORTED_JOB_TYPES = ("parse_document", "analyze_novel", "generate_adaptation", "generate_episode_screenplay", "generate_script_manifest", "generate_video_prompts", "director_story_ledger")
 
 
 def _now() -> datetime:

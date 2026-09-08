@@ -52,11 +52,11 @@ from app.schemas.short_drama import (
     AIAdaptationIn, AIGenerationRecordOut, AIProviderInput, AIProviderOut, AIPromptTemplateOut, AIPromptTemplateUpdateIn, EpisodeAIGenerateIn, NovelAnalyzeIn, NovelAnalysisOut,
     ScreenplayRevisionCandidateOut,
     ProjectQuickCreateIn, ProjectQuickCreateOut, EpisodeScriptPatchIn, EpisodeScriptOut,
-    ScriptManifestGenerateIn, ScriptManifestPatchIn, ScriptManifestOut,
-    PhaseOneCastingOut, ProjectAssetVersionCreateIn, ProjectAssetVersionOut,
+    ScriptManifestGenerateIn, ScriptManifestPatchIn, ScriptManifestSplitIn, ScriptManifestOut,
+    PhaseOneCastingOut, ProjectAssetCopyOut, ProjectAssetVersionCreateIn, ProjectAssetVersionOut,
     ShotCharacterBindingIn, ShotCharacterBindingOut,
 )
-from app.short_drama import ai_service, document_service, phase1_service, production_service, project_service, screenplay_service, storyboard_service, world_service
+from app.short_drama import ai_service, document_service, phase1_service, production_service, project_service, screenplay_service, storyboard_service, world_service, v65_pipeline_service
 
 router = APIRouter(prefix="/short-drama", tags=["v2-short-drama"])
 
@@ -278,11 +278,81 @@ def confirm_script_manifest(project_id: int, episode_id: int, manifest_id: int, 
     except (project_service.ProjectNotFoundError, project_service.ProjectConflictError) as exc: raise _not_found_or_conflict(exc)
 
 
+@router.post("/projects/{project_id}/episodes/{episode_id}/manifests/{manifest_id}/unlock", response_model=ScriptManifestOut)
+def unlock_script_manifest(project_id: int, episode_id: int, manifest_id: int, user: CurrentUser, db: DBSession) -> ScriptManifestOut:
+    _require_enabled()
+    try: return ScriptManifestOut.model_validate(phase1_service.unlock_manifest(db, user.id, project_id, episode_id, manifest_id))
+    except (project_service.ProjectNotFoundError, project_service.ProjectConflictError) as exc: raise _not_found_or_conflict(exc)
+
+
+@router.post("/projects/{project_id}/episodes/{episode_id}/manifests/{manifest_id}/review", response_model=ScriptManifestOut)
+def review_script_manifest(project_id: int, episode_id: int, manifest_id: int, user: CurrentUser, db: DBSession) -> ScriptManifestOut:
+    _require_enabled()
+    try: return ScriptManifestOut.model_validate(phase1_service.review_manifest(db, user.id, project_id, episode_id, manifest_id))
+    except (project_service.ProjectNotFoundError, project_service.ProjectConflictError) as exc: raise _not_found_or_conflict(exc)
+
+
+@router.delete("/projects/{project_id}/episodes/{episode_id}/manifests/{manifest_id}")
+def delete_script_manifest(project_id: int, episode_id: int, manifest_id: int, user: CurrentUser, db: DBSession) -> dict[str, bool]:
+    _require_enabled()
+    try:
+        phase1_service.delete_manifest(db, user.id, project_id, episode_id, manifest_id)
+        return {"deleted": True}
+    except (project_service.ProjectNotFoundError, project_service.ProjectConflictError) as exc: raise _not_found_or_conflict(exc)
+
+
+@router.get("/projects/{project_id}/episodes/{episode_id}/pipeline")
+def get_v65_pipeline(project_id: int, episode_id: int, user: CurrentUser, db: DBSession) -> dict:
+    _require_enabled()
+    try:
+        return v65_pipeline_service.snapshot(db, user.id, project_id, episode_id)
+    except project_service.ProjectNotFoundError as exc:
+        raise _not_found_or_conflict(exc)
+
+
+@router.post("/projects/{project_id}/episodes/{episode_id}/asset-atlas/confirm")
+def confirm_v65_asset_atlas(project_id: int, episode_id: int, user: CurrentUser, db: DBSession) -> dict:
+    _require_enabled()
+    try:
+        return v65_pipeline_service.confirm_asset_atlas(db, user.id, project_id, episode_id)
+    except (project_service.ProjectNotFoundError, project_service.ProjectConflictError) as exc:
+        raise _not_found_or_conflict(exc)
+
+
+@router.post("/projects/{project_id}/episodes/{episode_id}/spatial-storyboard/confirm")
+def confirm_v65_spatial_storyboard(project_id: int, episode_id: int, user: CurrentUser, db: DBSession) -> dict:
+    _require_enabled()
+    try:
+        return v65_pipeline_service.confirm_spatial_storyboard(db, user.id, project_id, episode_id)
+    except (project_service.ProjectNotFoundError, project_service.ProjectConflictError) as exc:
+        raise _not_found_or_conflict(exc)
+
+
+@router.post("/projects/{project_id}/episodes/{episode_id}/video-prompts/generate", response_model=CreativeJobOut, status_code=status.HTTP_202_ACCEPTED)
+def generate_v65_video_prompts(project_id: int, episode_id: int, body: dict, user: CurrentUser, db: DBSession) -> CreativeJobOut:
+    _require_enabled()
+    try:
+        v65_pipeline_service.require_video_prompt_gate(db, user.id, project_id, episode_id)
+        return CreativeJobOut.model_validate(ai_service.create_video_prompt_job(
+            db, user.id, project_id, episode_id, int(body.get("manifest_id") or 0),
+            provider_config_id=body.get("provider_config_id"), idempotency_key=str(body.get("idempotency_key") or ""),
+            model_adapter=str(body.get("model_adapter") or "seedance_2_5")))
+    except (project_service.ProjectNotFoundError, project_service.ProjectConflictError, ai_service.AIConfigurationError, ai_service.AIResponseError) as exc:
+        raise _not_found_or_conflict(exc)
+
+
 @router.get("/projects/{project_id}/casting", response_model=PhaseOneCastingOut)
 def phase_one_casting(project_id: int, user: CurrentUser, db: DBSession) -> PhaseOneCastingOut:
     _require_enabled()
     try: return PhaseOneCastingOut.model_validate(phase1_service.casting(db, user.id, project_id))
     except project_service.ProjectNotFoundError as exc: raise _not_found_or_conflict(exc)
+
+
+@router.post("/projects/{project_id}/assets/{entity_type}/{entity_id}/copy", response_model=ProjectAssetCopyOut, status_code=status.HTTP_201_CREATED)
+def copy_project_asset(project_id: int, entity_type: str, entity_id: int, user: CurrentUser, db: DBSession) -> ProjectAssetCopyOut:
+    _require_enabled()
+    try: return ProjectAssetCopyOut.model_validate(phase1_service.copy_asset(db, user.id, project_id, entity_type, entity_id))
+    except (project_service.ProjectNotFoundError, project_service.ProjectConflictError) as exc: raise _not_found_or_conflict(exc)
 
 
 @router.post("/projects/{project_id}/assets/{entity_type}/{entity_id}/versions", response_model=ProjectAssetVersionOut, status_code=status.HTTP_201_CREATED)
@@ -488,22 +558,25 @@ def list_ai_records(
     db: DBSession,
     limit: int = Query(default=100, ge=1, le=500),
     offset: int = Query(default=0, ge=0),
+    status_filter: str | None = Query(default=None, alias="status"),
+    operation: str | None = Query(default=None),
+    job_id: int | None = Query(default=None),
 ) -> list[AIGenerationRecordOut]:
-    """列出项目的 AI 调用日志（按时间倒序）。"""
+    """列出项目的 AI 调用日志（按时间倒序），可按状态/操作/任务过滤。"""
     _require_enabled()
     try:
         project_service.owned_project(db, user.id, project_id)
     except project_service.ProjectNotFoundError as exc:
         raise _screenplay_error(exc)
     from app.models import AIGenerationRecord
-    items = (
-        db.query(AIGenerationRecord)
-        .filter(AIGenerationRecord.project_id == project_id)
-        .order_by(AIGenerationRecord.id.desc())
-        .offset(offset)
-        .limit(limit)
-        .all()
-    )
+    query = db.query(AIGenerationRecord).filter(AIGenerationRecord.project_id == project_id)
+    if status_filter:
+        query = query.filter(AIGenerationRecord.status == status_filter)
+    if operation:
+        query = query.filter(AIGenerationRecord.operation == operation)
+    if job_id is not None:
+        query = query.filter(AIGenerationRecord.job_id == job_id)
+    items = query.order_by(AIGenerationRecord.id.desc()).offset(offset).limit(limit).all()
     return [AIGenerationRecordOut.model_validate(item) for item in items]
 
 
@@ -1066,3 +1139,19 @@ def regenerate_take(
     except (project_service.ProjectNotFoundError, production_service.ProductionValidationError) as exc:
         raise _screenplay_error(exc)
     return {"task_id": task.id, "link": ShotTaskLinkOut.model_validate(link).model_dump(mode="json")}
+
+
+@router.post("/projects/{project_id}/episodes/{episode_id}/manifests/{manifest_id}/split-preview")
+def preview_manifest_split(project_id: int, episode_id: int, manifest_id: int, body: ScriptManifestSplitIn, user: CurrentUser, db: DBSession):
+    _require_enabled()
+    from app.short_drama.manifest_editing import edit_split
+    try: return edit_split(db, user.id, project_id, episode_id, manifest_id, body)
+    except (project_service.ProjectNotFoundError, project_service.ProjectConflictError) as exc: raise _not_found_or_conflict(exc)
+
+
+@router.post("/projects/{project_id}/episodes/{episode_id}/manifests/{manifest_id}/split-apply", response_model=ScriptManifestOut)
+def apply_manifest_split(project_id: int, episode_id: int, manifest_id: int, body: ScriptManifestSplitIn, user: CurrentUser, db: DBSession):
+    _require_enabled()
+    from app.short_drama.manifest_editing import edit_split
+    try: return edit_split(db, user.id, project_id, episode_id, manifest_id, body, apply=True)
+    except (project_service.ProjectNotFoundError, project_service.ProjectConflictError) as exc: raise _not_found_or_conflict(exc)

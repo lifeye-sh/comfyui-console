@@ -31,10 +31,13 @@ def upgrade() -> None:
         ("reference_audio_resource_id", sa.Integer(), sa.ForeignKey("resources.id", ondelete="SET NULL"), None, True),
         ("reference_resource_ids", sa.JSON(), None, sa.text("'[]'"), False),
     )
-    for name, type_, foreign_key, default, nullable in additions:
-        if name not in columns:
-            args = (foreign_key,) if foreign_key is not None else ()
-            op.add_column("drama_shots", sa.Column(name, type_, *args, server_default=default, nullable=nullable))
+    with op.batch_alter_table("drama_shots") as batch:
+        for name, type_, foreign_key, default, nullable in additions:
+            if name not in columns:
+                batch.add_column(sa.Column(name, type_, server_default=default, nullable=nullable))
+                if foreign_key is not None:
+                    table, column = foreign_key.target_fullname.split(".")
+                    batch.create_foreign_key(f"fk_drama_shots_{name}", table, [name], [column], ondelete="SET NULL")
     indexes = {item["name"] for item in inspector.get_indexes("drama_shots")}
     if "uq_drama_shots_scene_no" not in indexes:
         op.create_index("uq_drama_shots_scene_no", "drama_shots", ["scene_id", "shot_no"], unique=True)

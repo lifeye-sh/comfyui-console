@@ -24,7 +24,9 @@ def upgrade() -> None:
     scene_columns = {item["name"] for item in inspector.get_columns("drama_scenes")}
     _add_json("drama_scenes", "character_ids", scene_columns)
     if "location_id" not in scene_columns:
-        op.add_column("drama_scenes", sa.Column("location_id", sa.Integer(), sa.ForeignKey("drama_locations.id", ondelete="SET NULL")))
+        with op.batch_alter_table("drama_scenes") as batch:
+            batch.add_column(sa.Column("location_id", sa.Integer()))
+            batch.create_foreign_key("fk_drama_scenes_location_id", "drama_locations", ["location_id"], ["id"], ondelete="SET NULL")
     for table in ("drama_characters", "character_variants", "drama_locations"):
         columns = {item["name"] for item in inspector.get_columns(table)}
         _add_json(table, "source_references", columns)

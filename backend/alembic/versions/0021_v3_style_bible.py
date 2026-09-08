@@ -70,13 +70,15 @@ def upgrade() -> None:
     )
     op.create_index("ix_v3_palette_project", "v3_palette_versions", ["project_id"])
     # 补充 use_alter 外键
-    op.create_foreign_key(
-        "fk_v3_style_palette_version", "v3_style_bible_versions", "v3_palette_versions",
-        ["palette_version_id"], ["id"],
-    )
+    with op.batch_alter_table("v3_style_bible_versions") as batch:
+        batch.create_foreign_key(
+            "fk_v3_style_palette_version", "v3_palette_versions",
+            ["palette_version_id"], ["id"],
+        )
 
 
 def downgrade() -> None:
-    op.drop_constraint("fk_v3_style_palette_version", "v3_style_bible_versions", type_="foreignkey")
+    with op.batch_alter_table("v3_style_bible_versions") as batch:
+        batch.drop_constraint("fk_v3_style_palette_version", type_="foreignkey")
     op.drop_table("v3_palette_versions")
     op.drop_table("v3_style_bible_versions")

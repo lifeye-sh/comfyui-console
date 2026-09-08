@@ -23,36 +23,50 @@ const estimatedGroups = computed(() => {
 
 async function load() {
   try {
-    const [value, providerList, manifestList, screenplay] = await Promise.all([
-      shortDramaApi.episodeScript(projectId.value, episodeId.value), shortDramaApi.aiProviders(),
-      shortDramaApi.scriptManifests(projectId.value, episodeId.value), shortDramaApi.screenplay(projectId.value),
-    ])
+    const value = await shortDramaApi.episodeScript(projectId.value, episodeId.value)
     value.settings = { language: 'zh-CN', aspect_ratio: '16:9', target_duration: 60, visual_style: '3D 动画', quality_check: true, ...value.settings }
-    script.value = value; providers.value = providerList; manifests.value = manifestList
+    script.value = value
+    const [providerList, manifestList] = await Promise.all([
+      shortDramaApi.aiProviders().catch(() => []),
+      shortDramaApi.scriptManifests(projectId.value, episodeId.value).catch(() => []),
+    ])
+    providers.value = providerList; manifests.value = manifestList
     providerId.value = (providerList.find(x => x.is_default && x.enabled) || providerList.find(x => x.enabled))?.id || null
-    episodeLockVersion.value = screenplay.episodes.find(x => x.id === episodeId.value)?.lock_version || null
+    const screenplay = await shortDramaApi.screenplay(projectId.value).catch(() => null)
+    episodeLockVersion.value = screenplay?.episodes?.find(x => x.id === episodeId.value)?.lock_version || null
     await nextTick(); suppress = false
   } catch (e: any) { error.value = e.response?.data?.detail || '剧本加载失败' }
   finally { loading.value = false }
 }
 function openManifest() { if (latestManifest.value) void router.push(`/v2/drama/projects/${projectId.value}/episodes/${episodeId.value}/manifest?version=${latestManifest.value.id}`) }
-async function save() {
-  if (!script.value || saving.value) return
-  if (timer) clearTimeout(timer); saving.value = true; error.value = ''
+async function save(): Promise<boolean> {
+  if (!script.value || saving.value) return false
+  if (timer) clearTimeout(timer)
+  const source = JSON.stringify({mode:script.value.mode,text:script.value.text,settings:script.value.settings})
+  const payload = {lock_version:script.value.lock_version, ...JSON.parse(source)}
+  saving.value = true; error.value = ''
   try {
-    const saved = await shortDramaApi.saveEpisodeScript(projectId.value, episodeId.value, { lock_version: script.value.lock_version, mode: script.value.mode, text: script.value.text, settings: script.value.settings })
-    suppress = true; script.value = saved; await nextTick(); suppress = false; notice.value = '已自动保存'
-  } catch (e: any) { error.value = e.response?.data?.detail || '保存失败' }
+    const saved = await shortDramaApi.saveEpisodeScript(projectId.value, episodeId.value, payload)
+    const changed = source !== JSON.stringify({mode:script.value.mode,text:script.value.text,settings:script.value.settings})
+    suppress = true
+    if (changed) { script.value.lock_version = saved.lock_version; script.value.script_revision = saved.script_revision }
+    else script.value = saved
+    episodeLockVersion.value = saved.lock_version
+    await nextTick(); suppress = false
+    if (changed) { timer = setTimeout(() => void save(), 800); return false }
+    notice.value = '已自动保存'; return true
+  } catch (e: any) { error.value = e.response?.data?.detail || '保存失败'; return false }
   finally { suppress = false; saving.value = false }
 }
 async function saveTitle() {
   if (!script.value || !episodeLockVersion.value || !script.value.title.trim()) return
-  try { const episode = await shortDramaApi.patchEpisode(projectId.value, episodeId.value, { lock_version: episodeLockVersion.value, title: script.value.title.trim() }); episodeLockVersion.value = episode.lock_version }
+  try { const episode = await shortDramaApi.patchEpisode(projectId.value, episodeId.value, { lock_version: episodeLockVersion.value, title: script.value.title.trim() }); episodeLockVersion.value = episode.lock_version; script.value.lock_version = episode.lock_version }
   catch (e: any) { error.value = e.response?.data?.detail || '集标题保存失败' }
 }
 async function generate() {
   if (!script.value?.text.trim()) return
-  await save(); generating.value = true; error.value = ''; notice.value = '任务已提交，等待 AI 分析…'
+  if (generating.value || !await save()) return
+  generating.value = true; error.value = ''; notice.value = '任务已提交，等待 AI 分析…'
   try {
     let job = await shortDramaApi.generateScriptManifest(projectId.value, episodeId.value, { idempotency_key: crypto.randomUUID(), provider_config_id: providerId.value })
     while (['queued', 'running', 'cancelling'].includes(job.status)) {
@@ -106,10 +120,10 @@ onMounted(load); onBeforeUnmount(() => { if (timer) clearTimeout(timer) })
           <label class="quality"><input v-model="script.settings.quality_check" type="checkbox"><span>显示分镜质量提示与可选修复建议</span></label>
         </div>
         <footer>
-          <div v-if="latestManifest" :class="['manifest-state', { stale: manifestStale }]"><b>拍摄清单 V{{ latestManifest.version }}</b><span>{{ manifestStale ? '剧本已修改，现有清单仍可查看' : '与当前剧本一致' }}</span></div>
+          <div v-if="latestManifest" :class="['manifest-state', { stale: manifestStale }]"><b>拍摄清单 V{{ latestManifest.version }}</b><span>{{ manifestStale ? '剧本已修改，可重新生成' : '与当前剧本一致' }}</span></div>
           <span v-else>{{ notice }}</span>
-          <div v-if="latestManifest" class="manifest-actions"><V2Button variant="primary" @click="openManifest">查看拍摄清单</V2Button><V2Button variant="ghost" :disabled="generating || !script.text.trim()" @click="generate">{{ generating ? 'AI 分析中…' : `重新生成 V${latestManifest.version + 1}` }}</V2Button></div>
-          <V2Button v-else variant="primary" :disabled="generating || !script.text.trim() || !providerId" @click="generate">{{ generating ? 'AI 分析中…' : '✣ 生成分镜脚本' }}</V2Button>
+          <div v-if="latestManifest" class="manifest-actions"><V2Button variant="secondary" style="border-color:#c3a47c;background:#fff;color:#4a3f2e;font-weight:600" @click="openManifest">查看拍摄清单</V2Button><V2Button variant="primary" :disabled="generating || !script.text.trim()" @click="generate">{{ generating ? 'AI 分析中…' : `重新生成分镜脚本 · V${latestManifest.version + 1}` }}</V2Button></div>
+          <V2Button v-else variant="primary" :disabled="generating || !script.text.trim()" @click="generate">{{ generating ? 'AI 分析中…' : '✣ 生成分镜脚本' }}</V2Button>
         </footer>
       </aside>
 

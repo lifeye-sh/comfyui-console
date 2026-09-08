@@ -18,6 +18,7 @@ from app.models.production import (
 )
 from app.models.prompt import Prompt, PromptCategory
 from app.models.share_audit import AuditLog, Share
+from app.models.structured_import import StructuredDramaImport
 from app.models.short_drama import (
     AdaptationCandidate,
     Character,
@@ -105,6 +106,7 @@ __all__ = [
     "PromptCategory",
     "Share",
     "AuditLog",
+    "StructuredDramaImport",
     "ShortDramaProject",
     "ProjectBrief",
     "Episode",

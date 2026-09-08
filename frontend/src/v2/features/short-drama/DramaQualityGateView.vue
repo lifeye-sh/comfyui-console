@@ -1,0 +1,11 @@
+<script setup lang="ts">
+import { computed,onMounted,ref } from 'vue'
+import { useRoute,useRouter } from 'vue-router'
+import { shortDramaApi,type DramaPipeline } from '@/api/modules'
+import DramaProjectShell from './DramaProjectShell.vue'
+const route=useRoute(),router=useRouter(),projectId=computed(()=>Number(route.params.projectId)),episodeId=computed(()=>Number(route.params.episodeId))
+const data=ref<DramaPipeline|null>(null),error=ref('')
+onMounted(async()=>{try{data.value=await shortDramaApi.dramaPipeline(projectId.value,episodeId.value)}catch(e:any){error.value=e.response?.data?.detail||'质检数据加载失败'}})
+</script>
+<template><DramaProjectShell active="quality" page-title="质检与交付" :save-state="error||'short-drama-director V6.5' " :save-tone="error?'error':'normal'"><div class="quality-page"><header><small>P5 · QUALITY GATE</small><h1>P0 / P1 / P2 质检</h1><p>阻断项、质量风险和优化建议统一在交付前处理。</p></header><section class="stage-grid"><article v-for="stage in data?.stages" :key="stage.id" :class="stage.status"><b>{{stage.id}}</b><strong>{{stage.name}}</strong><span>{{stage.status==='passed'?'通过':stage.status==='ready'?'待确认':'阻塞'}}</span></article></section><section class="issues"><h2>检查结果</h2><p v-if="!data?.quality_issues.length">全部检查通过，可以进入成片与导出。</p><article v-for="(issue,i) in data?.quality_issues" :key="i"><b>{{issue.level}}</b><span>{{issue.message}}</span><button v-if="issue.shot_id" @click="router.push('/v2/drama/projects/'+projectId+'/episodes/'+episodeId+'/director')">处理镜头</button></article></section></div></DramaProjectShell></template>
+<style scoped>.quality-page{padding:28px;display:grid;gap:20px}.quality-page h1{margin:4px 0}.quality-page p{color:#766e63}.stage-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}.stage-grid article{padding:16px;display:grid;gap:6px;background:#fff;border:1px solid #ded8ce;border-radius:10px}.stage-grid article.passed{border-color:#83c5a4}.stage-grid b{font:12px ui-monospace}.stage-grid span{color:#8a6250}.issues{padding:18px;background:#fff;border:1px solid #ded8ce;border-radius:12px}.issues article{padding:10px 0;display:flex;gap:12px;border-top:1px solid #eee7dc}.issues button{margin-left:auto}@media(max-width:900px){.stage-grid{grid-template-columns:1fr}}</style>

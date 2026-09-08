@@ -55,7 +55,7 @@ def test_encrypted_provider_and_ai_analysis_adaptation_pipeline() -> None:
 
     def fake_post(_url:str,**kwargs):
         prompt=kwargs["json"]["messages"][-1]["content"]
-        content=episode_payload if "结构化剧本候选" in prompt else adaptation_payload if "根对象为 options" in prompt else analysis_payload
+        content=episode_payload if "结构化剧本候选" in prompt else adaptation_payload if "options" in prompt and "episodes" in prompt else analysis_payload
         return FakeResponse({"choices":[{"message":{"content":__import__("json").dumps(content,ensure_ascii=False)}}],"usage":{"prompt_tokens":20,"completion_tokens":10,"total_tokens":30}})
 
     with patch("app.short_drama.ai_service.httpx.post",side_effect=fake_post):
@@ -74,6 +74,8 @@ def test_encrypted_provider_and_ai_analysis_adaptation_pipeline() -> None:
         try:job=db.get(CreativeJob,adapt.json()["id"]);job.status="running";db.commit()
         finally:db.close()
         story_worker._process(adapt.json()["id"])
+        adapted_job = client.get(f"/api/v2/short-drama/jobs/{adapt.json()['id']}", headers=headers)
+        assert adapted_job.json()["status"] == "succeeded", adapted_job.text
         adaptation_candidate=client.get(f"/api/v2/short-drama/projects/{project_id}/adaptation-candidates",headers=headers).json()[0]
         confirmed_adaptation=client.post(f"/api/v2/short-drama/projects/{project_id}/adaptation-candidates/{adaptation_candidate['id']}/confirm",headers=headers,json={"option_key":"faithful","version_name":"AI改编基础版"})
         assert confirmed_adaptation.status_code==200,confirmed_adaptation.text

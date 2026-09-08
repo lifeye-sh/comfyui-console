@@ -8,7 +8,7 @@ from __future__ import annotations
 import os
 from collections.abc import Generator
 
-from sqlalchemy import create_engine, inspect, text
+from sqlalchemy import create_engine, event, inspect, text
 from sqlalchemy.orm import DeclarativeBase, Session, sessionmaker
 
 from app.config import settings
@@ -22,6 +22,15 @@ engine = create_engine(
     connect_args=_connect_args,
     pool_pre_ping=not settings.database_url.startswith("sqlite"),
 )
+
+if settings.database_url.startswith("sqlite"):
+    # SQLite 默认关闭外键约束，ondelete=CASCADE 形同虚设：删除父行会留下孤儿数据，
+    # 后续 INSERT 复用 rowid 时会撞唯一约束（如确认拍摄清单重建镜头时）。
+    @event.listens_for(engine, "connect")
+    def _enable_sqlite_foreign_keys(dbapi_connection, _connection_record):  # noqa: ANN001
+        cursor = dbapi_connection.cursor()
+        cursor.execute("PRAGMA foreign_keys=ON")
+        cursor.close()
 
 SessionLocal = sessionmaker(bind=engine, autoflush=False, autocommit=False)
 
@@ -50,8 +59,9 @@ def init_db() -> None:
     # create_table 时失败。无 alembic_version 的测试库/首次开发库仍保留
     # 原有的零配置建库行为。
     versioned_database = inspect(engine).has_table("alembic_version")
-    if not versioned_database:
-        Base.metadata.create_all(bind=engine)
+    if versioned_database:
+        return
+    Base.metadata.create_all(bind=engine)
     # 开发态兼容升级：create_all 不会为已有 SQLite 表增加字段。
     if settings.database_url.startswith("sqlite"):
         resource_columns = {column["name"] for column in inspect(engine).get_columns("resources")}

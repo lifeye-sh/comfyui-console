@@ -17,6 +17,8 @@ const OPERATION_LABELS: Record<string, string> = {
   novel_analysis_merge: '分析合并',
   novel_adaptation: '改编生成',
   episode_screenplay: '单集剧本生成',
+  script_manifest: '拍摄清单生成',
+  script_manifest_repair: '拍摄清单修复',
   director_story_ledger: '故事台账生成',
   director_guidance: '导演建议',
   director_chat: '导演对话',
@@ -24,6 +26,15 @@ const OPERATION_LABELS: Record<string, string> = {
   director_llm_audit: '连续性审计',
   json_repair: 'JSON 修复',
 }
+
+const STATUS_FILTERS = [
+  { value: '', label: '全部' },
+  { value: 'failed', label: '失败' },
+  { value: 'succeeded', label: '成功' },
+  { value: 'invalid_json', label: 'JSON异常' },
+]
+const statusFilter = ref('')
+const operationFilter = ref('')
 
 function opLabel(op: string): string {
   // 去掉 .repair 后缀
@@ -81,7 +92,10 @@ function responseText(r: any): string {
 async function load() {
   loading.value = true; error.value = ''
   try {
-    records.value = await shortDramaApi.aiRecords(props.projectId, { limit: 100 })
+    const params: Record<string, unknown> = { limit: 100 }
+    if (statusFilter.value) params.status = statusFilter.value
+    if (operationFilter.value) params.operation = operationFilter.value
+    records.value = await shortDramaApi.aiRecords(props.projectId, params)
   } catch (e: any) {
     error.value = e?.response?.data?.detail || '加载日志失败'
   } finally { loading.value = false }
@@ -98,6 +112,13 @@ watch(() => props.projectId, () => void load())
 <template>
   <GlassPanel title="AI 调用日志" description="所有 AI 调用的审计记录：类型、模型、耗时、token 与成本。">
     <template #actions>
+      <select v-model="statusFilter" class="log-filter" @change="load">
+        <option v-for="item in STATUS_FILTERS" :key="item.value" :value="item.value">{{ item.label }}</option>
+      </select>
+      <select v-model="operationFilter" class="log-filter" @change="load">
+        <option value="">全部类型</option>
+        <option v-for="(label, op) in OPERATION_LABELS" :key="op" :value="op">{{ label }}</option>
+      </select>
       <V2Button variant="ghost" size="sm" :disabled="loading" @click="load">{{ loading ? '加载中…' : '刷新' }}</V2Button>
     </template>
 
@@ -160,6 +181,7 @@ watch(() => props.projectId, () => void load())
 </template>
 
 <style scoped>
+.log-filter{max-width:120px;padding:6px 8px;color:var(--v2-text);background:var(--v2-surface-soft);border:1px solid var(--v2-border);border-radius:7px;font-size:11px;outline:none}
 .log-error{padding:10px;color:#ffdce1;background:rgba(255,127,145,.1);border-radius:10px;font-size:12px;margin-bottom:8px}
 .log-empty{color:var(--v2-text-subtle);font-size:12px;padding:12px 0;text-align:center}
 .log-list{display:grid;gap:8px}

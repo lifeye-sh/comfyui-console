@@ -173,6 +173,10 @@ class Shot(Base, TimestampMixin):
     action: Mapped[str] = mapped_column(Text, default="", nullable=False)
     expression: Mapped[str] = mapped_column(String(255), default="", nullable=False)
     dialogue: Mapped[str] = mapped_column(Text, default="", nullable=False)
+    timeline_storyboard: Mapped[str] = mapped_column(Text, default="", nullable=False)
+    video_prompt: Mapped[str] = mapped_column(Text, default="", nullable=False)
+    negative_prompt: Mapped[str] = mapped_column(Text, default="", nullable=False)
+    continuity: Mapped[str] = mapped_column(Text, default="", nullable=False)
     character_ids: Mapped[list[int]] = mapped_column(JSON, default=list, nullable=False)
     location_id: Mapped[Optional[int]] = mapped_column(Integer, ForeignKey("drama_locations.id", ondelete="SET NULL"), nullable=True)
     prop_ids: Mapped[list[int]] = mapped_column(JSON, default=list, nullable=False)
@@ -220,8 +224,8 @@ class Take(Base, TimestampMixin):
     __table_args__ = (
         UniqueConstraint("shot_id", "take_no", name="uq_drama_take_shot_number"),
         Index(
-            "uq_drama_take_selected_per_shot",
-            "shot_id",
+            "uq_drama_take_selected_per_scope",
+            "shot_id", "scope",
             unique=True,
             sqlite_where=text("is_selected = 1"),
             postgresql_where=text("is_selected"),
@@ -232,6 +236,7 @@ class Take(Base, TimestampMixin):
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
     owner_id: Mapped[int] = mapped_column(Integer, ForeignKey("users.id"), nullable=False, index=True)
     shot_id: Mapped[int] = mapped_column(Integer, ForeignKey("drama_shots.id", ondelete="CASCADE"), nullable=False)
+    scope: Mapped[str] = mapped_column(String(64), default="video", server_default="video", nullable=False)
     resource_id: Mapped[int] = mapped_column(Integer, ForeignKey("resources.id", ondelete="RESTRICT"), nullable=False)
     source_task_id: Mapped[Optional[int]] = mapped_column(Integer, ForeignKey("tasks.id", ondelete="SET NULL"), nullable=True)
     take_no: Mapped[int] = mapped_column(Integer, nullable=False)

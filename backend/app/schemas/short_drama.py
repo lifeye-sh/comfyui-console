@@ -415,6 +415,12 @@ class ScriptManifestOut(BaseModel):
     lock_version: int; confirmed_at: datetime | None; created_at: datetime; updated_at: datetime
 
 
+class ProjectAssetCopyOut(BaseModel):
+    entity_type: str
+    entity_id: int
+    name: str
+
+
 class ProjectAssetVersionCreateIn(BaseModel):
     resource_id: int | None = None
     source_task_id: int | None = None
@@ -629,6 +635,10 @@ class ShotInput(BaseModel):
     action: str = Field(default="", max_length=10000)
     expression: str = Field(default="", max_length=255)
     dialogue: str = Field(default="", max_length=10000)
+    timeline_storyboard: str = Field(default="", max_length=50000)
+    video_prompt: str = Field(default="", max_length=50000)
+    negative_prompt: str = Field(default="", max_length=20000)
+    continuity: str = Field(default="", max_length=20000)
     character_ids: list[int] = Field(default_factory=list)
     location_id: int | None = None
     prop_ids: list[int] = Field(default_factory=list)
@@ -795,3 +805,10 @@ class TakeRegenerateIn(BaseModel):
     review_note: str = Field(default="", max_length=10000)
     parameter_overrides: dict[str, Any] = Field(default_factory=dict)
     idempotency_key: str = Field(min_length=1, max_length=80)
+
+
+class ScriptManifestSplitIn(BaseModel):
+    lock_version: int = Field(ge=1)
+    scene_index: int = Field(ge=0)
+    shot_index: int = Field(ge=0)
+    preview_hash: str | None = None

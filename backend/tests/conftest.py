@@ -32,11 +32,18 @@ def tmp_path():  # type: ignore[no-untyped-def]
 
 
 def pytest_sessionstart(session) -> None:  # type: ignore[no-untyped-def]
-    """Create the same baseline data as application startup, without workers."""
+    """Migrate a clean database, then seed baseline data without workers."""
     from app.config import settings
     from app.db import SessionLocal, init_db
     from app.services import auth_service, generation_type_service, prompt_service
 
+    from alembic import command
+    from alembic.config import Config
+
+    backend_root = Path(__file__).resolve().parents[1]
+    config = Config(str(backend_root / "alembic.ini"))
+    config.set_main_option("script_location", str(backend_root / "alembic"))
+    command.upgrade(config, "head")
     init_db()
     with SessionLocal() as db:
         auth_service.ensure_admin_seed(db, settings.admin_username, settings.admin_password)

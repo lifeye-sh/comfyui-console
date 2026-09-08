@@ -317,7 +317,7 @@ def extract_frames(
         for i, t in enumerate(tlist):
             out_file = os.path.join(tmp_dir, f"frame_{i:04d}.jpg")
             sp.run(
-                ["ffmpeg", "-y", "-ss", str(t), "-i", tmp_in.name, "-frames:v", "1", "-q:v", "2", out_file],
+                (["ffmpeg", "-y", "-sseof", str(t), "-i", tmp_in.name, "-frames:v", "1", "-q:v", "2", out_file] if t < 0 else ["ffmpeg", "-y", "-ss", str(t), "-i", tmp_in.name, "-frames:v", "1", "-q:v", "2", out_file]),
                 capture_output=True
             )
             if not os.path.exists(out_file):

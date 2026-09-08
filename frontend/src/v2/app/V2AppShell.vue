@@ -19,7 +19,7 @@ const generationMenu = ref<Partial<GenerationMenu>>({})
 const mobileGenerationOpen = ref(false)
 const profileOpen = ref(false)
 const dramaWorkspace = computed(() =>
-  /^\/v2\/drama\/projects\/\d+\/episodes\/\d+\/(script|manifest)$/.test(route.path)
+  /^\/v2\/drama\/projects\/\d+\/episodes\/\d+\/(script|manifest|spatial|director|quality)$/.test(route.path)
   || /^\/v2\/drama\/projects\/\d+\/(assets|storyboard|production)$/.test(route.path),
 )
 

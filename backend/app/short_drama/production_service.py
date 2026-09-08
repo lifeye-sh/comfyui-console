@@ -1,6 +1,9 @@
 """Bridge storyboard shots to the existing task engine and reconcile outputs as Takes."""
 from __future__ import annotations
 
+import math
+from app.short_drama.dialogue import total_duration
+
 from copy import deepcopy
 from datetime import datetime, timedelta, timezone
 from typing import Any
@@ -67,6 +70,37 @@ def _prompt(db: Session, shot: Shot, scene: Scene, project: ShortDramaProject) -
         f"镜头：{shot.shot_size}，{shot.camera_angle}，{shot.camera_movement}，{shot.composition}",
         f"情绪：{shot.mood}" if shot.mood else "", f"项目视觉风格：{project.brief.visual_style}" if project.brief and project.brief.visual_style else "",
     ]
+    settings = shot.production_settings or {}
+    bundle = settings.get("manifest_prompt") or {}
+    if bundle:
+        from app.short_drama.phase1_service import _prompt_bundle
+        effective = _prompt_bundle({"prompt": bundle})["effective"]
+        parts = [value for key, value in effective.items() if key != "negative_constraints"]
+        # Dialogue is preserved verbatim even when the visual description is overridden.
+        parts.extend(f"{line['speaker']}：{line['text']}" for line in settings.get("dialogue_lines", []))
+        if character_parts and not effective.get("character_consistency"):
+            parts.append("角色：" + "；".join(character_parts))
+        for key in ("narration", "inner_monologue"):
+            value = str(settings.get(key) or "")
+            if value and not any(value in str(part) for part in parts):
+                parts.append(("旁白：" if key == "narration" else "内心独白：") + value)
+        if effective.get("negative_constraints"):
+            parts.append("负面约束：" + effective["negative_constraints"])
+    keyframe_plan = settings.get("keyframe_plan") or {}
+    strategy_label = {"first": "首帧", "last": "尾帧", "first_last": "首尾帧", "multi": "多关键帧"}.get(
+        str(keyframe_plan.get("strategy") or ""), str(keyframe_plan.get("strategy") or ""))
+    if strategy_label:
+        parts.append(f"关键帧策略：{strategy_label}")
+    if keyframe_plan.get("first_frame_prompt"):
+        parts.append(f"首帧画面：{keyframe_plan['first_frame_prompt']}")
+    if keyframe_plan.get("last_frame_prompt"):
+        parts.append(f"尾帧画面：{keyframe_plan['last_frame_prompt']}")
+    for kf in keyframe_plan.get("keyframes") or []:
+        if isinstance(kf, dict) and kf.get("prompt"):
+            parts.append(f"{kf.get('label') or '关键帧'}：{kf['prompt']}")
+    reaction = float(settings.get("reaction_pause") or 0)
+    if reaction > 0:
+        parts.append(f"对白结束后保留约 {reaction:g} 秒人物反应停顿")
     return "\n".join(value.strip() for value in parts if value and value.strip())
 
 
@@ -155,7 +189,9 @@ def _compile_one(db: Session, owner_id: int, project_id: int, shot_id: int, gene
         if not key: continue
         value = deepcopy(spec.get("default")); kind = spec.get("type"); lowered = key.lower()
         if kind in {"text", "textarea"} and lowered in {"prompt", "positive_prompt", "text", "description"}: value = prompt
-        elif lowered in {"duration", "video_duration", "seconds"}: value = max(1, round(shot.duration))
+        elif lowered in {"duration", "video_duration", "seconds"}:
+            reaction = float((shot.production_settings or {}).get("reaction_pause") or 0)
+            value = max(1, math.ceil(total_duration(shot.duration, shot.production_settings or {})))
         elif lowered in {"aspect_ratio", "ratio"} and brief: value = brief.aspect_ratio
         elif lowered in {"quality", "quality_tier"} and brief: value = brief.quality_tier
         elif kind == "image":
@@ -250,6 +286,15 @@ def mark_sync_failed(db: Session, task_id: int, error: str, status: str = "sync_
     db.commit()
 
 
+def _auto_adopt_director_frame(db: Session, shot: Shot, take: Take) -> None:
+    """Director keyframe outputs adopt automatically; video keeps the candidate flow."""
+    db.query(Take).filter(Take.shot_id == shot.id, Take.scope == take.scope, Take.is_selected.is_(True)).update(
+        {Take.is_selected: False, Take.status: "candidate"}, synchronize_session=False)
+    take.is_selected = True; take.status = "selected"
+    if take.scope == "start": shot.first_frame_resource_id = take.resource_id
+    elif take.scope == "end": shot.last_frame_resource_id = take.resource_id
+
+
 def reconcile_task_outputs(db: Session, task_id: int) -> list[Take]:
     task = db.get(Task, task_id); links = db.query(ShotTaskLink).filter(ShotTaskLink.task_id == task_id).all()
     if not task or not links: return []
@@ -265,13 +310,17 @@ def reconcile_task_outputs(db: Session, task_id: int) -> list[Take]:
     for link in links:
         shot = db.get(Shot, link.shot_id)
         if not shot: raise ProductionValidationError("镜头已不存在，无法回写 Take")
+        director_scope = str((task.params or {}).get("__director", {}).get("scope") or "video")
         for resource in outputs:
             take = db.query(Take).filter(Take.source_task_id == task.id, Take.resource_id == resource.id).first()
             if not take:
                 next_no = (db.query(func.max(Take.take_no)).filter(Take.shot_id == shot.id).scalar() or 0) + 1
-                take = Take(owner_id=link.owner_id, shot_id=shot.id, resource_id=resource.id, source_task_id=task.id, take_no=next_no, status="candidate", generation_snapshot={"generation_type_id": task.generation_type_id, "workflow_version_id": task.workflow_version_id, "config_version_id": task.config_version_id, "params": deepcopy(task.params or {}), "input_resource_ids": input_ids, "output": {"resource_id": resource.id, "filename": resource.filename, "media_type": resource.media_type, "width": resource.width, "height": resource.height, "duration": resource.duration}})
+                take = Take(owner_id=link.owner_id, shot_id=shot.id, scope=director_scope, resource_id=resource.id, source_task_id=task.id, take_no=next_no, status="candidate", generation_snapshot={"generation_type_id": task.generation_type_id, "workflow_version_id": task.workflow_version_id, "config_version_id": task.config_version_id, "params": deepcopy(task.params or {}), "input_resource_ids": input_ids, "output": {"resource_id": resource.id, "filename": resource.filename, "media_type": resource.media_type, "width": resource.width, "height": resource.height, "duration": resource.duration}})
                 db.add(take); db.flush(); created.append(take)
             if link.take_id is None: link.take_id = take.id
+            # 关键帧产物自动采用为当前帧，视频保持候选确认流程。
+            if director_scope != "video" and resource.media_type == "image" and not take.is_selected:
+                _auto_adopt_director_frame(db, shot, take)
         link.status = "synced"; link.sync_error = None; link.next_retry_at = None
     db.commit()
     for item in created: db.refresh(item)
@@ -302,10 +351,17 @@ def _owned_take(db: Session, owner_id: int, project_id: int, take_id: int) -> Ta
 
 def select_take(db: Session, owner_id: int, project_id: int, take_id: int, selected: bool) -> Take:
     take = _owned_take(db, owner_id, project_id, take_id)
+    if take.is_selected == selected: return take
     if selected:
-        db.query(Take).filter(Take.shot_id == take.shot_id, Take.is_selected.is_(True)).update({Take.is_selected: False, Take.status: "candidate"}, synchronize_session=False); db.flush()
+        db.query(Take).filter(Take.shot_id == take.shot_id, Take.scope == take.scope, Take.is_selected.is_(True)).update({Take.is_selected: False, Take.status: "candidate"}, synchronize_session=False); db.flush()
         take.is_selected = True; take.status = "selected"
     else: take.is_selected = False; take.status = "candidate"
+    if take.scope in {"start", "end"}:
+        shot = db.get(Shot, take.shot_id)
+        field = "first_frame_resource_id" if take.scope == "start" else "last_frame_resource_id"
+        if selected or getattr(shot, field) == take.resource_id:
+            setattr(shot, field, take.resource_id if selected else None)
+            shot.lock_version += 1
     db.commit(); db.refresh(take); return take
 
 

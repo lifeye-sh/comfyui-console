@@ -378,6 +378,15 @@ class Dispatcher:
             t.error = None
             t.finished_at = datetime.now(timezone.utc)
             db.commit()
+            # Gemini frames use the same candidate registration and repair path as ComfyUI.
+            if db.query(ShotTaskLink.id).filter(ShotTaskLink.task_id == t.id).first():
+                from app.short_drama import production_service
+                try:
+                    production_service.reconcile_task_outputs(db, t.id)
+                except Exception as sync_exc:
+                    db.rollback()
+                    production_service.mark_sync_failed(db, t.id, str(sync_exc))
+                    logger.exception("Gemini shot output sync failed task=%s", t.id)
             await self._publish(t.id, "completed", 100, {"status": "SUCCESS", "resource_id": resource.id}, owner_id=t.user_id)
             self._completed += 1
         except Exception as exc:  # noqa: BLE001
@@ -459,9 +468,30 @@ class Dispatcher:
             rid = t.params.get(spec["key"])
             if not rid:
                 continue
+            if isinstance(rid, list):
+                # Multi-input nodes must explicitly declare a list widget. Never
+                # truncate references or guess a string encoding for custom nodes.
+                target, field = resolve_multimedia_target(prompt, spec)
+                if not spec.get("multiple") or not isinstance(target.get(field), list):
+                    raise RuntimeError(f"参数 {spec['key']} 的节点未声明列表输入，无法提交多素材")
+                if t.params.get(f"{spec['key']}__mask"):
+                    raise RuntimeError("多素材输入暂不支持单张遮罩")
+                names = []
+                for resource_id in rid:
+                    resource = db.get(Resource, int(resource_id))
+                    if not resource or resource.owner_id != t.user_id or resource.deleted_at is not None or resource.media_type != spec["type"]:
+                        raise RuntimeError(f"输入素材无效或无权访问: #{resource_id}")
+                    data = await asyncio.to_thread(get_storage().read, resource.storage_key)
+                    uploaded = await client.upload_image(data, resource.filename)
+                    folder = str(uploaded.get("subfolder") or "").strip("/\\")
+                    name = uploaded.get("name", resource.filename)
+                    names.append(f"{folder}/{name}" if folder else name)
+                    db.add(TaskResource(task_id=t.id, resource_id=resource.id, role="input", slot_key=spec["key"]))
+                target[field] = names
+                continue
             r = db.get(Resource, int(rid))
-            if not r:
-                raise RuntimeError(f"输入素材不存在: #{rid}")
+            if not r or r.owner_id != t.user_id or r.deleted_at is not None:
+                raise RuntimeError(f"输入素材不存在或无权访问: #{rid}")
             if r.media_type != spec.get("type"):
                 raise RuntimeError(f"输入素材 #{rid} 类型与参数 {spec['key']} 不匹配")
 
@@ -486,7 +516,7 @@ class Dispatcher:
                         mask_rid = None
             if mask_rid:
                 mask_r = db.get(Resource, mask_rid)
-                if not mask_r:
+                if not mask_r or mask_r.owner_id != t.user_id or mask_r.deleted_at is not None:
                     raise RuntimeError(f"遮罩素材不存在: #{mask_rid}")
                 if mask_r.media_type != "image":
                     raise RuntimeError(f"遮罩素材 #{mask_rid} 不是图片类型")
@@ -548,6 +578,7 @@ class Dispatcher:
                         if mask_val in (None, "", 0, []):
                             nd_inputs["mask"] = [mask_loader_id, 0]
 
+                db.add(TaskResource(task_id=t.id, resource_id=r.id, role="input", slot_key=spec["key"]))
                 db.add(TaskResource(task_id=t.id, resource_id=mask_r.id, role="mask", slot_key=spec["key"]))
                 continue
 
