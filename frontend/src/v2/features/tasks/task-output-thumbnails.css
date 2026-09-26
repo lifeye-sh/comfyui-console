@@ -4,6 +4,21 @@
   aspect-ratio: 2 / 3;
 }
 
+.task-table .type-prompt .prompt-line {
+  align-items: flex-start !important;
+}
+
+.task-table .type-prompt .prompt-line > span {
+  flex: 1;
+  min-width: 0;
+  max-height: 4.5em;
+  overflow: hidden;
+  text-overflow: clip !important;
+  white-space: break-spaces !important;
+  overflow-wrap: anywhere;
+  line-height: 1.5;
+}
+
 .detail .outputs img {
   width: 100%;
   height: auto !important;

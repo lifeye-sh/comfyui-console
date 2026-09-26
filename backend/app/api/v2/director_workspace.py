@@ -2,7 +2,7 @@
 from fastapi import APIRouter, Depends, HTTPException
 from app.config import settings
 from app.core.deps import CurrentUser, DBSession
-from app.schemas.director_workspace import WorkspaceSave, WorkflowBinding, DirectorGenerate, ImportFrame, ShotRefsUpdate
+from app.schemas.director_workspace import WorkspaceSave, ShotDetailsUpdate, WorkflowBinding, DirectorGenerate, ImportFrame, ShotRefsUpdate, FreeShotCreate, FreeShotBatchCreate
 from app.short_drama import director_workspace_service as service, project_service
 
 def enabled() -> None:
@@ -23,6 +23,16 @@ def call(db, function, *args):
 def overview(project_id:int,episode_id:int,user:CurrentUser,db:DBSession):
     return call(db,service.overview,user.id,project_id,episode_id)
 
+@router.post("/episodes/{episode_id}/shots",status_code=201)
+def create_free_shot(project_id:int,episode_id:int,body:FreeShotCreate,user:CurrentUser,db:DBSession):
+    shot = call(db,service.create_free_shot,user.id,project_id,episode_id,body)
+    return call(db,service.shot_view,user.id,project_id,shot.id)
+
+@router.post("/episodes/{episode_id}/shots/batch",status_code=201)
+def create_free_shots(project_id:int,episode_id:int,body:FreeShotBatchCreate,user:CurrentUser,db:DBSession):
+    shots = call(db,service.create_free_shots,user.id,project_id,episode_id,body.shots)
+    return [call(db,service.shot_view,user.id,project_id,shot.id) for shot in shots]
+
 @router.get("/workflows")
 def workflows(project_id:int,user:CurrentUser,db:DBSession):
     return call(db,service.workflow_list,user.id,project_id)
@@ -39,6 +49,11 @@ def shot(project_id:int,shot_id:int,user:CurrentUser,db:DBSession):
 @router.put("/shots/{shot_id}")
 def save(project_id:int,shot_id:int,body:WorkspaceSave,user:CurrentUser,db:DBSession):
     call(db,service.save_draft,user.id,project_id,shot_id,body.revision,body.draft)
+    return call(db,service.shot_view,user.id,project_id,shot_id)
+
+@router.put("/shots/{shot_id}/details")
+def update_details(project_id:int,shot_id:int,body:ShotDetailsUpdate,user:CurrentUser,db:DBSession):
+    call(db,service.update_details,user.id,project_id,shot_id,body)
     return call(db,service.shot_view,user.id,project_id,shot_id)
 
 @router.put("/shots/{shot_id}/refs")

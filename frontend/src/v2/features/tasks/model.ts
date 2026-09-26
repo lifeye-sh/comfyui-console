@@ -7,7 +7,7 @@ export type TaskItem = {
 }
 export type TaskEvent = { id: number; type: string; progress: number; payload: Record<string, unknown>; created_at: string }
 export type TaskOutput = { id: number; filename: string; media_type: 'image' | 'video' | 'audio' | 'text'; mime: string; thumbUrl?: string; fileUrl?: string; width?: number | null; height?: number | null; duration?: number | null; content?: string }
-export type GenerationTypeItem = { id: number; code: string; name: string; media_type: string; param_schema?: Array<{ key: string; label?: string; type?: string; options?: Array<{label:string;value:unknown}>; options_from?: string }> }
+export type GenerationTypeItem = { id: number; code: string; name: string; media_type: string; param_schema?: Array<{ key: string; label?: string; type?: string; multiple?: boolean; options?: Array<{label:string;value:unknown}>; options_from?: string }> }
 export type DashboardSummary = {
   generated_at: string
   tasks: { total: number; today: number; active: number; success: number; failed: number; success_rate: number; status_counts: Record<string, number> }

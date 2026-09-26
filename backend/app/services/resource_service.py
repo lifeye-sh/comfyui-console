@@ -11,13 +11,15 @@ from typing import Optional
 
 from fastapi import UploadFile
 from sqlalchemy.orm import Session
+from starlette.concurrency import run_in_threadpool
 
 from app.models import Resource
 from app.storage.local_fs import get_storage
 
 logger = logging.getLogger(__name__)
 
-MAX_SIZE = 100 * 1024 * 1024  # 100MB
+MAX_SIZE = 2 * 1024 * 1024 * 1024  # 2GB
+UPLOAD_CHUNK_SIZE = 1024 * 1024
 THUMBNAIL_SIZE = (256, 256)
 VIDEO_EXTENSIONS = {".mp4", ".webm", ".mov", ".mkv", ".avi", ".m4v", ".gif"}
 AUDIO_EXTENSIONS = {".wav", ".mp3", ".flac", ".ogg", ".m4a", ".aac"}
@@ -67,9 +69,16 @@ def build_image_thumbnail(data: bytes) -> tuple[bytes, int, int]:
     """Decode an image and return JPEG thumbnail bytes plus original dimensions."""
     import io
 
+    return build_image_thumbnail_from_source(io.BytesIO(data))
+
+
+def build_image_thumbnail_from_source(source: object) -> tuple[bytes, int, int]:
+    """Decode an image source without requiring the original file in memory."""
+    import io
+
     from PIL import Image
 
-    with Image.open(io.BytesIO(data)) as img:
+    with Image.open(source) as img:
         width, height = img.size
         thumb = img.copy()
         thumb.thumbnail(THUMBNAIL_SIZE)
@@ -176,11 +185,15 @@ async def upload_resource(
     direction: str = "input",
     media_type: str = "image",
 ) -> Resource:
-    data = await file.read()
-    if len(data) > MAX_SIZE:
-        raise ValueError("文件超过大小上限")
-
-    sha = _sha256(data)
+    size = 0
+    hasher = hashlib.sha256()
+    while chunk := await file.read(UPLOAD_CHUNK_SIZE):
+        size += len(chunk)
+        if size > MAX_SIZE:
+            raise ValueError("文件不能超过 2GB")
+        hasher.update(chunk)
+    sha = hasher.hexdigest()
+    await file.seek(0)
     existing = db.query(Resource).filter(
         Resource.sha256 == sha, Resource.owner_id == owner_id, Resource.deleted_at.is_(None)
     ).first()
@@ -190,16 +203,17 @@ async def upload_resource(
     ext = os.path.splitext(file.filename or "")[1] or ""
     safe_name = (file.filename or f"{sha[:16]}{ext}").replace("/", "_")
     key = f"resources/{datetime.now(timezone.utc):%Y-%m}/{sha[:16]}/{safe_name}"
-    get_storage().save_bytes(data, key)
+    storage = get_storage()
+    await run_in_threadpool(storage.save_file, file.file, key)
 
     mime = file.content_type or "application/octet-stream"
     width = height = None
     thumb_key: Optional[str] = None
     if media_type == "image" and mime.startswith("image/"):
         try:
-            thumb_data, width, height = build_image_thumbnail(data)
+            thumb_data, width, height = build_image_thumbnail_from_source(storage.abs_path(key))
             thumb_key = thumbnail_storage_key(key)
-            get_storage().save_bytes(thumb_data, thumb_key)
+            storage.save_bytes(thumb_data, thumb_key)
         except Exception as e:  # noqa: BLE001
             logger.warning("缩略图生成失败: %s", e)
 
@@ -211,7 +225,7 @@ async def upload_resource(
         direction=direction,
         filename=safe_name,
         mime=mime,
-        size=len(data),
+        size=size,
         sha256=sha,
         storage_key=key,
         thumb_key=thumb_key,

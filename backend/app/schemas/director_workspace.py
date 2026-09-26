@@ -11,7 +11,7 @@ class FrameDraft(BaseModel):
     generation_service: Literal["comfyui", "gemini_image"] = "comfyui"
     gemini_provider_id: int | None = None
     gemini_params: dict[str, Any] = Field(default_factory=dict)
-    enabled: bool = True
+    enabled: bool = False
     order: int = Field(default=0, ge=0, le=9999)
 
 class CharacterAssetChoice(BaseModel):
@@ -71,6 +71,16 @@ class WorkspaceSave(BaseModel):
     revision: int = Field(ge=1)
     draft: WorkspaceDraft
 
+class ShotDetailsUpdate(BaseModel):
+    revision: int = Field(ge=1)
+    title: str = Field(min_length=1, max_length=160)
+    visual_description: str = Field(default="", max_length=20000)
+    action: str = Field(default="", max_length=20000)
+    dialogue: str = Field(default="", max_length=20000)
+    duration: float = Field(ge=0.1, le=600)
+    shot_size: str = Field(default="", max_length=64)
+    camera_movement: str = Field(default="", max_length=128)
+
 class WorkflowBinding(BaseModel):
     mapping: dict[str, str] = Field(default_factory=dict)
 
@@ -94,3 +104,16 @@ class ShotRefsUpdate(BaseModel):
     bindings: dict[str, int | None] = Field(default_factory=dict)  # character_id -> variant_id
     location_id: int | None = None
     prop_ids: list[int] = Field(default_factory=list)
+
+class FreeShotCreate(BaseModel):
+    """A director-owned shot that does not depend on screenplay or manifest data."""
+    title: str = Field(default="自由镜头", min_length=1, max_length=160)
+    visual_description: str = Field(default="", max_length=20000)
+    duration: float = Field(default=5, ge=0.1, le=600)
+    shot_size: str = Field(default="中景", max_length=64)
+    camera_movement: str = Field(default="固定镜头", max_length=128)
+
+
+class FreeShotBatchCreate(BaseModel):
+    """Create several director-owned shots atomically in their display order."""
+    shots: list[FreeShotCreate] = Field(min_length=1, max_length=50)

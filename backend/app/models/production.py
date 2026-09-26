@@ -4,7 +4,7 @@ from __future__ import annotations
 from datetime import datetime
 from typing import Any, Dict, List, Optional
 
-from sqlalchemy import JSON, Boolean, DateTime, ForeignKey, Index, Integer, String, Text, UniqueConstraint, func
+from sqlalchemy import JSON, BigInteger, Boolean, DateTime, ForeignKey, Index, Integer, String, Text, UniqueConstraint, func
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.models.base import Base, TimestampMixin
@@ -159,7 +159,7 @@ class Resource(Base, TimestampMixin):
     direction: Mapped[str] = mapped_column(String(16), default="output", nullable=False)
     filename: Mapped[str] = mapped_column(String(255), nullable=False)
     mime: Mapped[str] = mapped_column(String(128), default="application/octet-stream", nullable=False)
-    size: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
+    size: Mapped[int] = mapped_column(BigInteger, default=0, nullable=False)
     sha256: Mapped[Optional[str]] = mapped_column(String(64), index=True, nullable=True)
     storage_key: Mapped[str] = mapped_column(String(512), nullable=False)
     thumb_key: Mapped[Optional[str]] = mapped_column(String(512), nullable=True)

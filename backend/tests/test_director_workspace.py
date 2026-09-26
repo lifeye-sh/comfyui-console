@@ -4,7 +4,7 @@ import asyncio
 from uuid import uuid4
 import pytest
 from app.db import SessionLocal
-from app.models import Batch, Resource, Shot, Task, TaskResource, Take, Workflow, WorkflowVersion
+from app.models import Batch, Resource, Scene, Shot, Task, TaskResource, Take, Workflow, WorkflowVersion
 from app.queue.dispatcher import Dispatcher
 from app.short_drama import production_service
 from tests.test_short_drama_production import _setup, client
@@ -41,6 +41,60 @@ def get(headers, root, shot):
     return response.json()
 
 
+def test_director_can_create_free_shots_without_manifest_or_existing_scene_selection():
+    headers, project, existing_shot, _, _, root = fixture()
+    with SessionLocal() as db:
+        episode_id = db.get(Scene, db.get(Shot, existing_shot).scene_id).episode_id
+    payload={"title":"自由广告镜头","visual_description":"玻璃瓶在黑色台面缓慢旋转","duration":6.5,
+             "shot_size":"特写","camera_movement":"环绕运镜"}
+    first=client.post(f"{root}/episodes/{episode_id}/shots",headers=headers,json=payload)
+    second=client.post(f"{root}/episodes/{episode_id}/shots",headers=headers,json={**payload,"title":"第二个自由镜头"})
+    assert first.status_code==201,first.text
+    assert second.status_code==201,second.text
+    assert first.json()["scene"]=="自由制作"
+    assert first.json()["title"]=="自由广告镜头"
+    assert first.json()["description"]==payload["visual_description"]
+    assert first.json()["duration"]==6.5
+    assert first.json()["character_ids"]==[] and first.json()["assets"]==[]
+    assert {frame["id"] for frame in first.json()["draft"]["frames"]}=={"start","end"}
+    assert all(frame["enabled"] is False and frame["order"] == 0 for frame in first.json()["draft"]["frames"])
+    batch_payload={"shots":[
+        {**payload,"title":"批量镜头 A","duration":2.5},
+        {**payload,"title":"批量镜头 B","duration":3.0},
+        {**payload,"title":"批量镜头 C","duration":3.5},
+    ]}
+    batch=client.post(f"{root}/episodes/{episode_id}/shots/batch",headers=headers,json=batch_payload)
+    assert batch.status_code==201,batch.text
+    assert [shot["title"] for shot in batch.json()]==["批量镜头 A","批量镜头 B","批量镜头 C"]
+    assert [shot["shot_no"] for shot in batch.json()]==[3,4,5]
+    assert len({shot["scene_id"] for shot in batch.json()})==1
+    with SessionLocal() as db:
+        free_scenes=db.query(Scene).filter_by(episode_id=episode_id,scene_no="DIRECTOR_FREE").all()
+        assert len(free_scenes)==1
+        assert db.query(Shot).filter_by(scene_id=free_scenes[0].id).count()==5
+        created=db.get(Shot,first.json()["id"])
+        assert created.source_story_version_id is None
+        assert created.production_settings["director_free"] is True
+
+
+def test_director_overview_can_edit_shot_details_with_revision_guard():
+    headers, project, shot_id, _, _, root = fixture()
+    original = get(headers, root, shot_id)
+    payload = {
+        "revision": original["revision"], "title": "雨夜重逢", "visual_description": "女孩在雨幕中回头",
+        "action": "先停步，再缓慢回头", "dialogue": "女孩：你终于来了。", "duration": 7.5,
+        "shot_size": "近景", "camera_movement": "缓慢推镜",
+    }
+    saved = client.put(f"{root}/shots/{shot_id}/details", headers=headers, json=payload)
+    assert saved.status_code == 200, saved.text
+    assert saved.json()["title"] == "雨夜重逢"
+    assert saved.json()["description"] == "女孩在雨幕中回头"
+    assert saved.json()["dialogue"] == "女孩：你终于来了。"
+    assert saved.json()["duration"] == 7.5 and saved.json()["shot_size"] == "近景"
+    assert saved.json()["camera"] == "缓慢推镜"
+    assert client.put(f"{root}/shots/{shot_id}/details", headers=headers, json=payload).status_code == 409
+
+
 def imported(headers,root,shot,scope,rid):
     response=client.post(f'{root}/shots/{shot}/frames/import',headers=headers,json={'scope':scope,'resource_id':rid})
     assert response.status_code == 201,response.text
@@ -75,6 +129,12 @@ def test_preflight_idempotent_queue_output_sync_and_stale_dependencies():
     for scope,rid in zip(['start','end'],ids):
         take=imported(h,root,s,scope,rid)
         assert client.post(f"{root}/takes/{take['id']}/adopt",headers=h).status_code==200
+    view=get(h,root,s)
+    draft=deepcopy(view['draft'])
+    for order,frame in enumerate(draft['frames'],start=1):
+        frame['enabled']=True;frame['order']=order
+    saved=client.put(f'{root}/shots/{s}',headers=h,json={'revision':view['revision'],'draft':draft})
+    assert saved.status_code==200,saved.text
     compiled=client.post(f'{root}/shots/{s}/compile',headers=h,json=body).json()
     assert compiled['errors']==[],compiled
     assert compiled['params']['first']==ids[0] and compiled['params']['last']==ids[1]

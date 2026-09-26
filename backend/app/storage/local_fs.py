@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import os
 from abc import ABC, abstractmethod
+from typing import BinaryIO
 
 
 class StorageProvider(ABC):
@@ -21,6 +22,10 @@ class StorageProvider(ABC):
     @abstractmethod
     def abs_path(self, key: str) -> str: ...
 
+    def save_file(self, source: BinaryIO, key: str) -> str:
+        """Persist a file-like object; providers may override to stream it."""
+        return self.save_bytes(source.read(), key)
+
 
 class LocalFSStorage(StorageProvider):
     def __init__(self, root: str) -> None:
@@ -32,6 +37,14 @@ class LocalFSStorage(StorageProvider):
         os.makedirs(os.path.dirname(path), exist_ok=True)
         with open(path, "wb") as f:
             f.write(data)
+        return key
+
+    def save_file(self, source: BinaryIO, key: str) -> str:
+        path = os.path.join(self.root, key)
+        os.makedirs(os.path.dirname(path), exist_ok=True)
+        with open(path, "wb") as target:
+            while chunk := source.read(1024 * 1024):
+                target.write(chunk)
         return key
 
     def read(self, key: str) -> bytes:

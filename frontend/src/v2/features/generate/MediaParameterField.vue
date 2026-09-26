@@ -84,8 +84,17 @@ async function loadMaskPreview() {
 
 function choose(items: ResourceItem[]) {
   const item = items[0] || null
-  emit('update:modelValue', props.multiple ? items.map(value=>value.id) : (item?.id || null))
-  emit('selected', props.multiple ? items : item)
+  if (props.multiple) {
+    const nextIds = [...orderedIds.value]
+    for (const value of items) if (!nextIds.includes(value.id)) nextIds.push(value.id)
+    const known = new Map(resources.value.map(value => [value.id, value]))
+    for (const value of items) known.set(value.id, value)
+    emit('update:modelValue', nextIds)
+    emit('selected', nextIds.map(id => known.get(id)).filter((value): value is ResourceItem => !!value))
+  } else {
+    emit('update:modelValue', item?.id || null)
+    emit('selected', item)
+  }
   // 切换图片时清空遮罩
   emit('update:maskResourceId', null)
 }
@@ -131,7 +140,7 @@ onUnmounted(() => { release(); releaseMask() })
         </div>
         <div class="multiple-actions">
           <V2Button variant="ghost" :disabled="disabled" @click="pickerOpen=true">
-            {{ hasValue ? '重新选择图片' : '选择图片' }}
+            {{ hasValue ? '继续添加图片' : '添加图片' }}
           </V2Button>
           <V2Button v-if="hasValue" variant="ghost" :disabled="disabled" @click="clear">清除全部</V2Button>
         </div>
@@ -153,8 +162,8 @@ onUnmounted(() => { release(); releaseMask() })
       </div>
       <button v-else type="button" class="multiple-empty" :disabled="disabled" @click="pickerOpen=true">
         <span class="media-icon">▧</span>
-        <b>选择多张参考图片</b>
-        <small>选择后将在这里按顺序逐张显示</small>
+        <b>添加参考图片</b>
+        <small>支持分多次添加，图片按添加顺序发送</small>
       </button>
     </div>
 

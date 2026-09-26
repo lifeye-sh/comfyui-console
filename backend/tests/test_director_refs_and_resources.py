@@ -180,9 +180,9 @@ def test_draft_rejects_unknown_extras_and_video_compile_fills_inputs_in_order():
     assert result["params"]["first"] == first  # only the checked extra feeds the input
     assert result["warnings"] == []  # unchecked extras are not counted as unmatched
     view = get(h, root, s)
-    # 默认两个帧都启用（order 0 按 index 平局），勾选素材排第 3。
+    # 关键帧默认不勾选，因此首个显式勾选素材排第 1。
     assert view["extras"] == [
-        {"resource_id": first, "media_type": "image", "label": "勾选素材", "enabled": True, "order": 1, "check_order": 3, "filename": "ref0.png"},
+        {"resource_id": first, "media_type": "image", "label": "勾选素材", "enabled": True, "order": 1, "check_order": 1, "filename": "ref0.png"},
         {"resource_id": second, "media_type": "image", "label": "未勾选素材", "enabled": False, "order": 0, "check_order": 0, "filename": "ref1.png"},
     ]
     # Check both with explicit order: fill follows the check order, not list order.

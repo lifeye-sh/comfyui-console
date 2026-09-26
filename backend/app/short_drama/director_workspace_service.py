@@ -15,7 +15,7 @@ from app.models import (Batch, Character, CharacterVariant, Episode, GenerationT
     Take, Task, Workflow, WorkflowVersion)
 from app.models.short_drama import ShotCharacterBinding, ScriptManifestVersion
 from app.short_drama.dialogue import total_duration
-from app.schemas.director_workspace import WorkspaceDraft, DirectorGenerate
+from app.schemas.director_workspace import WorkspaceDraft, DirectorGenerate, FreeShotCreate, ShotDetailsUpdate
 from app.services import generation_type_config_service as config_service
 from app.services.generation_type_service import get_select_options, get_select_default
 from app.short_drama import production_service as production, project_service
@@ -80,7 +80,7 @@ def checked_orders(shot: Shot) -> dict[str, int]:
     choices = ((shot.production_settings or {}).get("director_workspace") or {}).get("asset_choices") or {}
     entries: list[tuple[str, int, int]] = []  # (key, order, tiebreak)
     for frame in (((shot.production_settings or {}).get("director_workspace") or {}).get("frames") or []):
-        if frame.get("enabled", True):
+        if frame.get("enabled", False):
             entries.append((f"frame:{frame['id']}", int(frame.get("order") or 0), 0))
     for index, extra in enumerate(choices.get("extras") or []):
         if extra.get("enabled", True):
@@ -514,6 +514,29 @@ def save_draft(db: Session, owner: int, project_id: int, shot_id: int, revision:
         db.rollback(); raise Conflict("镜头已被其他页面更新，请重新载入后再保存")
     db.commit()
 
+def update_details(db: Session, owner: int, project_id: int, shot_id: int, body: ShotDetailsUpdate) -> None:
+    """Edit production-facing shot facts from the overview with optimistic locking."""
+    shot, *_ = context(db, owner, project_id, shot_id)
+    frames = ((shot.production_settings or {}).get("director_workspace") or {}).get("frames") or []
+    if any(float(frame.get("time") or 0) > body.duration for frame in frames if isinstance(frame, dict)):
+        raise ValueError("新时长小于已有关键帧时间，请先调整关键帧位置")
+    settings = deepcopy(shot.production_settings or {})
+    settings["title"] = body.title.strip()
+    values = {
+        "visual_description": body.visual_description,
+        "action": body.action,
+        "dialogue": body.dialogue,
+        "duration": body.duration,
+        "shot_size": body.shot_size,
+        "camera_movement": body.camera_movement,
+        "production_settings": settings,
+        "lock_version": body.revision + 1,
+    }
+    result = db.execute(update(Shot).where(Shot.id == shot.id, Shot.lock_version == body.revision).values(**values))
+    if result.rowcount != 1:
+        db.rollback(); raise Conflict("镜头已被其他页面更新，请重新载入后再保存")
+    db.commit()
+
 
 def workflow_list(db: Session, owner: int, project_id: int) -> list[dict]:
     project = project_service.owned_project(db, owner, project_id)
@@ -619,7 +642,7 @@ def checked_image_references(db: Session, owner: int, project_id: int, shot: Sho
     orders=checked_orders(shot); frames=selected_frames(db,shot); draft=default_draft(shot); result=[]
     for frame in draft["frames"]:
         key=f"frame:{frame['id']}"; rid=frames.get(frame["id"])
-        if frame.get("enabled",True) and rid and orders.get(key):
+        if frame.get("enabled",False) and rid and orders.get(key):
             label={"start":"首帧","end":"尾帧"}.get(frame["id"],f"关键帧 {frame['id']}")
             result.append({"resource_id":rid,"check_order":orders[key],"source":"frame","frame_kind":frame["id"],"label":f"已勾选{label}（{frame['time']}秒）","description":frame.get("prompt") or "以图片中的构图、人物姿态和场景状态为准","purpose":"约束对应时间点的画面构图与连续性"})
     for item in extras(db,owner,shot):
@@ -690,7 +713,7 @@ def shot_view(db: Session, owner: int, project_id: int, shot_id: int) -> dict:
             "title":shot_title(db,shot,scene,episode),
             "aspect_ratio":_.brief.aspect_ratio if _.brief else "9:16",
             "description":shot.visual_description,"action":shot.action,"dialogue":confirmed_manifest_dialogue(db,shot),"duration":total_duration(shot.duration,shot.production_settings or {}),
-            "camera":shot.camera_movement,"revision":shot.lock_version,"draft":draft_with_defaults(db,owner,project_id,shot),
+            "shot_size":shot.shot_size,"camera":shot.camera_movement,"revision":shot.lock_version,"draft":draft_with_defaults(db,owner,project_id,shot),
             "character_ids":shot.character_ids or [],"location_id":shot.location_id,"prop_ids":shot.prop_ids or [],
             "extras":extras(db,owner,shot),"check_orders":checked_orders(shot),
             "assets":resources(db,owner,project_id,shot),"takes":takes,"tasks":tasks,"selected_frames":selected_frames(db,shot)}
@@ -702,6 +725,46 @@ def overview(db: Session, owner: int, project_id: int, episode_id: int) -> dict:
     if not episode: raise project_service.ProjectNotFoundError("分集不存在")
     shots = db.query(Shot).join(Scene,Scene.id==Shot.scene_id).filter(Scene.episode_id==episode_id,Shot.owner_id==owner).order_by(Scene.sort_order,Scene.id,Shot.sort_order,Shot.id).all()
     return {"episode_id":episode.id,"shots":[shot_view(db,owner,project_id,s.id) for s in shots]}
+
+
+def create_free_shot(db: Session, owner: int, project_id: int, episode_id: int, body: FreeShotCreate) -> Shot:
+    """Create one standalone director shot through the atomic batch implementation."""
+    return create_free_shots(db, owner, project_id, episode_id, [body])[0]
+
+
+def create_free_shots(
+    db: Session,
+    owner: int,
+    project_id: int,
+    episode_id: int,
+    bodies: list[FreeShotCreate],
+) -> list[Shot]:
+    """Create ordered standalone director shots in one transaction."""
+    project_service.owned_project(db,owner,project_id)
+    episode=db.query(Episode).filter_by(id=episode_id,project_id=project_id,owner_id=owner).first()
+    if not episode: raise project_service.ProjectNotFoundError("分集不存在")
+    scene=(db.query(Scene).filter_by(episode_id=episode.id,owner_id=owner,scene_no="DIRECTOR_FREE")
+           .order_by(Scene.id).first())
+    if not scene:
+        order=(db.query(func.max(Scene.sort_order)).filter(Scene.episode_id==episode.id).scalar() or -1)+1
+        scene=Scene(owner_id=owner,episode_id=episode.id,scene_no="DIRECTOR_FREE",heading="自由制作",
+                    purpose="导演工作台自由镜头容器",target_duration=0,sort_order=order,status="draft",
+                    source_references=[{"type":"director_free"}])
+        db.add(scene);db.flush()
+    count=db.query(func.count(Shot.id)).filter(Shot.scene_id==scene.id).scalar() or 0
+    shots=[]
+    for offset,body in enumerate(bodies):
+        settings={"title":body.title.strip(),"director_free":True}
+        shot=Shot(owner_id=owner,scene_id=scene.id,source_story_version_id=None,shot_no=count+offset+1,sort_order=count+offset,
+                  visual_description=body.visual_description,action="",expression="",dialogue="",
+                  timeline_storyboard="",video_prompt="",negative_prompt="",continuity="",
+                  character_ids=[],location_id=None,prop_ids=[],mood="",shot_size=body.shot_size,
+                  camera_angle="平视",camera_movement=body.camera_movement,composition="",transition="",
+                  duration=body.duration,reference_resource_ids=[],status="draft",production_settings=settings)
+        db.add(shot);shots.append(shot)
+    db.commit()
+    for shot in shots: db.refresh(shot)
+    return shots
 
 
 def visible(spec: dict, params: dict) -> bool:
@@ -782,7 +845,7 @@ def compile_generation(db: Session, owner: int, project_id: int, shot_id: int, b
     if body.scope=="video" and body.mode not in workflow["modes"]: raise ValueError("当前工作流不支持所选输入模式")
     assets=resources(db,owner,project_id,shot); frames=selected_frames(db,shot)
     if body.scope == "video":
-        frames={f["id"]:frames[f["id"]] for f in draft["frames"] if f.get("enabled",True) and f["id"] in frames}
+        frames={f["id"]:frames[f["id"]] for f in draft["frames"] if f.get("enabled",False) and f["id"] in frames}
     prompt=(draft_with_defaults(db,owner,project_id,shot)["video_prompt"] if body.scope=="video" else frame["prompt"]).strip()
     if not prompt: raise ValueError("请先填写当前画面或视频描述")
     if body.scope!="video":

@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import asyncio
 from datetime import datetime, timedelta, timezone
 from types import SimpleNamespace
 
@@ -8,9 +9,9 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import Session
 
 from app.api.v1.resources import generation_info
-from app.api.v1.tasks import output_summaries
+from app.api.v1.tasks import output_summaries, recheck_task
 from app.db import Base
-from app.models import Batch, GenerationType, Resource, Task, TaskResource
+from app.models import Batch, GenerationType, Node, Resource, ShotTaskLink, Task, TaskResource
 from app.services import task_service
 
 
@@ -230,6 +231,77 @@ def test_execute_with_params_preserves_original_multimedia_values() -> None:
         )
 
         assert executed.params == {"input_image": 10, "input_video": 20, "prompt": "修改后"}
+
+
+def test_recheck_uses_one_event_loop_for_comfy_client_and_output_collection(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    with _session() as db:
+        batch, generation_type = _create_batch_and_type(db)
+        node = Node(name="test-node", base_url="http://comfy.test")
+        db.add(node)
+        db.flush()
+        task = Task(
+            batch_id=batch.id,
+            user_id=11,
+            generation_type_id=generation_type.id,
+            node_id=node.id,
+            prompt_id="prompt-1",
+            status="FAILED",
+        )
+        db.add(task)
+        db.flush()
+        db.add(ShotTaskLink(
+            owner_id=11,
+            shot_id=999,
+            task_id=task.id,
+            purpose="director",
+            status="linked",
+            idempotency_key="recheck-loop-test",
+        ))
+        db.commit()
+        task_id = task.id
+        loop_ids: list[int] = []
+        shot_sync_calls: list[tuple[str, int]] = []
+
+        class FakeClient:
+            def __init__(self, *_args: object) -> None:
+                pass
+
+            async def get_history(self, prompt_id: str) -> dict:
+                loop_ids.append(id(asyncio.get_running_loop()))
+                return {prompt_id: {"status": {"completed": True}, "outputs": {}}}
+
+            async def aclose(self) -> None:
+                loop_ids.append(id(asyncio.get_running_loop()))
+
+        async def collect_outputs(*_args: object) -> None:
+            loop_ids.append(id(asyncio.get_running_loop()))
+
+        def mark_output_payload(_db: Session, synced_task_id: int, _payload: dict) -> None:
+            shot_sync_calls.append(("payload", synced_task_id))
+
+        def reconcile_task_outputs(_db: Session, synced_task_id: int) -> list:
+            shot_sync_calls.append(("reconcile", synced_task_id))
+            return []
+
+        from app.queue.dispatcher import dispatcher
+
+        monkeypatch.setattr("app.comfy.client.ComfyUIClient", FakeClient)
+        monkeypatch.setattr(dispatcher, "_collect_outputs", collect_outputs)
+        monkeypatch.setattr("app.short_drama.production_service.mark_output_payload", mark_output_payload)
+        monkeypatch.setattr("app.short_drama.production_service.reconcile_task_outputs", reconcile_task_outputs)
+
+        result = asyncio.run(
+            recheck_task(task_id, SimpleNamespace(id=11, role="user"), db)  # type: ignore[arg-type]
+        )
+
+        assert result["ok"] is True
+        assert result["take_sync_pending"] is False
+        assert db.get(Task, task_id).status == "SUCCESS"
+        assert shot_sync_calls == [("payload", task_id), ("reconcile", task_id)]
+        assert len(loop_ids) == 3
+        assert len(set(loop_ids)) == 1
 
 
 def test_generated_resource_returns_source_task_parameters() -> None:

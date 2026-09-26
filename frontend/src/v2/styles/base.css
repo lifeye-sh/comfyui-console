@@ -2,6 +2,7 @@
 
 .v2-theme, .v2-theme * { box-sizing: border-box; }
 .v2-theme button, .v2-theme input, .v2-theme select, .v2-theme textarea { font: inherit; }
+.v2-theme textarea { white-space: break-spaces; tab-size: 4; }
 .v2-theme button, .v2-theme a { -webkit-tap-highlight-color: transparent; }
 .v2-theme :focus-visible { outline: 2px solid var(--v2-primary); outline-offset: 3px; }
 .v2-theme ::selection { color: #fff; background: rgba(101, 119, 245, 0.6); }
@@ -12,4 +13,37 @@
 .v2-grid { display: grid; gap: var(--v2-space-4); }
 .v2-grid--2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 .v2-grid--3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+
+/* Prompt copy is user-authored structured text. Preserve its spacing and line breaks. */
+.v2-theme .batch-detail .prompt-line,
+.v2-theme .recent .prompt-cell {
+  align-items: flex-start;
+}
+.v2-theme .batch-detail .prompt-line {
+  overflow: visible !important;
+  text-overflow: clip !important;
+  white-space: normal !important;
+}
+.v2-theme .batch-detail .prompt-line > span,
+.v2-theme .recent .prompt-cell > em,
+.v2-theme .item-prompt {
+  min-width: 0;
+  overflow: hidden;
+  overflow-wrap: anywhere;
+  white-space: break-spaces !important;
+}
+.v2-theme .batch-detail .prompt-line > span,
+.v2-theme .recent .prompt-cell > em {
+  flex: 1;
+  max-height: 3em;
+  line-height: 1.5;
+}
+
+/* Prompt library cards show the saved copy verbatim, including indentation. */
+.v2-theme .prompt-grid > .glass-card > p,
+.v2-theme .prompt-grid > .glass-card details p {
+  overflow-wrap: anywhere;
+  white-space: break-spaces;
+  tab-size: 4;
+}
 @media (max-width: 820px) { .v2-grid--2, .v2-grid--3 { grid-template-columns: 1fr; } }
