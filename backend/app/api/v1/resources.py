@@ -25,6 +25,16 @@ class ResourceBatchMoveIn(BaseModel):
     folder_id: int | None = None
 
 
+class ResourceBatchCropIn(BaseModel):
+    resource_ids: list[int]
+    aspect_ratio: str
+
+
+class ResourceBatchCropOut(BaseModel):
+    created: list[ResourceOut]
+    failed: list[dict]
+
+
 @router.post("", response_model=ResourceOut, status_code=201)
 async def upload(
     user: CurrentUser,
@@ -55,6 +65,11 @@ def list_(
     return [ResourceOut.model_validate(i) for i in items]
 
 
+@router.get("/storage-summary")
+def storage_summary(user: CurrentUser, db: DBSession) -> dict[str, int]:
+    return resource_service.storage_summary(db, user.id)
+
+
 @router.post("/batch-move")
 def batch_move(body: ResourceBatchMoveIn, user: CurrentUser, db: DBSession) -> dict:
     try:
@@ -62,6 +77,35 @@ def batch_move(body: ResourceBatchMoveIn, user: CurrentUser, db: DBSession) -> d
         return {"moved": resource_folder_service.move_resources(db, user.id, body.resource_ids, body.folder_id)}
     except ValueError as exc:
         raise HTTPException(status.HTTP_400_BAD_REQUEST, str(exc))
+
+
+@router.post("/batch-crop", response_model=ResourceBatchCropOut)
+def batch_crop(body: ResourceBatchCropIn, user: CurrentUser, db: DBSession) -> ResourceBatchCropOut:
+    """Center-crop multiple images to one common ratio and preserve every source image."""
+    if body.aspect_ratio not in resource_service.CROP_RATIOS:
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, "不支持的图片比例")
+    created: list[ResourceOut] = []
+    failed: list[dict] = []
+    for rid in dict.fromkeys(body.resource_ids):
+        resource = resource_service.get(db, rid)
+        if not resource or resource.deleted_at is not None:
+            failed.append({"resource_id": rid, "reason": "资源不存在或已删除"})
+            continue
+        if resource.owner_id != user.id and user.role != "admin":
+            failed.append({"resource_id": rid, "reason": "无权访问"})
+            continue
+        if resource.media_type != "image":
+            failed.append({"resource_id": rid, "reason": "不是图片"})
+            continue
+        try:
+            cropped = resource_service.crop_image_resource(db, resource, body.aspect_ratio)
+            created.append(ResourceOut.model_validate(cropped))
+        except (ValueError, OSError) as exc:
+            failed.append({"resource_id": rid, "reason": str(exc) or "裁剪失败"})
+        except Exception as exc:  # noqa: BLE001
+            failed.append({"resource_id": rid, "reason": "裁剪失败"})
+            resource_service.logger.exception("图片裁剪失败 resource=%s: %s", rid, exc)
+    return ResourceBatchCropOut(created=created, failed=failed)
 
 
 @router.get("/{rid}/generation-info")
@@ -197,21 +241,11 @@ def permanent_delete(rid: int, user: CurrentUser, db: DBSession) -> None:
     r = resource_service.get(db, rid)
     if not r:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "资源不存在")
-    # 删除物理文件
-    if r.storage_key:
-        try:
-            get_storage().delete(r.storage_key)
-        except Exception:
-            pass
-    if r.thumb_key:
-        try:
-            get_storage().delete(r.thumb_key)
-        except Exception:
-            pass
-    # 删除 TaskResource 关联
-    db.query(TaskResource).filter(TaskResource.resource_id == rid).delete(synchronize_session=False)
-    db.delete(r)
-    db.commit()
+    if r.deleted_at is None:
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, "素材不在回收站")
+    outcome, reason = resource_service.permanently_delete_resource(db, r)
+    if outcome == "restored":
+        raise HTTPException(status.HTTP_409_CONFLICT, reason or "素材仍在使用，已自动恢复")
 
 
 class BatchDeleteIn(BaseModel):
@@ -241,12 +275,13 @@ def batch_delete(body: BatchDeleteIn, user: CurrentUser, db: DBSession) -> dict:
 
 @router.post("/batch-purge", status_code=200)
 def batch_purge(body: BatchDeleteIn, user: CurrentUser, db: DBSession) -> dict:
-    """批量物理删除回收站素材：删除物理文件 + DB 记录 + TaskResource 关联。"""
+    """批量清理回收站；仍被业务使用的素材会安全恢复。"""
     if not body.resource_ids:
-        return {"deleted": 0, "failed": []}
+        return {"deleted": 0, "restored": [], "failed": []}
     deleted = 0
+    restored: list[dict] = []
     failed: list[dict] = []
-    for rid in body.resource_ids:
+    for rid in dict.fromkeys(body.resource_ids):
         r = db.get(Resource, rid)
         if not r:
             failed.append({"resource_id": rid, "reason": "不存在"})
@@ -254,21 +289,20 @@ def batch_purge(body: BatchDeleteIn, user: CurrentUser, db: DBSession) -> dict:
         if r.owner_id != user.id and user.role != "admin":
             failed.append({"resource_id": rid, "reason": "无权删除"})
             continue
-        if r.storage_key:
-            try:
-                get_storage().delete(r.storage_key)
-            except Exception:
-                pass
-        if r.thumb_key:
-            try:
-                get_storage().delete(r.thumb_key)
-            except Exception:
-                pass
-        db.query(TaskResource).filter(TaskResource.resource_id == rid).delete(synchronize_session=False)
-        db.delete(r)
-        deleted += 1
-    db.commit()
-    return {"deleted": deleted, "failed": failed}
+        if r.deleted_at is None:
+            failed.append({"resource_id": rid, "reason": "不在回收站"})
+            continue
+        try:
+            outcome, reason = resource_service.permanently_delete_resource(db, r)
+            if outcome == "deleted":
+                deleted += 1
+            else:
+                restored.append({"resource_id": rid, "reason": reason})
+        except Exception as exc:  # noqa: BLE001
+            db.rollback()
+            resource_service.logger.exception("永久删除素材失败 resource=%s: %s", rid, exc)
+            failed.append({"resource_id": rid, "reason": "删除失败，请重试"})
+    return {"deleted": deleted, "restored": restored, "failed": failed}
 
 
 # ---- 参考视频抽帧 ----

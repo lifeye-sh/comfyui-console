@@ -47,8 +47,10 @@ def shot(project_id:int,shot_id:int,user:CurrentUser,db:DBSession):
     return call(db,service.shot_view,user.id,project_id,shot_id)
 
 @router.put("/shots/{shot_id}")
-def save(project_id:int,shot_id:int,body:WorkspaceSave,user:CurrentUser,db:DBSession):
+def save(project_id:int,shot_id:int,body:WorkspaceSave,user:CurrentUser,db:DBSession,compact:bool=False):
     call(db,service.save_draft,user.id,project_id,shot_id,body.revision,body.draft)
+    if compact:
+        return {"revision":body.revision+1}
     return call(db,service.shot_view,user.id,project_id,shot_id)
 
 @router.put("/shots/{shot_id}/details")

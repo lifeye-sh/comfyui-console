@@ -16,6 +16,9 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 BACKEND_DIR = Path(__file__).resolve().parent.parent
 
 
+from app import __version__
+
+
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(
         env_prefix="COMFY_CONSOLE_",
@@ -25,7 +28,7 @@ class Settings(BaseSettings):
     )
 
     app_name: str = "comfyui-console"
-    version: str = "0.1.0"
+    version: str = __version__
     debug: bool = True
 
     # V2.1 AI 短剧模块；可在部署时显式关闭以快速回滚入口。

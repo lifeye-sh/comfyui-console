@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import hashlib
+import io
 import json
 import logging
 import os
@@ -10,6 +11,7 @@ from datetime import datetime, timezone
 from typing import Optional
 
 from fastapi import UploadFile
+from sqlalchemy import func
 from sqlalchemy.orm import Session
 from starlette.concurrency import run_in_threadpool
 
@@ -20,9 +22,20 @@ logger = logging.getLogger(__name__)
 
 MAX_SIZE = 2 * 1024 * 1024 * 1024  # 2GB
 UPLOAD_CHUNK_SIZE = 1024 * 1024
-THUMBNAIL_SIZE = (256, 256)
+THUMBNAIL_SIZE = (1024, 1024)
+THUMBNAIL_VERSION = "v2-hd"
 VIDEO_EXTENSIONS = {".mp4", ".webm", ".mov", ".mkv", ".avi", ".m4v", ".gif"}
 AUDIO_EXTENSIONS = {".wav", ".mp3", ".flac", ".ogg", ".m4a", ".aac"}
+CROP_RATIOS = {
+    "1:1": (1, 1),
+    "4:3": (4, 3),
+    "3:4": (3, 4),
+    "3:2": (3, 2),
+    "2:3": (2, 3),
+    "16:9": (16, 9),
+    "9:16": (9, 16),
+    "21:9": (21, 9),
+}
 
 
 def _sha256(data: bytes) -> str:
@@ -34,7 +47,7 @@ def _sha256(data: bytes) -> str:
 def thumbnail_storage_key(storage_key: str) -> str:
     """Return a deterministic thumbnail key for a stored image."""
     stem, _ = os.path.splitext(storage_key)
-    return f"{stem}.thumb.jpg"
+    return f"{stem}.thumb-{THUMBNAIL_VERSION}.jpg"
 
 
 def infer_media_type(filename: str, mime: str, fallback: str = "image") -> str:
@@ -87,8 +100,110 @@ def build_image_thumbnail_from_source(source: object) -> tuple[bytes, int, int]:
         elif thumb.mode == "L":
             thumb = thumb.convert("RGB")
         output = io.BytesIO()
-        thumb.save(output, format="JPEG", quality=80, optimize=True)
+        thumb.save(output, format="JPEG", quality=90, optimize=True, progressive=True)
     return output.getvalue(), width, height
+
+
+def centered_crop_box(width: int, height: int, aspect_ratio: str) -> tuple[int, int, int, int]:
+    """Return the largest centered crop box matching a supported aspect ratio."""
+    ratio = CROP_RATIOS.get(aspect_ratio)
+    if not ratio:
+        raise ValueError("不支持的图片比例")
+    if width <= 0 or height <= 0:
+        raise ValueError("图片尺寸无效")
+    target = ratio[0] / ratio[1]
+    current = width / height
+    if current > target:
+        crop_width = max(1, min(width, round(height * target)))
+        left = (width - crop_width) // 2
+        return left, 0, left + crop_width, height
+    crop_height = max(1, min(height, round(width / target)))
+    top = (height - crop_height) // 2
+    return 0, top, width, top + crop_height
+
+
+def build_cropped_image(
+    source: object, aspect_ratio: str
+) -> tuple[bytes, int, int, str, str, tuple[int, int, int, int]]:
+    """Center-crop one static image and return encoded bytes plus output metadata."""
+    from PIL import Image, ImageOps
+
+    with Image.open(source) as opened:
+        if getattr(opened, "is_animated", False):
+            raise ValueError("暂不支持动图裁剪")
+        source_format = (opened.format or "PNG").upper()
+        image = ImageOps.exif_transpose(opened)
+        box = centered_crop_box(image.width, image.height, aspect_ratio)
+        cropped = image.crop(box)
+        output_format = source_format if source_format in {"JPEG", "PNG", "WEBP"} else "PNG"
+        extension = {"JPEG": ".jpg", "PNG": ".png", "WEBP": ".webp"}[output_format]
+        mime = {"JPEG": "image/jpeg", "PNG": "image/png", "WEBP": "image/webp"}[output_format]
+        if output_format == "JPEG" and cropped.mode not in {"RGB", "L"}:
+            cropped = cropped.convert("RGB")
+        output = io.BytesIO()
+        save_options: dict[str, object] = {"format": output_format}
+        if output_format == "JPEG":
+            save_options.update(quality=95, optimize=True)
+        elif output_format == "PNG":
+            save_options.update(optimize=True)
+        else:
+            save_options.update(quality=95, method=6)
+        cropped.save(output, **save_options)
+        return output.getvalue(), cropped.width, cropped.height, extension, mime, box
+
+
+def crop_image_resource(db: Session, resource: Resource, aspect_ratio: str) -> Resource:
+    """Create a cropped resource beside its source without modifying the original."""
+    if resource.media_type != "image":
+        raise ValueError("仅支持图片裁剪")
+    storage = get_storage()
+    if not storage.exists(resource.storage_key):
+        raise ValueError("原始图片文件不存在")
+
+    data, width, height, extension, mime, box = build_cropped_image(
+        storage.abs_path(resource.storage_key), aspect_ratio
+    )
+    sha = _sha256(data)
+    stem = os.path.splitext(os.path.basename(resource.filename))[0][:180]
+    ratio_label = aspect_ratio.replace(":", "x")
+    filename = f"{stem}_crop_{ratio_label}{extension}"
+    key = f"resources/{datetime.now(timezone.utc):%Y-%m}/{sha[:16]}/{filename}"
+    thumb_key = thumbnail_storage_key(key)
+    saved_keys: list[str] = []
+    try:
+        storage.save_bytes(data, key)
+        saved_keys.append(key)
+        thumb_data, _, _ = build_image_thumbnail(data)
+        storage.save_bytes(thumb_data, thumb_key)
+        saved_keys.append(thumb_key)
+        cropped = Resource(
+            owner_id=resource.owner_id,
+            folder_id=resource.folder_id,
+            media_type="image",
+            direction="output",
+            filename=filename,
+            mime=mime,
+            size=len(data),
+            sha256=sha,
+            storage_key=key,
+            thumb_key=thumb_key,
+            width=width,
+            height=height,
+            visibility=resource.visibility,
+            meta={"source_image": resource.id, "crop_ratio": aspect_ratio, "crop_box": list(box)},
+        )
+        db.add(cropped)
+        db.commit()
+        db.refresh(cropped)
+        return cropped
+    except Exception:
+        db.rollback()
+        for saved_key in saved_keys:
+            try:
+                storage.delete(saved_key)
+            except Exception:  # noqa: BLE001
+                pass
+        raise
 
 
 def build_video_thumbnail(video_path: str) -> bytes:
@@ -98,7 +213,7 @@ def build_video_thumbnail(video_path: str) -> bytes:
             "ffmpeg", "-v", "error", "-ss", "0", "-i", video_path,
             "-frames:v", "1", "-vf",
             f"scale={THUMBNAIL_SIZE[0]}:{THUMBNAIL_SIZE[1]}:force_original_aspect_ratio=decrease",
-            "-f", "image2pipe", "-vcodec", "mjpeg", "pipe:1",
+            "-q:v", "2", "-f", "image2pipe", "-vcodec", "mjpeg", "pipe:1",
         ],
         capture_output=True,
         timeout=30,
@@ -152,10 +267,17 @@ def ensure_thumbnail(db: Session, resource: Resource) -> bool:
         return False
 
     storage = get_storage()
-    if resource.thumb_key and storage.exists(resource.thumb_key):
+    current_thumb_key = thumbnail_storage_key(resource.storage_key)
+    if resource.thumb_key == current_thumb_key and storage.exists(current_thumb_key):
         return True
     if not storage.exists(resource.storage_key):
         return False
+
+    if storage.exists(current_thumb_key):
+        resource.thumb_key = current_thumb_key
+        db.commit()
+        db.refresh(resource)
+        return True
 
     try:
         if resource.media_type == "video":
@@ -164,9 +286,8 @@ def ensure_thumbnail(db: Session, resource: Resource) -> bool:
         else:
             data = storage.read(resource.storage_key)
             thumb_data, width, height = build_image_thumbnail(data)
-        thumb_key = thumbnail_storage_key(resource.storage_key)
-        storage.save_bytes(thumb_data, thumb_key)
-        resource.thumb_key = thumb_key
+        storage.save_bytes(thumb_data, current_thumb_key)
+        resource.thumb_key = current_thumb_key
         resource.width = resource.width or width
         resource.height = resource.height or height
         db.commit()
@@ -268,6 +389,85 @@ def list_resources(
     return items, total
 
 
+def storage_summary(db: Session, owner_id: int) -> dict[str, int]:
+    """Return per-owner logical storage usage, counting each stored file key once."""
+    owner_resources = db.query(Resource).filter(Resource.owner_id == owner_id)
+    active_count = owner_resources.filter(Resource.deleted_at.is_(None)).count()
+    recycle_bin_count = owner_resources.filter(Resource.deleted_at.is_not(None)).count()
+
+    all_files = db.query(
+        Resource.storage_key.label("storage_key"),
+        func.max(Resource.size).label("size"),
+    ).filter(
+        Resource.owner_id == owner_id,
+    ).group_by(Resource.storage_key).subquery()
+    active_files = db.query(
+        Resource.storage_key.label("storage_key"),
+        func.max(Resource.size).label("size"),
+    ).filter(
+        Resource.owner_id == owner_id,
+        Resource.deleted_at.is_(None),
+    ).group_by(Resource.storage_key).subquery()
+
+    total_bytes = int(db.query(func.coalesce(func.sum(all_files.c.size), 0)).scalar() or 0)
+    active_bytes = int(db.query(func.coalesce(func.sum(active_files.c.size), 0)).scalar() or 0)
+    return {
+        "total_bytes": total_bytes,
+        "active_bytes": active_bytes,
+        "recycle_bin_bytes": max(0, total_bytes - active_bytes),
+        "total_count": active_count + recycle_bin_count,
+        "active_count": active_count,
+        "recycle_bin_count": recycle_bin_count,
+    }
+
+
 def soft_delete(db: Session, r: Resource) -> None:
     r.deleted_at = datetime.now(timezone.utc)
     db.commit()
+
+
+def permanently_delete_resource(db: Session, resource: Resource) -> tuple[str, str | None]:
+    """Purge a recycled resource, or restore it when active business records still use it."""
+    from app.models import ProjectResourceLink, Share, SourceDocument, Take, TaskResource
+
+    resource_id = resource.id
+    protected_by: list[str] = []
+    if db.query(Take.id).filter(Take.resource_id == resource_id).first():
+        protected_by.append("镜头版本")
+    if db.query(SourceDocument.id).filter(SourceDocument.resource_id == resource_id).first():
+        protected_by.append("短剧源文档")
+    if db.query(ProjectResourceLink.id).filter(ProjectResourceLink.resource_id == resource_id).first():
+        protected_by.append("项目素材")
+    if db.query(Share.id).filter(Share.resource_id == resource_id).first():
+        protected_by.append("分享链接")
+    if protected_by:
+        resource.deleted_at = None
+        db.commit()
+        db.refresh(resource)
+        return "restored", f"仍被{'、'.join(protected_by)}使用，已自动恢复"
+
+    stem, _ = os.path.splitext(resource.storage_key or "")
+    storage_keys = {
+        key for key in (
+            resource.storage_key,
+            resource.thumb_key,
+            f"{stem}.thumb.jpg" if stem else None,
+            thumbnail_storage_key(resource.storage_key) if resource.storage_key else None,
+        ) if key
+    }
+    try:
+        db.query(TaskResource).filter(TaskResource.resource_id == resource_id).delete(synchronize_session=False)
+        db.delete(resource)
+        db.flush()
+        db.commit()
+    except Exception:
+        db.rollback()
+        raise
+
+    storage = get_storage()
+    for key in storage_keys:
+        try:
+            storage.delete(key)
+        except Exception as exc:  # noqa: BLE001
+            logger.warning("永久删除素材文件失败 resource=%s key=%s: %s", resource_id, key, exc)
+    return "deleted", None

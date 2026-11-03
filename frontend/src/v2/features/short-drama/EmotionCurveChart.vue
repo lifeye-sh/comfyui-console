@@ -66,15 +66,15 @@ const assumptionCount = computed(() => props.curve.filter(p => p.evidence_type =
       <span><i class="dot hollow" />assumed 假设节拍（{{ assumptionCount }}）</span>
     </div>
     <div v-if="peak && trough" class="summary">
-      <span>🔺 最高峰：<b>{{ peak.stable_key }}</b> 强度 {{ peak.intensity }} · {{ peak.dominant_emotion }}</span>
-      <span>🔻 最低谷：<b>{{ trough.stable_key }}</b> 强度 {{ trough.intensity }} · {{ trough.dominant_emotion }}</span>
+      <span><StudioIcon name="up"/>  最高峰：<b>{{ peak.stable_key }}</b> 强度 {{ peak.intensity }} · {{ peak.dominant_emotion }}</span>
+      <span><StudioIcon name="down"/>  最低谷：<b>{{ trough.stable_key }}</b> 强度 {{ trough.intensity }} · {{ trough.dominant_emotion }}</span>
     </div>
   </div>
 </template>
 
 <style scoped>
 .curve-wrap{display:grid;gap:8px}
-.curve-svg{width:100%;height:auto;background:rgba(255,255,255,.02);border:1px solid var(--v2-border);border-radius:12px}
+.curve-svg{width:100%;height:auto;background:color-mix(in srgb, var(--ws-surface) 2%, transparent);border:1px solid var(--v2-border);border-radius:12px}
 .grid{stroke:rgba(130,149,255,.12);stroke-width:1}
 .midline{stroke:rgba(130,149,255,.25);stroke-width:1;stroke-dasharray:4 4}
 .tick{fill:#7a85a8;font-size:9px}
@@ -85,10 +85,10 @@ const assumptionCount = computed(() => props.curve.filter(p => p.evidence_type =
 .dot.assumed{fill:none;stroke:#ffb347;stroke-width:2}
 .dot.explicit{fill:#8295ff}
 .dot.inferred{fill:#8295ff;fill-opacity:.6}
-.legend{display:flex;gap:16px;flex-wrap:wrap;color:#7a85a8;font-size:11px;align-items:center}
+.legend{display:flex;gap:16px;flex-wrap:wrap;color:var(--ws-text-muted);font-size:11px;align-items:center}
 .legend .swatch{display:inline-block;width:14px;height:3px;border-radius:2px;margin-right:4px;vertical-align:middle}
-.intensity-swatch{background:#8295ff}.valence-swatch{background:#4fd1a5}
-.legend .dot{position:relative;display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:4px;background:#ffb347}
-.summary{display:flex;flex-direction:column;gap:6px;color:#7a85a8;font-size:11px}
-.summary b{color:#e8edff}
+.intensity-swatch{background:var(--ws-surface-soft)}.valence-swatch{background:color-mix(in srgb, var(--ws-success) 16%, transparent)}
+.legend .dot{position:relative;display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:4px;background:var(--ws-surface-soft)}
+.summary{display:flex;flex-direction:column;gap:6px;color:var(--ws-text-muted);font-size:11px}
+.summary b{color:var(--ws-text)}
 </style>

@@ -4,7 +4,17 @@ ComfyUI Console 是一个面向本地或远程 ComfyUI 节点的统一 AI 内容
 
 项目地址：[https://github.com/lifeye-sh/comfyui-console](https://github.com/lifeye-sh/comfyui-console)
 
-当前仓库同时包含 V1 稳定界面和 V2 Glassmorphism 新界面。V2 使用独立的 `/v2` 路由和构建时功能开关，复用同一套认证、任务、素材和工作流数据；关闭 V2 后仍可立即回到 V1，不影响历史任务和数据。
+V2 媒体工作台使用石墨灰界面、统一线性 SVG 图标，以及摄影和产品截图封面。V1 与 V2 共用认证、任务、素材和工作流数据。角色图库作为独立子项目随 Console 启动，通过同一域名访问。
+
+**本机入口**　[媒体工作台](http://localhost/v2) · [角色合成台](http://localhost/gallery/studio) · [图库任务中心](http://localhost/v2/tasks?source=gallery) · [Docker 部署](#快速部署docker-compose)
+
+## v0.2.0 · 本机正式版（2026-11-03）
+
+- Console 与角色图库共用媒体工作台主题，可从「创作生成」打开图库合成台。
+- 支持三图和两种双图组合，可选择 ComfyUI 工作流或混合生图的图片提供方。
+- 批量随机捏人支持 1–50 套配方，可分别固定或随机人像、服装和姿势，预览后提交。
+- 任务详情按顺序展示参考图，支持查看原图。
+- 数据库沿用 `0038_gallery_task_request`。部署后访问 `/health` 核对 Console 版本。
 
 ## 当前版本状态
 
@@ -15,7 +25,20 @@ ComfyUI Console 是一个面向本地或远程 ComfyUI 节点的统一 AI 内容
 - 后端调度器在独立线程运行，登录和普通 API 请求不会被排队任务阻塞；管理员可在 V2“运行监控”查看心跳、节点与在途任务。
 - V2 默认仍由构建变量控制，部署时可选择只发布 V1、开放 V2，或按比例灰度开放。
 
-当前改造基线（2026-09-08）：SQLite 可从空库迁移到 `0035_structured_drama_imports`；导演工作台、结构化导入、资产复制和首尾帧提示词已有专项回归测试；前端 `vue-tsc --noEmit` 与 Vite 生产构建通过。
+当前数据库迁移版本为 `0038_gallery_task_request`，用于按用户和请求标识避免重复创建图库任务。
+
+## 使用 AI 角色图库
+
+1. 登录 Console，从「创作生成 → 图片生成 → AI 角色图库」在新窗口打开图库。浏览人像、服装或姿势时，可在同一张姿势卡片中切换角度。
+2. 打开「AI 角色合成台」，选择 **人像＋服装＋姿势**、**人像＋服装** 或 **人像＋姿势**。各槽位都支持从角色图库、Console 素材库或本地文件选图。
+3. 选择生图方式，填写画面提示词，点击「生成角色图」。两种方式都由 Console 创建和管理任务。
+
+| 生图方式 | 管理员如何配置 |
+| --- | --- |
+| ComfyUI | 在「系统配置 → 图库合成工作流」中为三种组合分别发布工作流版本，绑定提示词和参考图输入。工作流可接收独立图片、多图输入或合成拼图。 |
+| 第三方图片模型 | 在「系统配置 → 图片模型配置」启用提供方，同时启用「混合生图」。合成台读取可用提供方和系统维护的图片尺寸。 |
+
+提交后可以关闭图库。任务中心支持按图库来源查看状态和结果；在混合生图任务详情的「参考图与输入素材」中，可按提交顺序查看缩略图，点击打开原图。[图库工作流配置](http://localhost/v2/settings/gallery) · [子项目说明](apps/pose-gallery/README.md)
 
 ## 主要功能
 
@@ -143,6 +166,7 @@ alembic upgrade head
 - `0033_phase1_timestamp_defaults`：补齐第一阶段 ORM 插入所需的服务器时间默认值。
 - `0034_director_take_scopes`：按首帧、尾帧、关键帧和视频范围维护独立候选。
 - `0035_structured_drama_imports`：增加三文档分阶段导入记录和关联数据。
+- `0036_resource_size_bigint` 至 `0038_gallery_task_request`：扩展素材文件大小字段、保留历史图库引用，并为图库任务增加请求去重键。
 
 禁止只替换代码而跳过迁移，否则会出现 `no such column` 或 `no such table`。
 
@@ -161,6 +185,7 @@ alembic upgrade head
 
 ```text
 comfyui-console/
+├─ apps/pose-gallery/      # 角色图库与合成台（React），共享 Console 登录与任务接口
 ├─ backend/
 │  ├─ app/                 # FastAPI 应用、调度器、ComfyUI 客户端
 │  ├─ alembic/             # 数据库迁移
@@ -196,6 +221,15 @@ ComfyUI 与本项目可以部署在同一台机器或不同机器。ComfyUI 必�
 git clone https://github.com/lifeye-sh/comfyui-console.git
 cd comfyui-console
 ```
+
+在 Console 项目根目录准备图库素材。首次部署执行以下命令，将固定版本的图包下载到相邻目录：
+
+```bash
+git clone https://github.com/anhao/ai-pose-gallery-zh.git ../ai-pose-gallery-zh
+git -C ../ai-pose-gallery-zh checkout 4464f7638826f57ed654430a3a7df57f88b2c03c
+```
+
+已有图包可跳过下载，在 **Console 根目录**的 `.env` 中设置 `POSE_GALLERY_ASSETS` 为图包根目录，例如 `POSE_GALLERY_ASSETS=D:/media/ai-pose-gallery-zh`。确认其中包含 `data/`、`img/` 和 `thumbs/`，Compose 会将这三个目录只读挂载到图库容器。图库代码和图片的授权范围不同，见[上游许可证](apps/pose-gallery/LICENSE)。
 
 ### 3. 创建后端配置
 
@@ -261,13 +295,16 @@ python -c "import secrets; print(secrets.token_urlsafe(48))"
 在项目根目录执行：
 
 ```bash
-docker compose up -d --build
+docker compose build
+docker compose run --rm --no-deps backend alembic upgrade head
+docker compose up -d
 ```
 
 启动后访问：
 
 - Web 管理界面：`http://服务器IP/`
 - V2 界面：启用 V2 后通过 V1 的“进入新版”入口访问，或登录后打开 `http://服务器IP/v2`
+- 角色图库：`http://服务器IP/gallery/`；合成台：`http://服务器IP/gallery/studio`。
 - 后端健康检查：`http://服务器IP:8000/health`
 - API 文档：`http://服务器IP:8000/docs`
 
@@ -278,13 +315,13 @@ docker compose up -d --build
 ```bash
 docker compose ps
 docker compose logs -f backend
-docker compose logs -f frontend
+docker compose logs -f frontend pose-gallery
 ```
 
 健康检查预期返回：
 
 ```json
-{"status":"ok","app":"comfyui-console","version":"0.1.0"}
+{"status":"ok","app":"comfyui-console","version":"0.2.0"}
 ```
 
 ### 6. 停止或重启
@@ -484,7 +521,7 @@ Windows PowerShell 使用 `Copy-Item .env.example .env.local`。生产回退时�
 | 变量 | 默认值 | 说明 |
 | --- | --- | --- |
 | `COMFY_CONSOLE_APP_NAME` | `comfyui-console` | 应用名称 |
-| `COMFY_CONSOLE_VERSION` | `0.1.0` | API 显示版本 |
+| `COMFY_CONSOLE_VERSION` | `0.2.0` | API 显示版本 |
 | `COMFY_CONSOLE_DEBUG` | `true` | 调试模式，生产应设为 `false` |
 | `COMFY_CONSOLE_SHORT_DRAMA_ENABLED` | `true` | V2.1 短剧模块运行开关；关闭后状态接口会通知前端回退 |
 | `COMFY_CONSOLE_STORY_WORKER_POLL_SECONDS` | `1` | 独立 Story Worker 的队列轮询间隔（秒） |
@@ -538,35 +575,16 @@ docker compose start backend
 
 1. 备份 `backend/data` 和 `backend/.env`。
 2. 获取新版本代码。
-3. 重新构建并启动：
+3. 等待运行中的任务结束，再停止后端调度、构建镜像并迁移数据库。请在 Console 项目根目录执行，任一命令失败时先检查错误，再继续下一步。
 
 ```bash
-docker compose up -d --build
+docker compose stop backend
+docker compose build
+docker compose run --rm --no-deps backend alembic upgrade head
+docker compose up -d
 ```
 
-4. 检查健康状态和日志：
-
-```bash
-docker compose ps
-docker compose logs --tail=200 backend
-```
-
-当前应用启动时会创建缺失的表，并对部分 SQLite 字段执行兼容升级。生产环境引入 PostgreSQL 或执行跨版本升级时，应优先按 Alembic 迁移说明操作并先在备份环境验证。
-
-当前版本新增了生成类型配置版本和运行监控相关迁移。升级前建议执行：
-
-```bash
-cd backend
-alembic upgrade head
-```
-
-Docker 部署可使用：
-
-```bash
-docker compose exec backend alembic upgrade head
-```
-
-应用启动仍包含 SQLite 开发态兼容升级，但正式部署应以 Alembic 为准。
+4. 运行 `docker compose ps`，确认 `frontend`、`backend` 和 `pose-gallery` 均已启动。访问后端 `/health`，再打开 `/gallery/studio` 检查登录和参考图库。
 
 ## 生产部署建议
 

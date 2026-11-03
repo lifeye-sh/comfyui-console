@@ -114,7 +114,7 @@ watch(() => props.manifestId, () => {
     <div v-if="error" class="wb-error">{{ error }}</div>
 
     <template v-if="approved">
-      <h4 class="section-title">🚀 编译为生产任务</h4>
+      <h4 class="section-title"><StudioIcon name="play"/>  编译为生产任务</h4>
       <p class="compile-hint">选择生成类型与工作流后预览编译。校验失败的任务不会创建。</p>
 
       <div class="compile-form">
@@ -162,7 +162,7 @@ watch(() => props.manifestId, () => {
               <StatusBadge v-else tone="success">可编译</StatusBadge>
             </header>
             <div v-if="intent.validation_errors?.length" class="intent-errors">
-              <small v-for="(err, i) in intent.validation_errors" :key="i">⚠ {{ err.message }}</small>
+              <small v-for="(err, i) in intent.validation_errors" :key="i"><StudioIcon name="alert"/>  {{ err.message }}</small>
             </div>
             <details>
               <summary>参数预览</summary>
@@ -177,7 +177,7 @@ watch(() => props.manifestId, () => {
     <!-- 任务链接状态 -->
     <template v-if="links.length">
       <div class="links-head">
-        <h4 class="section-title">🔗 任务链接（{{ links.length }}）</h4>
+        <h4 class="section-title"><StudioIcon name="link"/>  任务链接（{{ links.length }}）</h4>
         <V2Button variant="ghost" size="sm" :disabled="refreshing" @click="refreshStatus">
           {{ refreshing ? '刷新中…' : '刷新状态' }}
         </V2Button>
@@ -199,8 +199,8 @@ watch(() => props.manifestId, () => {
 
 <style scoped>
 .compile-panel{display:grid;gap:12px;border-top:1px solid var(--v2-border);margin-top:16px;padding-top:16px}
-.wb-error{padding:10px;color:#ffdce1;background:rgba(255,127,145,.1);border-radius:10px;font-size:12px}
-.section-title{margin:0;font-size:13px;color:#e8edff}
+.wb-error{padding:10px;color:var(--ws-danger);background:color-mix(in srgb, var(--ws-danger) 10%, transparent);border-radius:10px;font-size:12px}
+.section-title{margin:0;font-size:13px;color:var(--ws-text)}
 .compile-hint{margin:0;color:var(--v2-text-subtle);font-size:11px}
 .compile-form{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
 .compile-select{min-height:34px;padding:6px 10px;color:var(--v2-text);background:var(--v2-surface-soft);border:1px solid var(--v2-border);border-radius:9px;font-size:12px}
@@ -210,11 +210,11 @@ watch(() => props.manifestId, () => {
 .preview-summary button{margin-left:auto}
 .intent-list{display:grid;gap:6px}
 .intent-card{padding:10px;background:rgba(0,0,0,.15);border:1px solid var(--v2-border);border-radius:8px;display:grid;gap:6px}
-.intent-card.has-error{border-color:rgba(255,127,145,.35)}
+.intent-card.has-error{border-color:color-mix(in srgb, var(--ws-danger) 35%, transparent)}
 .intent-card header{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
 .intent-card header code{color:var(--v2-primary);font-size:11px}
 .intent-errors{display:grid;gap:3px}
-.intent-errors small{color:#ffb347;font-size:10px}
+.intent-errors small{color:var(--ws-danger);font-size:10px}
 .intent-card details{font-size:11px;color:var(--v2-text-subtle)}
 .intent-card details summary{cursor:pointer}
 .intent-card details pre{margin-top:6px;max-height:140px;overflow:auto;font-size:10px;background:rgba(0,0,0,.3);padding:8px;border-radius:8px}

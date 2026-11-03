@@ -331,7 +331,7 @@ def test_generated_resource_returns_source_task_parameters() -> None:
         assert result["params"]["prompt"] == "一只猫"
 
 
-def test_output_summaries_are_batched_scoped_and_limited_for_task_list() -> None:
+def test_output_summaries_are_batched_scoped_and_complete_for_task_list() -> None:
     with _session() as db:
         batch, generation_type = _create_batch_and_type(db)
         own = Task(batch_id=batch.id, user_id=11, generation_type_id=generation_type.id, status="SUCCESS")
@@ -352,4 +352,9 @@ def test_output_summaries_are_batched_scoped_and_limited_for_task_list() -> None
         result = output_summaries(f"{own.id},{other.id}", SimpleNamespace(id=11, role="user"), db)
 
         assert set(result) == {own.id}
-        assert [item["filename"] for item in result[own.id]] == ["own-0.png", "own-1.png", "own-2.png"]
+        assert [item["filename"] for item in result[own.id]] == [
+            "own-0.png",
+            "own-1.png",
+            "own-2.png",
+            "own-3.png",
+        ]

@@ -17,7 +17,10 @@ async function submit() {
   try {
     await auth.login(form.username, form.password)
     connectWs()
-    router.push('/')
+    const back = sessionStorage.getItem('gallery-login-return')
+    sessionStorage.removeItem('gallery-login-return')
+    if (back === '/gallery/studio') location.assign(back)
+    else router.push('/')
   } catch (e: any) {
     error.value = e.response?.data?.message || '登录失败'
   } finally {
@@ -27,8 +30,8 @@ async function submit() {
 </script>
 
 <template>
-  <div class="min-h-screen flex items-center justify-center bg-gray-100 p-4">
-    <NCard title="comfyui-console" style="width: 100%; max-width: 360px">
+  <div class="access-page">
+    <div class="access-photo"><img src="/editorial/camera.jpg" alt="摄影器材"/><span>COMFY CONSOLE</span></div><NCard title="登录工作台" style="width: 100%; max-width: 360px">
       <NSpace vertical :size="16">
         <NInput v-model:value="form.username" placeholder="用户名" />
         <NInput

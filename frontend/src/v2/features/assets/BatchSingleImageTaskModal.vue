@@ -37,11 +37,10 @@ function imageParameters(workflow: RuntimeWorkflow) {
 }
 
 const compatibleWorkflows = computed(() => workflows.value.filter(workflow => {
-  const images = imageParameters(workflow)
-  return images.length === 1 && !images[0].multiple
+  return imageParameters(workflow).some(parameter => !parameter.multiple)
 }))
 const currentWorkflow = computed(() => compatibleWorkflows.value.find(workflow => workflow.workflow_version_id === workflowVersionId.value) || null)
-const imageParameter = computed(() => currentWorkflow.value ? imageParameters(currentWorkflow.value)[0] : null)
+const imageParameter = computed(() => currentWorkflow.value ? imageParameters(currentWorkflow.value).find(parameter => !parameter.multiple) || null : null)
 const visibleParameters = computed(() => currentWorkflow.value?.parameters.filter(parameter => parameter.key !== imageParameter.value?.key) || [])
 const outputSizeKey = computed(() => props.generationType?.media_type === 'video' ? 'video_size' : 'image_size')
 const usingApi = computed(() => props.generationType?.code === 'mixed' && executionTarget.value.startsWith('gemini:'))
@@ -101,7 +100,7 @@ async function load() {
       const provider = imageProviders.value.find(item => item.is_default) || imageProviders.value[0]
       executionTarget.value = `gemini:${provider.id}`
     } else if (!first) {
-      error.value = mixed ? '混合生图没有可用的 API 图片提供方或单图工作流' : '该任务类型没有“仅接收一张图片”的可用工作流'
+      error.value = mixed ? '混合生图没有可用的 API 图片提供方或单图输入工作流' : '该任务类型没有包含单图输入的可用工作流'
     }
   } catch (event: any) {
     error.value = errorText(event)
@@ -166,7 +165,7 @@ watch(() => [props.open, props.generationType?.id, props.resourceIds.join(',')],
     <GlassCard class="batch-task-modal" padding="sm">
       <header>
         <div><small>BATCH SINGLE-IMAGE TASK</small><h2>批量单图任务</h2><p>{{ generationType?.name }} · 已选 {{ resourceIds.length }} 张图片，每张图片生成一个独立任务</p></div>
-        <button class="close" :disabled="submitting" @click="emit('close')">✕</button>
+        <button class="close" :disabled="submitting" @click="emit('close')" aria-label="关闭"><StudioIcon name="close"/></button>
       </header>
       <p v-if="error" class="error" role="alert">{{ error }}</p>
       <div v-if="loading" class="loading">正在读取工作流参数…</div>
@@ -183,7 +182,7 @@ watch(() => [props.open, props.generationType?.id, props.resourceIds.join(',')],
             <option v-for="workflow in compatibleWorkflows" :key="workflow.workflow_version_id" :value="workflow.workflow_version_id">{{ workflow.name }} · v{{ workflow.version }}</option>
           </select>
         </V2Field>
-        <div class="input-summary"><span>自动输入</span><b>{{ usingApi?'API 参考图片':(imageParameter?.label || imageParameter?.key) }}</b><em>{{ resourceIds.length===1?'单图编辑：创建 1 个任务':`批量编辑：${resourceIds.length} 张图片分别创建 ${resourceIds.length} 个任务` }}</em></div>
+        <div class="input-summary"><span>自动输入</span><b>{{ usingApi?'API 参考图片':(imageParameter?.label || imageParameter?.key) }}</b><em>{{ resourceIds.length===1?'单图输入：创建 1 个任务':`批量输入：${resourceIds.length} 张图片分别创建 ${resourceIds.length} 个任务` }}</em></div>
         <div v-if="usingApi" class="parameter-grid">
           <V2Field label="图片尺寸" required>
             <select v-model="apiSize">
@@ -211,7 +210,7 @@ watch(() => [props.open, props.generationType?.id, props.resourceIds.join(',')],
 .batch-task-layer{position:fixed;inset:0;z-index:10020;display:grid;place-items:center;padding:20px;background:rgba(0,0,0,.68);backdrop-filter:blur(5px)}
 .batch-task-modal{width:min(860px,96vw);max-height:88vh;overflow:auto}
 header{display:flex;align-items:flex-start;justify-content:space-between;gap:18px;padding-bottom:14px;border-bottom:1px solid var(--v2-border)}
-header small{color:var(--v2-primary);font-size:10px;letter-spacing:.12em}h2{margin:5px 0 4px}header p{margin:0;color:var(--v2-text-muted);font-size:12px}.close{padding:6px;color:var(--v2-text-muted);background:transparent;border:0;cursor:pointer}.error{padding:10px 12px;color:#ffdce1;background:rgba(255,127,145,.1);border:1px solid rgba(255,127,145,.25);border-radius:9px}.loading{padding:60px;text-align:center;color:var(--v2-text-muted)}
+header small{color:var(--v2-primary);font-size:10px;letter-spacing:.12em}h2{margin:5px 0 4px}header p{margin:0;color:var(--v2-text-muted);font-size:12px}.close{padding:6px;color:var(--v2-text-muted);background:transparent;border:0;cursor:pointer}.error{padding:10px 12px;color:var(--ws-danger);background:color-mix(in srgb, var(--ws-danger) 10%, transparent);border:1px solid color-mix(in srgb, var(--ws-danger) 25%, transparent);border-radius:9px}.loading{padding:60px;text-align:center;color:var(--v2-text-muted)}
 .form{display:grid;grid-template-columns:1fr 1fr;gap:14px;padding:18px 0}.input-summary{grid-column:1/-1;display:grid;grid-template-columns:auto auto 1fr;align-items:center;gap:9px;padding:11px 13px;color:var(--v2-text-muted);background:var(--v2-surface-soft);border:1px solid var(--v2-border);border-radius:10px;font-size:12px}.input-summary span{color:var(--v2-primary)}.input-summary b{color:var(--v2-text)}.input-summary em{justify-self:end;font-style:normal}.parameter-grid{grid-column:1/-1;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}.parameter-grid :deep(.wide-field){grid-column:1/-1}.parameter-grid textarea{box-sizing:border-box;width:100%;resize:vertical}footer{display:flex;justify-content:flex-end;gap:9px;padding-top:14px;border-top:1px solid var(--v2-border)}
 @media(max-width:700px){.batch-task-layer{padding:8px}.batch-task-modal{width:100%;max-height:94vh}.form,.parameter-grid{grid-template-columns:1fr}.input-summary{grid-template-columns:1fr}.input-summary em{justify-self:start}footer{position:sticky;bottom:0;padding:12px 0;background:var(--v2-surface)}}
 </style>

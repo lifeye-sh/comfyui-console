@@ -590,7 +590,7 @@ const columns: DataTableColumns<TaskItem> = [
       const outputs = taskOutputs.value[row.id] || []
       if (!outputs.length) return '—'
       return h('div', { class: 'flex flex-wrap gap-1' }, [
-        ...outputs.slice(0, 3).map((output) => {
+        ...outputs.map((output) => {
           if (output.media_type === 'image' || output.mime.startsWith('image/')) {
             return h('img', { src: output.url, alt: output.filename, title: '点击放大', class: 'w-14 h-14 object-contain bg-gray-100 rounded cursor-pointer', onClick: () => void openOutput(output) })
           }
@@ -609,7 +609,6 @@ const columns: DataTableColumns<TaskItem> = [
             onClick: () => void openOutput(output),
           }, { default: () => output.media_type === 'video' ? '视频' : '音频' })
         }),
-        outputs.length > 3 ? h(NText, { depth: 3 }, { default: () => `+${outputs.length - 3}` }) : null,
       ])
     },
   },
@@ -701,6 +700,7 @@ const columns: DataTableColumns<TaskItem> = [
 const pagination = {
   pageSize: 20,
   showSizePicker: true,
+  showQuickJumper: true,
   pageSizes: [20, 50, 100],
 }
 </script>
@@ -795,7 +795,7 @@ const pagination = {
                     @click="openOutput(detailMediaPreviews[String(key)])"
                   >
                     <img :src="detailMediaPreviews[String(key)].url" class="w-full h-full object-contain" />
-                    <span class="absolute inset-0 flex items-center justify-center text-white text-3xl bg-black/20">▶</span>
+                    <span class="absolute inset-0 flex items-center justify-center text-white text-3xl bg-black/20"><StudioIcon name="play"/></span>
                   </button>
                   <audio
                     v-else-if="detailMediaPreviews[String(key)]?.media_type === 'audio'"
@@ -861,7 +861,7 @@ const pagination = {
                   <img v-if="output.media_type === 'image' || output.mime.startsWith('image/')" :src="output.url" class="w-full h-full object-contain" />
                   <div v-else-if="output.media_type === 'video'" class="relative w-full h-full">
                     <img :src="output.url" class="w-full h-full object-contain" />
-                    <span class="absolute inset-0 flex items-center justify-center text-white text-3xl bg-black/20">▶</span>
+                    <span class="absolute inset-0 flex items-center justify-center text-white text-3xl bg-black/20"><StudioIcon name="play"/></span>
                   </div>
                   <span v-else class="text-gray-500">音频 ▶</span>
                 </div>
@@ -898,9 +898,9 @@ const pagination = {
           @dblclick="resetImageView"
         >
           <div class="absolute top-3 left-1/2 -translate-x-1/2 z-10 flex items-center gap-1 rounded-lg bg-black/65 p-1 text-white shadow-lg">
-            <NButton size="small" quaternary style="color: white" @click.stop="zoomImage(-0.25)">−</NButton>
+            <NButton size="small" quaternary style="color: white" @click.stop="zoomImage(-0.25)"><StudioIcon name="minus"/></NButton>
             <span class="w-14 text-center text-xs">{{ Math.round(imageScale * 100) }}%</span>
-            <NButton size="small" quaternary style="color: white" @click.stop="zoomImage(0.25)">＋</NButton>
+            <NButton size="small" quaternary style="color: white" @click.stop="zoomImage(0.25)"><StudioIcon name="plus"/></NButton>
             <NButton size="small" quaternary style="color: white" @click.stop="resetImageView">适应</NButton>
           </div>
           <img

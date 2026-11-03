@@ -121,7 +121,7 @@ def import_csv(
     return {"inserted": inserted}
 
 
-def submit_batch(db: Session, batch: Batch) -> dict:
+def submit_batch(db: Session, batch: Batch, *, commit: bool = True) -> dict:
     enqueued = 0
     invalid = 0
     for t in batch.tasks:
@@ -190,7 +190,8 @@ def submit_batch(db: Session, batch: Batch) -> dict:
         t.error = None
         enqueued += 1
     batch.submitted_at = datetime.now(timezone.utc)
-    db.commit()
+    if commit:
+        db.commit()
     return {"ok": True, "enqueued": enqueued, "invalid": invalid}
 
 

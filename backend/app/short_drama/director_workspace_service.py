@@ -500,12 +500,22 @@ def save_draft(db: Session, owner: int, project_id: int, shot_id: int, revision:
             raise ValueError("关键帧编号与用途不一致")
         if frame.time > shot.duration: raise ValueError("关键帧时间超出镜头时长")
     # Extras must point at real, owned library resources; characters must be project members.
-    project = project_service.owned_project(db, owner, project_id)
+    project_service.owned_project(db, owner, project_id)
+    extra_ids = {extra.resource_id for extra in draft.asset_choices.extras}
+    valid_extras = set()
+    if extra_ids:
+        valid_extras = {(rid, media) for rid, media in db.query(Resource.id, Resource.media_type).filter(
+            Resource.id.in_(extra_ids), Resource.owner_id==owner, Resource.deleted_at.is_(None)).all()}
     for extra in draft.asset_choices.extras:
-        if not db.query(Resource).filter_by(id=extra.resource_id, owner_id=owner, media_type=extra.media_type, deleted_at=None).first():
+        if (extra.resource_id, extra.media_type) not in valid_extras:
             raise ValueError(f"视频资源 #{extra.resource_id} 不存在、类型不符或已删除")
+    character_ids = {choice.character_id for choice in draft.asset_choices.characters}
+    valid_characters = set()
+    if character_ids:
+        valid_characters = {cid for (cid,) in db.query(Character.id).filter(
+            Character.id.in_(character_ids), Character.project_id==project_id, Character.owner_id==owner).all()}
     for choice in draft.asset_choices.characters:
-        if not db.query(Character).filter_by(id=choice.character_id, project_id=project_id, owner_id=owner).first():
+        if choice.character_id not in valid_characters:
             raise ValueError(f"角色 #{choice.character_id} 不属于当前项目")
     settings = deepcopy(shot.production_settings or {})
     settings["director_workspace"] = draft.model_dump()

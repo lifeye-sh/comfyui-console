@@ -24,6 +24,7 @@ const editingFolder = ref<any>(null)
 const showMove = ref(false)
 const moveTargetId = ref<number | null>(null)
 const blobs = ref<Record<number, string>>({})
+const storageSummary = ref<{ total_bytes: number; active_bytes: number; recycle_bin_bytes: number; total_count: number } | null>(null)
 const PAGE_SIZE = 30
 const THUMBNAIL_CONCURRENCY = 6
 const mediaOptions = [
@@ -150,7 +151,22 @@ async function load(reset = true) {
     loadingMore.value = false
   }
 }
-onMounted(async () => { await loadFolders(true); await load(true) })
+async function refreshLibrary() {
+  if (loading.value || loadingMore.value) return
+  await Promise.all([loadFolders(), load(true), loadStorageSummary()])
+}
+function formatBytes(value: number) {
+  if (value <= 0) return '0 B'
+  const units = ['B', 'KB', 'MB', 'GB', 'TB']
+  const index = Math.min(Math.floor(Math.log(value) / Math.log(1024)), units.length - 1)
+  const amount = value / 1024 ** index
+  return `${amount.toFixed(index === 0 ? 0 : amount >= 100 ? 0 : amount >= 10 ? 1 : 2)} ${units[index]}`
+}
+async function loadStorageSummary() {
+  try { storageSummary.value = await resourceApi.storageSummary() }
+  catch { storageSummary.value = null }
+}
+onMounted(async () => { await loadFolders(true); await Promise.all([load(true), loadStorageSummary()]) })
 watch(mediaType, () => void load(true))
 watch(currentFolderId, () => { selectedIds.value = []; void load(true) })
 onUnmounted(() => {
@@ -206,6 +222,7 @@ async function del(id: number) {
     delete blobs.value[id]
     items.value = items.value.filter((item) => item.id !== id)
     if (preview.value?.id === id) closePreview()
+    await loadStorageSummary()
     message.success('已删除')
   } catch {
     message.error('删除失败')
@@ -242,9 +259,9 @@ async function saveFolder() {
 }
 async function deleteCurrentFolder() {
   if (!currentFolder.value || currentFolder.value.folder_type !== 'normal') return
-  if (!confirm(`删除文件夹“${currentFolder.value.name}”？其中素材将移到“上传素材”。`)) return
+  if (!confirm(`删除空目录“${currentFolder.value.name}”？\n目录中存在素材或子目录时不能删除。`)) return
   try { await resourceFolderApi.delete(currentFolder.value.id); await loadFolders(true); message.success('文件夹已删除') }
-  catch (e: any) { message.error(e.response?.data?.message || '删除失败') }
+  catch (e: any) { message.error(e.response?.data?.detail || e.message || '删除失败') }
 }
 function openMoveDialog(resourceId?: number) {
   if (resourceId) selectedIds.value = [resourceId]
@@ -263,8 +280,9 @@ async function moveSelected() {
 <template>
   <div class="space-y-4">
     <div class="flex flex-wrap items-center justify-between gap-3">
-      <div><NH2 style="margin: 0">素材库</NH2><div class="text-xs text-gray-500 mt-1">{{ currentFolder?.name || '目录' }}</div></div>
+      <div><NH2 style="margin: 0">素材库</NH2><div class="text-xs text-gray-500 mt-1">{{ currentFolder?.name || '目录' }}</div><div v-if="storageSummary" class="text-xs text-gray-500 mt-1" title="包含素材库和回收站中的素材文件，不重复计算相同存储文件"><b class="text-gray-700">总占用 {{ formatBytes(storageSummary.total_bytes) }}</b> · 在库 {{ formatBytes(storageSummary.active_bytes) }} · 回收站 {{ formatBytes(storageSummary.recycle_bin_bytes) }} · 共 {{ storageSummary.total_count }} 项</div></div>
       <div class="flex gap-2">
+        <NButton size="small" :loading="loading" :disabled="loadingMore" @click="refreshLibrary">刷新</NButton>
         <NButton size="small" @click="openNewFolder">新建文件夹</NButton>
         <NButton v-if="currentFolder?.folder_type === 'normal'" size="small" @click="openRenameFolder">重命名</NButton>
         <NButton v-if="currentFolder?.folder_type === 'normal'" size="small" type="error" quaternary @click="deleteCurrentFolder">删除目录</NButton>
@@ -283,8 +301,8 @@ async function moveSelected() {
           :class="{ 'bg-green-50 text-green-700 font-medium': currentFolderId === folder.id }"
           :style="{ paddingLeft: `${8 + folder.depth * 18}px` }"
         >
-          <button class="w-5 h-8 shrink-0 text-xs text-gray-500" @click.stop="toggleFolder(folder)">{{ folder.children?.length ? (expandedFolderIds.has(folder.id) ? '▼' : '▶') : '' }}</button>
-          <button class="flex-1 text-left py-2 pr-2 truncate" @click="currentFolderId = folder.id">📁 {{ folder.name }} <span class="text-xs text-gray-400">({{ folder.resource_count }})</span></button>
+          <button class="w-5 h-8 shrink-0 text-xs text-gray-500" @click.stop="toggleFolder(folder)"><StudioIcon :name="folder.children?.length ? (expandedFolderIds.has(folder.id) ? 'down' : 'play') : ''"/></button>
+          <button class="flex-1 text-left py-2 pr-2 truncate" @click="currentFolderId = folder.id"><StudioIcon name="assets"/>  {{ folder.name }} <span class="text-xs text-gray-400">({{ folder.resource_count }})</span></button>
         </div>
       </aside>
       <main class="min-w-0">
@@ -312,7 +330,7 @@ async function moveSelected() {
             @click="openPreview(r)"
           >
             <img :src="blobs[r.id]" :alt="r.filename" class="w-full h-full object-contain" loading="lazy" decoding="async" />
-            <span class="absolute inset-0 flex items-center justify-center"><i class="w-10 h-10 rounded-full bg-black/60 text-white not-italic flex items-center justify-center text-lg">▶</i></span>
+            <span class="absolute inset-0 flex items-center justify-center"><i class="w-10 h-10 rounded-full bg-black/60 text-white not-italic flex items-center justify-center text-lg"><StudioIcon name="play"/></i></span>
           </button>
           <div v-else-if="r.media_type === 'image' || r.media_type === 'video'" class="w-full h-32 bg-gray-100 animate-pulse" />
           <button

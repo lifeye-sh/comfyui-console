@@ -107,6 +107,10 @@ def test_draft_conflict_and_independent_frame_video_adoption():
     draft=deepcopy(original['draft']);draft['frames'][1]['prompt']='女孩转身面对车站'
     saved=client.put(f'{root}/shots/{s}',headers=h,json={'revision':original['revision'],'draft':draft})
     assert saved.status_code==200,saved.text
+    compact=client.get(f'{root}/shots/{s}',headers=h).json()
+    compact_draft=deepcopy(compact['draft']);compact_draft['frames'][1]['prompt']='女孩面对驶离的列车'
+    compact_saved=client.put(f'{root}/shots/{s}?compact=true',headers=h,json={'revision':compact['revision'],'draft':compact_draft})
+    assert compact_saved.status_code==200 and compact_saved.json()=={'revision':compact['revision']+1}
     assert client.put(f'{root}/shots/{s}',headers=h,json={'revision':original['revision'],'draft':draft}).status_code==409
     for scope,rid in zip(['start','end'],ids):
         take=imported(h,root,s,scope,rid)
@@ -117,7 +121,7 @@ def test_draft_conflict_and_independent_frame_video_adoption():
     assert view['selected_frames']=={'start':ids[0],'end':ids[1]}
     assert view['dialogue']==original['dialogue']
     assert len([t for t in view['takes'] if t['is_selected']])==2
-    assert get(h,root,s)['draft']==draft
+    assert get(h,root,s)['draft']==compact_draft
 
 
 def test_preflight_idempotent_queue_output_sync_and_stale_dependencies():

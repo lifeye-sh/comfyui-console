@@ -529,6 +529,14 @@ export const taskApi = {
 
 export const resourceApi = {
   list: (params?: any) => http.get('/resources', { params }).then((r) => r.data),
+  storageSummary: () => http.get('/resources/storage-summary').then((r) => r.data as {
+    total_bytes: number
+    active_bytes: number
+    recycle_bin_bytes: number
+    total_count: number
+    active_count: number
+    recycle_bin_count: number
+  }),
   upload: (file: File, media_type = 'image', direction = 'input') => {
     const fd = new FormData()
     fd.append('file', file)
@@ -539,7 +547,7 @@ export const resourceApi = {
       })
       .then((r) => r.data)
   },
-  thumbUrl: (id: number) => `/api/v1/resources/${id}/thumb`,
+  thumbUrl: (id: number) => `/api/v1/resources/${id}/thumb?v=2-hd`,
   fileUrl: (id: number) => `/api/v1/resources/${id}/file`,
   generationInfo: (id: number) => http.get(`/resources/${id}/generation-info`).then((r) => r.data),
   get: (id: number) => http.get(`/resources/${id}`).then((r) => r.data),
@@ -553,8 +561,17 @@ export const resourceApi = {
     http.post('/resources/batch-move', { resource_ids, folder_id }).then((r) => r.data),
   batchDelete: (resource_ids: number[]) =>
     http.post('/resources/batch-delete', { resource_ids }).then((r) => r.data),
+  batchCrop: (resource_ids: number[], aspect_ratio: string) =>
+    http.post('/resources/batch-crop', { resource_ids, aspect_ratio }).then((r) => r.data as {
+      created: Array<{ id: number; filename: string }>
+      failed: Array<{ resource_id: number; reason: string }>
+    }),
   batchPurge: (resource_ids: number[]) =>
-    http.post('/resources/batch-purge', { resource_ids }).then((r) => r.data),
+    http.post('/resources/batch-purge', { resource_ids }).then((r) => r.data as {
+      deleted: number
+      restored: Array<{ resource_id: number; reason: string }>
+      failed: Array<{ resource_id: number; reason: string }>
+    }),
   trimVideo: (id: number, start: number, end: number) =>
     http.post(`/resources/${id}/trim`, { start, end }).then((r) => r.data),
   mergeVideos: (resource_ids: number[]) =>

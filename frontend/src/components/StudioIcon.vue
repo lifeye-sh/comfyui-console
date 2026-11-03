@@ -1,0 +1,45 @@
+<script setup lang="ts">
+const props=withDefaults(defineProps<{name:string;size?:number}>(),{size:18})
+const paths:Record<string,string>={
+  "overview": "M3 3h7v8H3z M14 3h7v5h-7z M3 15h7v6H3z M14 12h7v9h-7z",
+  "assets": "M3 6h7l2 2h9v12H3z M4 4h6",
+  "creation": "M4 5h16v14H4z M4 15l5-5 5 5 3-3 3 3 M16 8h1",
+  "tasks": "M8 5h13 M8 12h13 M8 19h13 M3 5h1 M3 12h1 M3 19h1",
+  "system": "M3 6h7m4 0h7 M3 12h12m4 0h2 M3 18h3m4 0h11 M10 3v6 M15 9v6 M6 15v6",
+  "workflows": "M3 3h6v6H3z M15 15h6v6h-6z M6 9v9h9",
+  "drama": "M3 7h18v13H3z M3 7l16-4 1 4 M4 11h16 M9 4l3 3",
+  "user": "M8 8a4 4 0 1 0 8 0a4 4 0 1 0-8 0 M4 21a8 8 0 0 1 16 0",
+  "search": "M3 10a7 7 0 1 0 14 0a7 7 0 1 0-14 0 M15 15l6 6",
+  "file": "M5 3h9l5 5v13H5z M14 3v6h5 M8 13h8 M8 17h6",
+  "edit": "M4 20l1-5L16 4l4 4L9 19z M14 6l4 4",
+  "calendar": "M3 6h18v15H3z M3 10h18 M8 3v5 M16 3v5",
+  "save": "M3 3h15l3 3v15H3z M7 3v6h9V3 M7 21v-8h10v8",
+  "download": "M12 3v12 M7 10l5 5 5-5 M4 16v5h16v-5",
+  "check": "M4 12l5 5L20 6",
+  "close": "M5 5l14 14 M19 5L5 19",
+  "play": "M7 4l13 8-13 8z",
+  "audio": "M4 10v4 M8 6v12 M12 3v18 M16 7v10 M20 10v4",
+  "alert": "M12 3l10 17H2z M12 9v5 M12 17h.01",
+  "link": "M10 14l4-4 M8 15l-1 1a3 3 0 0 1-4-4l4-4a4 4 0 0 1 5 0 M16 9l1-1a3 3 0 0 0-4-4l-3 3",
+  "camera": "M3 7h4l2-3h6l2 3h4v13H3z M8 13a4 4 0 1 0 8 0a4 4 0 1 0-8 0",
+  "chart": "M3 4v16h18 M6 15l4-5 4 2 5-7",
+  "lock": "M5 10h14v11H5z M8 10V7a4 4 0 0 1 8 0v3",
+  "chevron": "M8 5l7 7-7 7",
+  "down": "M5 8l7 7 7-7",
+  "plus": "M4 12h16 M12 4v16",
+  "minus": "M4 12h16",
+  "copy": "M8 8h12v13H8z M4 16V3h12",
+  "collapse": "M3 4h18v16H3z M9 4v16 M16 9l-3 3 3 3",
+  "circle": "M3 12a9 9 0 1 0 18 0a9 9 0 1 0-18 0",
+  "badge": "M3 4h18v16H3z M6 14l4-5 4 5 3-3 2 3",
+  "up": "M5 15l7-7 7 7",
+  "back": "M16 5l-7 7 7 7",
+  "rotate": "M4 9a8 8 0 1 1 0 6 M4 3v6h6",
+  "bolt": "M13 2L4 14h7l-1 8 10-14h-8z",
+  "shirt": "M8 4l-6 4 3 4 3-2v11h8V10l3 2 3-4-6-4q-4 4-8 0",
+  "robot": "M4 7h16v12H4z M12 3v4 M8 12h1 M15 12h1 M9 16h6",
+  "pin": "M4 11h16 M12 3v17 M7 6h10v5H7z"
+}
+</script>
+<template><svg v-if="name" xmlns="http://www.w3.org/2000/svg" :width="size" :height="size" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.65" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" class="studio-icon"><path :d="paths[props.name] || paths.file"/></svg></template>
+<style scoped>.studio-icon{display:inline-block;vertical-align:-.16em;flex:none;pointer-events:none}</style>

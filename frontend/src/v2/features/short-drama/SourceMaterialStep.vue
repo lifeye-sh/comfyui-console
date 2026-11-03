@@ -161,7 +161,7 @@ watch(() => props.projectId, () => void load())
     <div class="sm-drop" :class="{ smDragging: dragging }"
       @dragover.prevent="dragging = true" @dragleave.prevent="dragging = false" @drop.prevent="dropFile">
       <input id="sm-file-input" type="file" accept=".txt,.docx,.epub" @change="chooseFile">
-      <div class="sm-drop-icon">📄</div>
+      <div class="sm-drop-icon"><StudioIcon name="file"/> </div>
       <div class="sm-drop-info">
         <strong>{{ selectedFile?.name || '拖放故事文档到这里' }}</strong>
         <p>{{ selectedFile ? `${(selectedFile.size / 1024 / 1024).toFixed(2)} MB · 等待上传` : '支持 TXT / DOCX / EPUB，≤ 50MB' }}</p>
@@ -221,7 +221,7 @@ watch(() => props.projectId, () => void load())
         <V2Button variant="primary" :disabled="active" @click="analyzeNovel">
           {{ active ? '分析中…' : '启动 AI 分析' }}
         </V2Button>
-        <V2Button variant="ghost" @click="emit('edit-prompt', 'novel_chunk_analysis', '小说分析')">📝</V2Button>
+        <V2Button variant="ghost" @click="emit('edit-prompt', 'novel_chunk_analysis', '小说分析')" aria-label="编辑"><StudioIcon name="edit"/></V2Button>
       </div>
 
       <div v-if="analyses.length" class="sm-card-list">
@@ -243,7 +243,7 @@ watch(() => props.projectId, () => void load())
 
           <!-- 校验错误 -->
           <div v-if="a.validation_errors?.length" class="sm-err-list">
-            <small v-for="(err, i) in a.validation_errors" :key="i" class="sm-danger">⚠ {{ err.message || JSON.stringify(err) }}</small>
+            <small v-for="(err, i) in a.validation_errors" :key="i" class="sm-danger"><StudioIcon name="alert"/>  {{ err.message || JSON.stringify(err) }}</small>
           </div>
 
           <!-- 展开详情 -->
@@ -317,11 +317,11 @@ watch(() => props.projectId, () => void load())
 
 <style scoped>
 /* 全部类名带 sm- 前缀，避免与 DirectorWorkbench / GlassPanel 内部样式冲突 */
-.sm-error{padding:10px 12px;color:#ffdce1;background:rgba(255,127,145,.1);border-radius:10px;font-size:12px;margin-bottom:12px}
+.sm-error{padding:10px 12px;color:var(--ws-danger);background:color-mix(in srgb, var(--ws-danger) 10%, transparent);border-radius:10px;font-size:12px;margin-bottom:12px}
 
 /* 上传区 */
-.sm-drop{position:relative;min-height:130px;padding:18px 20px;display:flex;align-items:center;gap:14px;background:rgba(130,149,255,.04);border:2px dashed var(--v2-border);border-radius:14px;transition:.2s}
-.sm-drop.smDragging{border-color:var(--v2-primary);background:rgba(102,126,234,.08)}
+.sm-drop{position:relative;min-height:130px;padding:18px 20px;display:flex;align-items:center;gap:14px;background:color-mix(in srgb, var(--ws-surface-soft) 4%, transparent);border:2px dashed var(--v2-border);border-radius:14px;transition:.2s}
+.sm-drop.smDragging{border-color:var(--v2-primary);background:color-mix(in srgb, var(--ws-surface-soft) 8%, transparent)}
 .sm-drop input{position:absolute;width:1px;height:1px;opacity:0;pointer-events:none}
 .sm-drop-icon{font-size:28px;flex-shrink:0}
 .sm-drop-info{flex:1;min-width:0}
@@ -331,15 +331,15 @@ watch(() => props.projectId, () => void load())
 .sm-pick:hover{border-color:var(--v2-primary)}
 
 /* 进度条 */
-.sm-bar{height:4px;background:rgba(255,255,255,.06);border-radius:99px;overflow:hidden}
-.sm-bar span{display:block;height:100%;background:linear-gradient(90deg,#6f86ff,#aa70e8);transition:width .3s}
+.sm-bar{height:4px;background:color-mix(in srgb, var(--ws-surface) 6%, transparent);border-radius:99px;overflow:hidden}
+.sm-bar span{display:block;height:100%;background:var(--ws-surface-soft);transition:width .3s}
 .sm-bar.sm-bar{margin-top:10px}
 .sm-bar-sm{height:3px;margin-top:6px}
 .sm-upload-act{margin-top:10px}
 
 /* 区块标题 */
 .sm-block{margin-top:18px}
-.sm-h4{margin:0 0 8px;font-size:13px;color:#c8d0ee;font-weight:600}
+.sm-h4{margin:0 0 8px;font-size:13px;color:var(--ws-text);font-weight:600}
 .sm-hint{margin:0 0 10px;color:var(--v2-text-subtle);font-size:11px;line-height:1.5}
 .sm-empty{margin-top:20px;color:var(--v2-text-subtle);font-size:12px;text-align:center;padding:16px 0}
 
@@ -347,8 +347,8 @@ watch(() => props.projectId, () => void load())
 .sm-card-list{display:grid;gap:10px}
 
 /* 文档卡片 */
-.sm-doc-card{display:flex;align-items:center;gap:12px;padding:12px 14px;background:rgba(130,149,255,.04);border:1px solid var(--v2-border);border-radius:10px}
-.sm-doc-fmt{flex-shrink:0;width:38px;height:38px;display:grid;place-items:center;color:#fff;background:linear-gradient(145deg,#7b8cff,#a167e8);border-radius:8px;font-size:9px;font-weight:700}
+.sm-doc-card{display:flex;align-items:center;gap:12px;padding:12px 14px;background:color-mix(in srgb, var(--ws-surface-soft) 4%, transparent);border:1px solid var(--v2-border);border-radius:10px}
+.sm-doc-fmt{flex-shrink:0;width:38px;height:38px;display:grid;place-items:center;color:var(--ws-text);background:var(--ws-surface-soft);border-radius:8px;font-size:9px;font-weight:700}
 .sm-doc-body{flex:1;min-width:0;display:grid;gap:2px}
 .sm-doc-body strong{font-size:12px;color:var(--v2-text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .sm-doc-body small{color:var(--v2-text-muted);font-size:10px}
@@ -356,7 +356,7 @@ watch(() => props.projectId, () => void load())
 .sm-pending{color:var(--v2-warning) !important}
 
 /* 任务卡片 */
-.sm-job-card{padding:12px 14px;background:rgba(130,149,255,.04);border:1px solid var(--v2-border);border-radius:10px}
+.sm-job-card{padding:12px 14px;background:color-mix(in srgb, var(--ws-surface-soft) 4%, transparent);border:1px solid var(--v2-border);border-radius:10px}
 .sm-job-head{display:flex;align-items:center;justify-content:space-between;gap:8px}
 .sm-job-head strong{font-size:12px;color:var(--v2-text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .sm-job-foot{display:flex;align-items:center;gap:8px;margin-top:6px;font-size:11px;color:var(--v2-text-muted)}
@@ -369,10 +369,10 @@ watch(() => props.projectId, () => void load())
 .sm-analyze-act{margin-bottom:12px;display:flex;gap:8px;align-items:center}
 
 /* 分析卡片 */
-.sm-analysis-card{background:rgba(130,149,255,.04);border:1px solid var(--v2-border);border-radius:12px;overflow:hidden}
-.sm-analysis-card.sm-failed{border-color:rgba(255,127,145,.3)}
+.sm-analysis-card{background:color-mix(in srgb, var(--ws-surface-soft) 4%, transparent);border:1px solid var(--v2-border);border-radius:12px;overflow:hidden}
+.sm-analysis-card.sm-failed{border-color:color-mix(in srgb, var(--ws-danger) 30%, transparent)}
 .sm-analysis-head{display:flex;align-items:center;gap:10px;padding:12px 14px;cursor:pointer;user-select:none;flex-wrap:nowrap}
-.sm-analysis-head:hover{background:rgba(130,149,255,.06)}
+.sm-analysis-head:hover{background:color-mix(in srgb, var(--ws-selected) 6%, transparent)}
 .sm-analysis-meta{display:grid;gap:2px;flex-shrink:0;min-width:130px}
 .sm-analysis-meta strong{font-size:12px;color:var(--v2-text)}
 .sm-analysis-meta small{color:var(--v2-text-muted);font-size:10px}
@@ -390,7 +390,7 @@ watch(() => props.projectId, () => void load())
 .sm-field label{display:block;font-size:10px;color:var(--v2-text-subtle);margin-bottom:5px;text-transform:uppercase;letter-spacing:.5px;font-weight:600}
 .sm-field p{margin:0;font-size:12px;color:var(--v2-text);line-height:1.65}
 .sm-tags{display:flex;gap:5px;flex-wrap:wrap}
-.sm-tag{padding:4px 10px;background:rgba(130,149,255,.08);border:1px solid rgba(130,149,255,.18);border-radius:7px;font-size:11px;color:#a8b8ee}
+.sm-tag{padding:4px 10px;background:color-mix(in srgb, var(--ws-surface-soft) 8%, transparent);border:1px solid color-mix(in srgb, var(--ws-border) 18%, transparent);border-radius:7px;font-size:11px;color:var(--ws-text-muted)}
 .sm-event-list{display:grid;gap:5px}
 .sm-event{padding:7px 10px;background:rgba(0,0,0,.15);border-radius:8px}
 .sm-event small{font-size:11px;color:var(--v2-text-muted);line-height:1.5}

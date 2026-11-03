@@ -150,18 +150,18 @@ onUnmounted(() => { release(); releaseMask() })
         <article v-for="(id, index) in orderedIds" :key="id" class="ordered-media-item">
           <button type="button" class="ordered-thumb" :disabled="disabled" @click="openViewer(id)">
             <img v-if="previewUrls[id]" :src="previewUrls[id]" :alt="resources.find(item => item.id === id)?.filename || `素材 ${id}`" />
-            <span v-else class="media-icon">▧</span>
+            <span v-else class="media-icon"><StudioIcon name="creation"/></span>
             <span class="order-badge">{{ index + 1 }}</span>
           </button>
           <button type="button" class="ordered-copy" :disabled="disabled" @click="openViewer(id)">
             <b>第 {{ index + 1 }} 张</b>
             <small>{{ resources.find(item => item.id === id)?.filename || `素材 #${id}` }}</small>
           </button>
-          <button type="button" class="remove-item" :disabled="disabled" :aria-label="`移除第 ${index + 1} 张图片`" @click="removeAt(index)">×</button>
+          <button type="button" class="remove-item" :disabled="disabled" :aria-label="`移除第 ${index + 1} 张图片`" @click="removeAt(index)"><StudioIcon name="close"/></button>
         </article>
       </div>
       <button v-else type="button" class="multiple-empty" :disabled="disabled" @click="pickerOpen=true">
-        <span class="media-icon">▧</span>
+        <span class="media-icon"><StudioIcon name="creation"/></span>
         <b>添加参考图片</b>
         <small>支持分多次添加，图片按添加顺序发送</small>
       </button>
@@ -171,7 +171,7 @@ onUnmounted(() => { release(); releaseMask() })
       <div class="preview">
         <button type="button" class="thumb-area" :disabled="disabled" @click="hasValue ? openViewer(currentResourceId()) : pickerOpen=true">
           <img v-if="previewUrls[currentResourceId()]" :src="previewUrls[currentResourceId()]" :alt="resource?.filename" />
-          <span v-else class="media-icon">{{ mediaType==='image'?'▧':mediaType==='video'?'▶':'♪' }}</span>
+          <span v-else class="media-icon"><StudioIcon :name="mediaType==='image'?'creation':mediaType==='video'?'play':'audio'"/></span>
         </button>
         <button type="button" class="text-area" :disabled="disabled" @click="pickerOpen=true">
           <b>{{ resource?.filename || `选择${mediaType==='image'?'图片':mediaType==='video'?'视频':'音频'}` }}</b>
@@ -190,7 +190,7 @@ onUnmounted(() => { release(); releaseMask() })
       </div>
     </div>
     <div v-if="!multiple && isImage() && maskResourceId" class="mask-badge">
-      <span class="mask-indicator">◐</span>
+      <span class="mask-indicator"><StudioIcon name="circle"/></span>
       <small>已设置遮罩 #{{ maskResourceId }}</small>
     </div>
     <AssetPicker :open="pickerOpen" :media-type="mediaType" :multiple="multiple" @close="pickerOpen=false" @select="choose" />
@@ -208,15 +208,15 @@ onUnmounted(() => { release(); releaseMask() })
 
 <style scoped>
 .media-input{display:grid;gap:6px}
-.multiple-input{display:grid;gap:10px;padding:11px;background:rgba(255,255,255,.025);border:1px solid var(--v2-border);border-radius:12px}
+.multiple-input{display:grid;gap:10px;padding:11px;background:color-mix(in srgb, var(--ws-surface) 2%, transparent);border:1px solid var(--v2-border);border-radius:12px}
 .multiple-toolbar{display:flex;align-items:center;justify-content:space-between;gap:12px}.multiple-toolbar>div:first-child{display:grid;gap:4px}.multiple-toolbar b{font-size:13px}.multiple-toolbar small{color:var(--v2-text-subtle);font-size:11px}.multiple-actions{display:flex;gap:6px;flex:0 0 auto}
-.ordered-media-list{display:grid;grid-template-columns:repeat(auto-fill,minmax(205px,1fr));gap:8px}.ordered-media-item{min-width:0;display:grid;grid-template-columns:62px minmax(0,1fr) 28px;align-items:center;gap:9px;padding:7px;background:rgba(255,255,255,.035);border:1px solid var(--v2-border);border-radius:10px}.ordered-thumb{position:relative;width:62px;height:62px;padding:0;display:grid;place-items:center;overflow:hidden;cursor:pointer;background:rgba(0,0,0,.18);border:1px solid var(--v2-border-strong);border-radius:8px}.ordered-thumb:disabled,.ordered-copy:disabled,.remove-item:disabled,.multiple-empty:disabled{opacity:.55;cursor:not-allowed}.ordered-thumb img{width:100%;height:100%;object-fit:contain}.order-badge{position:absolute;top:4px;left:4px;min-width:21px;height:21px;padding:0 5px;display:grid;place-items:center;color:#fff;font-size:11px;font-weight:800;background:var(--v2-primary);border:1px solid rgba(255,255,255,.42);border-radius:999px;box-shadow:0 2px 7px rgba(0,0,0,.32)}.ordered-copy{min-width:0;display:grid;gap:5px;padding:0;text-align:left;color:var(--v2-text);cursor:pointer;background:transparent;border:0}.ordered-copy b{font-size:12px}.ordered-copy small{overflow:hidden;color:var(--v2-text-subtle);font-size:11px;text-overflow:ellipsis;white-space:nowrap}.remove-item{width:28px;height:28px;padding:0;color:var(--v2-text-muted);font-size:18px;cursor:pointer;background:transparent;border:0;border-radius:7px}.remove-item:hover{color:#ff8e8e;background:rgba(255,90,90,.1)}
-.multiple-empty{min-height:92px;display:grid;place-items:center;align-content:center;gap:5px;color:var(--v2-text);cursor:pointer;background:rgba(255,255,255,.018);border:1px dashed var(--v2-border-strong);border-radius:10px}.multiple-empty b{font-size:12px}.multiple-empty small{color:var(--v2-text-subtle);font-size:11px}
+.ordered-media-list{display:grid;grid-template-columns:repeat(auto-fill,minmax(205px,1fr));gap:8px}.ordered-media-item{min-width:0;display:grid;grid-template-columns:62px minmax(0,1fr) 28px;align-items:center;gap:9px;padding:7px;background:color-mix(in srgb, var(--ws-surface) 4%, transparent);border:1px solid var(--v2-border);border-radius:10px}.ordered-thumb{position:relative;width:62px;height:62px;padding:0;display:grid;place-items:center;overflow:hidden;cursor:pointer;background:rgba(0,0,0,.18);border:1px solid var(--v2-border-strong);border-radius:8px}.ordered-thumb:disabled,.ordered-copy:disabled,.remove-item:disabled,.multiple-empty:disabled{opacity:.55;cursor:not-allowed}.ordered-thumb img{width:100%;height:100%;object-fit:contain}.order-badge{position:absolute;top:4px;left:4px;min-width:21px;height:21px;padding:0 5px;display:grid;place-items:center;color:var(--ws-text);font-size:11px;font-weight:800;background:var(--v2-primary);border:1px solid color-mix(in srgb, var(--ws-border) 42%, transparent);border-radius:999px;box-shadow:0 2px 7px rgba(0,0,0,.32)}.ordered-copy{min-width:0;display:grid;gap:5px;padding:0;text-align:left;color:var(--v2-text);cursor:pointer;background:transparent;border:0}.ordered-copy b{font-size:12px}.ordered-copy small{overflow:hidden;color:var(--v2-text-subtle);font-size:11px;text-overflow:ellipsis;white-space:nowrap}.remove-item{width:28px;height:28px;padding:0;color:var(--v2-text-muted);font-size:18px;cursor:pointer;background:transparent;border:0;border-radius:7px}.remove-item:hover{color:var(--ws-danger);background:color-mix(in srgb, var(--ws-danger) 10%, transparent)}
+.multiple-empty{min-height:92px;display:grid;place-items:center;align-content:center;gap:5px;color:var(--v2-text);cursor:pointer;background:color-mix(in srgb, var(--ws-surface) 2%, transparent);border:1px dashed var(--v2-border-strong);border-radius:10px}.multiple-empty b{font-size:12px}.multiple-empty small{color:var(--v2-text-subtle);font-size:11px}
 .preview-row{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:8px;align-items:start}
-.preview{min-height:76px;display:flex;align-items:center;gap:11px;min-width:0}.thumb-area{width:60px;height:58px;flex:0 0 auto;padding:0;display:grid;place-items:center;background:rgba(255,255,255,.04);border:1px dashed var(--v2-border-strong);border-radius:9px;cursor:pointer;overflow:hidden}.thumb-area:disabled{opacity:.55;cursor:not-allowed}.thumb-area img{width:100%;height:100%;object-fit:contain}.media-icon{font-size:24px;color:var(--v2-primary)}.text-area{flex:1;min-width:0;display:grid;gap:6px;padding:0;color:var(--v2-text);text-align:left;background:transparent;border:0;cursor:pointer}.text-area:disabled{opacity:.55;cursor:not-allowed}.text-area b{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:13px}.text-area small{color:var(--v2-text-subtle)}
+.preview{min-height:76px;display:flex;align-items:center;gap:11px;min-width:0}.thumb-area{width:60px;height:58px;flex:0 0 auto;padding:0;display:grid;place-items:center;background:color-mix(in srgb, var(--ws-surface) 4%, transparent);border:1px dashed var(--v2-border-strong);border-radius:9px;cursor:pointer;overflow:hidden}.thumb-area:disabled{opacity:.55;cursor:not-allowed}.thumb-area img{width:100%;height:100%;object-fit:contain}.media-icon{font-size:24px;color:var(--v2-primary)}.text-area{flex:1;min-width:0;display:grid;gap:6px;padding:0;color:var(--v2-text);text-align:left;background:transparent;border:0;cursor:pointer}.text-area:disabled{opacity:.55;cursor:not-allowed}.text-area b{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:13px}.text-area small{color:var(--v2-text-subtle)}
 .side-buttons{display:flex;flex-direction:column;gap:4px}
-.mask-badge{display:flex;align-items:center;gap:5px;padding:4px 10px;background:rgba(130,149,255,.12);border:1px solid rgba(130,149,255,.22);border-radius:8px}
-.mask-badge small{color:#dfe5ff;font-size:11px}
-.mask-indicator{color:#8295ff;font-size:14px}
+.mask-badge{display:flex;align-items:center;gap:5px;padding:4px 10px;background:color-mix(in srgb, var(--ws-surface-soft) 12%, transparent);border:1px solid color-mix(in srgb, var(--ws-border) 22%, transparent);border-radius:8px}
+.mask-badge small{color:var(--ws-text);font-size:11px}
+.mask-indicator{color:var(--ws-text-muted);font-size:14px}
 @media(max-width:700px){.multiple-toolbar{align-items:flex-start;flex-direction:column}.multiple-actions{width:100%}.multiple-actions>*{flex:1}.ordered-media-list{grid-template-columns:1fr}}
 </style>

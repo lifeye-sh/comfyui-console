@@ -21,9 +21,9 @@ export function requestNotificationPermission() {
 function notifyTaskComplete(taskId: number, type: string) {
   if (!('Notification' in window) || Notification.permission !== 'granted') return
   if (type === 'completed') {
-    new Notification('任务完成', { body: `任务 #${taskId} 已成功完成`, icon: '/favicon.ico' })
+    new Notification('任务完成', { body: `任务 #${taskId} 已成功完成`, icon: '/console-mark.svg' })
   } else if (type === 'failed') {
-    new Notification('任务失败', { body: `任务 #${taskId} 执行失败`, icon: '/favicon.ico' })
+    new Notification('任务失败', { body: `任务 #${taskId} 执行失败`, icon: '/console-mark.svg' })
   }
 }
 

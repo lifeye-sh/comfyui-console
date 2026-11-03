@@ -24,7 +24,7 @@ const canCopy = computed(() => Boolean(props.text))
     :title="copied ? '已复制' : '复制到剪贴板'"
     @click="copy(props.text)"
   >
-    {{ copied ? '✓ 已复制' : displayLabel }}
+    <StudioIcon :name="copied?'check':'copy'" :size="14"/> {{ copied ? '已复制' : displayLabel }}
   </button>
 </template>
 
@@ -33,17 +33,17 @@ const canCopy = computed(() => Boolean(props.text))
   flex-shrink: 0;
   padding: 2px 8px;
   font-size: 11px;
-  color: var(--v2-text-subtle, #a0abc8);
-  background: rgba(130, 149, 255, 0.08);
-  border: 1px solid rgba(130, 149, 255, 0.18);
+  color: var(--v2-text-subtle, var(--ws-text-muted));
+  background: color-mix(in srgb, var(--ws-surface-soft) 8%, transparent);
+  border: 1px solid color-mix(in srgb, var(--ws-border) 18%, transparent);
   border-radius: 6px;
   cursor: pointer;
   white-space: nowrap;
   transition: 0.15s;
 }
 .copy-btn:hover:not(:disabled) {
-  background: rgba(130, 149, 255, 0.16);
-  color: var(--v2-text, #e8edff);
+  background: color-mix(in srgb, var(--ws-selected) 16%, transparent);
+  color: var(--v2-text, var(--ws-text));
 }
 .copy-btn.sm {
   padding: 1px 6px;

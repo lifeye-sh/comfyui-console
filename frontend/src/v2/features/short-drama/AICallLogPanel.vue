@@ -182,13 +182,13 @@ watch(() => props.projectId, () => void load())
 
 <style scoped>
 .log-filter{max-width:120px;padding:6px 8px;color:var(--v2-text);background:var(--v2-surface-soft);border:1px solid var(--v2-border);border-radius:7px;font-size:11px;outline:none}
-.log-error{padding:10px;color:#ffdce1;background:rgba(255,127,145,.1);border-radius:10px;font-size:12px;margin-bottom:8px}
+.log-error{padding:10px;color:var(--ws-danger);background:color-mix(in srgb, var(--ws-danger) 10%, transparent);border-radius:10px;font-size:12px;margin-bottom:8px}
 .log-empty{color:var(--v2-text-subtle);font-size:12px;padding:12px 0;text-align:center}
 .log-list{display:grid;gap:8px}
 .log-row{background:var(--v2-surface-soft);border:1px solid var(--v2-border);border-radius:10px;overflow:hidden}
-.log-row.log-failed{border-color:rgba(255,127,145,.3)}
+.log-row.log-failed{border-color:color-mix(in srgb, var(--ws-danger) 30%, transparent)}
 .log-head{display:flex;align-items:center;gap:10px;padding:10px 12px;cursor:pointer;user-select:none}
-.log-head:hover{background:rgba(130,149,255,.05)}
+.log-head:hover{background:color-mix(in srgb, var(--ws-selected) 5%, transparent)}
 .log-meta{flex:1;min-width:0;display:grid;gap:2px}
 .log-meta strong{font-size:12px;color:var(--v2-text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .log-meta small{color:var(--v2-text-muted);font-size:10px}
@@ -198,7 +198,7 @@ watch(() => props.projectId, () => void load())
 .log-stats{display:flex;gap:12px;flex-wrap:wrap;font-size:11px;color:var(--v2-text-muted)}
 .log-stats b{color:var(--v2-text);font-weight:600}
 .log-error-detail label{display:block;font-size:10px;color:var(--v2-danger);margin-bottom:4px;text-transform:uppercase;letter-spacing:.5px}
-.log-error-detail pre{margin:0;padding:8px 10px;background:rgba(0,0,0,.25);border-radius:8px;font-size:11px;color:#ffb3bd;white-space:pre-wrap;word-break:break-word;max-height:120px;overflow:auto;line-height:1.5}
+.log-error-detail pre{margin:0;padding:8px 10px;background:rgba(0,0,0,.25);border-radius:8px;font-size:11px;color:var(--ws-danger);white-space:pre-wrap;word-break:break-word;max-height:120px;overflow:auto;line-height:1.5}
 .log-id{color:var(--v2-text-subtle);font-size:9px}
 .log-snap-block{display:grid;gap:6px}
 .log-snap-label{font-size:10px;color:var(--v2-text-subtle);text-transform:uppercase;letter-spacing:.5px;font-weight:600}

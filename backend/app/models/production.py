@@ -93,6 +93,7 @@ class WorkflowVersion(Base, TimestampMixin):
 
 class Batch(Base, TimestampMixin):
     __tablename__ = "batches"
+    request_key: Mapped[Optional[str]] = mapped_column(String(80), unique=True)
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
     user_id: Mapped[Optional[int]] = mapped_column(Integer, ForeignKey("users.id"), nullable=True)

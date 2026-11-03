@@ -294,7 +294,7 @@ onBeforeUnmount(() => {
             <b>{{ resource?.filename || '图片编辑' }}</b>
             <small v-if="imgNatW">原始 {{ imgNatW }} × {{ imgNatH }}px · 输出 {{ Math.round(crop.w) }} × {{ Math.round(crop.h) }}px</small>
           </div>
-          <button class="close-btn" @click="emit('close')">✕</button>
+          <button class="close-btn" @click="emit('close')" aria-label="关闭"><StudioIcon name="close"/></button>
         </header>
 
         <div v-if="error" class="ie-error">{{ error }}</div>
@@ -323,7 +323,7 @@ onBeforeUnmount(() => {
               <div class="tool-buttons tool-buttons-row">
                 <button @click="zoomImage(-0.2)">－</button>
                 <span class="zoom-label">{{ Math.round(imgScale * 100) }}%</span>
-                <button @click="zoomImage(0.2)">＋</button>
+                <button @click="zoomImage(0.2)" aria-label="添加"><StudioIcon name="plus"/></button>
               </div>
               <button class="reset-btn" @click="resetZoom">重置视图</button>
             </div>
@@ -333,7 +333,7 @@ onBeforeUnmount(() => {
               <button class="tool-btn-wide" @click="editing = !editing">{{ editing ? '完成裁剪' : '开始裁剪' }}</button>
             </div>
             <div class="tool-section">
-              <button class="primary-btn" :disabled="saving" @click="save">{{ saving ? '保存中…' : '💾 保存为新素材' }}</button>
+              <button class="primary-btn" :disabled="saving" @click="save">{{ saving ? '保存中…' : ' 保存为新素材' }}</button>
               <small class="hint">编辑后的图片另存为新素材，不修改原图</small>
             </div>
           </aside>
@@ -396,7 +396,7 @@ onBeforeUnmount(() => {
 .tool-btn-wide { padding: 8px 12px; font-size: 12px; color: #c8d0ee; background: rgba(130,149,255,.1); border: 1px solid rgba(130,149,255,.2); border-radius: 8px; cursor: pointer; text-align: center; }
 .tool-btn-wide:hover { background: rgba(130,149,255,.2); }
 .reset-btn:hover { color: #c8d0ee; }
-.primary-btn { padding: 10px; font-size: 13px; color: #fff; background: linear-gradient(135deg, #8295ff, #865fee); border: 0; border-radius: 10px; cursor: pointer; }
+.primary-btn { padding: 10px; font-size: 13px; color: #fff; background:#456d68; border: 0; border-radius: 10px; cursor: pointer; }
 .primary-btn:hover:not(:disabled) { filter: brightness(1.1); }
 .primary-btn:disabled { opacity: 0.5; cursor: not-allowed; }
 .hint { display: block; font-size: 11px; color: #7a85a8; }

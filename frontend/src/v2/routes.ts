@@ -5,6 +5,7 @@ export const v2Routes: RouteRecordRaw = {
   component: () => import('@/v2/app/V2AppShell.vue'),
   meta: { requiresV2: true },
   children: [
+    { path: 'settings/gallery', name:'gallery-config', component:()=>import('@/v2/features/generation-config/GalleryConfig.vue'), meta:{title:'图库合成工作流',adminOnly:true} },
     { path: 'drama/projects/:projectId/episodes/:episodeId/director', name: 'v2-drama-director-workspace', component: () => import('@/v2/features/short-drama/DramaDirectorWorkspace.vue'), meta: { title: '导演工作台', requiresShortDrama: true } },
     { path: 'drama/projects/:projectId/episodes/:episodeId/spatial', name: 'v2-drama-spatial-storyboard', component: () => import('@/v2/features/short-drama/DramaSpatialStoryboardView.vue'), meta: { title: '空间走位与分镜', requiresShortDrama: true } },
     { path: 'drama/projects/:projectId/episodes/:episodeId/quality', name: 'v2-drama-quality-gate', component: () => import('@/v2/features/short-drama/DramaQualityGateView.vue'), meta: { title: '质检与交付', requiresShortDrama: true } },

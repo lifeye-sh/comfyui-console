@@ -119,7 +119,7 @@ watch(() => props.projectId, load)
         </div>
 
         <div class="approve-row" v-if="selectedManifest.status === 'draft'">
-          <V2Button variant="primary" :disabled="approving" @click="approve">{{ approving ? '审批中…' : '✅ 审批清单' }}</V2Button>
+          <V2Button variant="primary" :disabled="approving" @click="approve">{{ approving ? '审批中…' : ' 审批清单' }}</V2Button>
           <small>审批后清单不可修改，如需变更需生成新版本。</small>
         </div>
 
@@ -169,19 +169,19 @@ watch(() => props.projectId, load)
 </template>
 
 <style scoped>
-.wb-error{padding:10px;color:#ffdce1;background:rgba(255,127,145,.1);border-radius:10px;font-size:12px;margin-bottom:10px}
+.wb-error{padding:10px;color:var(--ws-danger);background:color-mix(in srgb, var(--ws-danger) 10%, transparent);border-radius:10px;font-size:12px;margin-bottom:10px}
 .empty-tip{color:var(--v2-text-subtle);font-size:12px;padding:20px 0}
 .manifest-section{display:grid;gap:14px}
 .manifest-tabs{display:flex;gap:6px;flex-wrap:wrap}
 .manifest-tab{display:flex;align-items:center;gap:6px;padding:7px 12px;color:var(--v2-text-muted);background:transparent;border:1px solid var(--v2-border);border-radius:9px;cursor:pointer;font-size:12px}
-.manifest-tab.active{color:var(--v2-text);background:rgba(130,149,255,.1);border-color:rgba(130,149,255,.35)}
+.manifest-tab.active{color:var(--v2-text);background:color-mix(in srgb, var(--ws-selected) 10%, transparent);border-color:color-mix(in srgb, var(--ws-border) 35%, transparent)}
 .manifest-detail{display:grid;gap:14px}
 .manifest-meta{display:flex;gap:16px;flex-wrap:wrap;font-size:12px;color:var(--v2-text-muted)}
 .manifest-meta b{color:var(--v2-text)}
-.approve-row{display:flex;align-items:center;gap:10px;padding:12px;background:rgba(79,209,165,.06);border-radius:10px}
+.approve-row{display:flex;align-items:center;gap:10px;padding:12px;background:color-mix(in srgb, var(--ws-success) 6%, transparent);border-radius:10px}
 .approve-row small{color:var(--v2-text-subtle);font-size:11px}
 .item-group{display:grid;gap:8px}
-.group-title{margin:0;font-size:13px;color:#e8edff;border-bottom:1px solid var(--v2-border);padding-bottom:6px}
+.group-title{margin:0;font-size:13px;color:var(--ws-text);border-bottom:1px solid var(--v2-border);padding-bottom:6px}
 .item-list{display:grid;gap:8px}
 .item-card{padding:12px;background:var(--v2-surface-soft);border:1px solid var(--v2-border);border-radius:10px;display:grid;gap:8px}
 .item-card header{display:flex;align-items:center;gap:8px;flex-wrap:wrap}

@@ -39,7 +39,7 @@ def test_clean_sqlite_upgrade_and_versioned_startup(tmp_path):
     run("-c", "import app.models; from app.db import init_db; init_db()")
     assert schema() == before
     with sqlite3.connect(database) as db:
-        assert db.execute("SELECT version_num FROM alembic_version").fetchone() == ("0036_resource_size_bigint",)
+        assert db.execute("SELECT version_num FROM alembic_version").fetchone() == ("0038_gallery_task_request",)
         assert db.execute("PRAGMA foreign_key_check").fetchall() == []
         for table in ("script_manifest_versions", "project_asset_versions", "shot_character_bindings"):
             columns = {row[1]: row for row in db.execute(f"PRAGMA table_info({table})")}

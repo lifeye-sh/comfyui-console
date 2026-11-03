@@ -1,0 +1,132 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
+@import "@fontsource-variable/inter";
+
+@custom-variant dark (&:is(.dark *));
+
+@theme inline {
+    --font-heading: var(--font-sans);
+    --font-sans: 'Inter Variable', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', 'Noto Sans SC', system-ui, sans-serif;
+    --color-sidebar-ring: var(--sidebar-ring);
+    --color-sidebar-border: var(--sidebar-border);
+    --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+    --color-sidebar-accent: var(--sidebar-accent);
+    --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+    --color-sidebar-primary: var(--sidebar-primary);
+    --color-sidebar-foreground: var(--sidebar-foreground);
+    --color-sidebar: var(--sidebar);
+    --color-chart-5: var(--chart-5);
+    --color-chart-4: var(--chart-4);
+    --color-chart-3: var(--chart-3);
+    --color-chart-2: var(--chart-2);
+    --color-chart-1: var(--chart-1);
+    --color-ring: var(--ring);
+    --color-input: var(--input);
+    --color-border: var(--border);
+    --color-destructive: var(--destructive);
+    --color-accent-foreground: var(--accent-foreground);
+    --color-accent: var(--accent);
+    --color-muted-foreground: var(--muted-foreground);
+    --color-muted: var(--muted);
+    --color-secondary-foreground: var(--secondary-foreground);
+    --color-secondary: var(--secondary);
+    --color-primary-foreground: var(--primary-foreground);
+    --color-primary: var(--primary);
+    --color-popover-foreground: var(--popover-foreground);
+    --color-popover: var(--popover);
+    --color-card-foreground: var(--card-foreground);
+    --color-card: var(--card);
+    --color-foreground: var(--foreground);
+    --color-background: var(--background);
+    --radius-sm: calc(var(--radius) * 0.6);
+    --radius-md: calc(var(--radius) * 0.8);
+    --radius-lg: var(--radius);
+    --radius-xl: calc(var(--radius) * 1.4);
+    --radius-2xl: calc(var(--radius) * 1.8);
+    --radius-3xl: calc(var(--radius) * 2.2);
+    --radius-4xl: calc(var(--radius) * 2.6);
+}
+
+:root, .dark {
+  --background: var(--ws-bg);
+  --foreground: var(--ws-text);
+  --card: var(--ws-surface);
+  --card-foreground: var(--ws-text);
+  --popover: var(--ws-bg-elevated);
+  --popover-foreground: var(--ws-text);
+  --primary: var(--ws-primary);
+  --primary-foreground: var(--ws-on-primary);
+  --secondary: var(--ws-surface-soft);
+  --secondary-foreground: var(--ws-text);
+  --muted: var(--ws-surface-soft);
+  --muted-foreground: var(--ws-text-muted);
+  --accent: var(--ws-selected);
+  --accent-foreground: var(--ws-primary);
+  --destructive: var(--ws-danger);
+  --border: var(--ws-border);
+  --input: var(--ws-border-strong);
+  --ring: var(--ws-primary);
+  --chart-1: var(--ws-primary);
+  --chart-2: var(--ws-info);
+  --chart-3: var(--ws-warning);
+  --chart-4: var(--ws-success);
+  --chart-5: var(--ws-text-muted);
+  --sidebar: var(--ws-sidebar);
+  --sidebar-foreground: var(--ws-text);
+  --sidebar-primary: var(--ws-primary);
+  --sidebar-primary-foreground: var(--ws-on-primary);
+  --sidebar-accent: var(--ws-selected);
+  --sidebar-accent-foreground: var(--ws-primary);
+  --sidebar-border: var(--ws-border);
+  --sidebar-ring: var(--ws-primary);
+  --radius: var(--ws-card-radius);
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+    }
+  body {
+    @apply bg-background text-foreground;
+    }
+  button:not(:disabled), [role="button"]:not(:disabled) {
+    cursor: pointer;
+    }
+  html {
+    @apply font-sans;
+    }
+}
+/* 选中菜单加粗 */
+[data-slot="sidebar-menu-button"][data-active="true"] {
+  font-weight: 600;
+}
+
+/* Fit the studio to the space remaining beside the gallery sidebar. */
+.studio-page .studio-slots {grid-template-columns:repeat(auto-fit,minmax(min(100%,225px),1fr))}
+.studio-slots > section {min-width:0;background:var(--card);display:flex;flex-direction:column;align-items:stretch;gap:.5rem}
+.studio-slots > section > * {margin-block:0}
+.studio-preview {display:grid;place-items:center;height:clamp(110px,15vw,180px);background:var(--muted);color:var(--muted-foreground);border-radius:.5rem;font-size:.875rem}
+.studio-preview img {height:100%;width:100%;min-height:0;object-fit:contain}
+.studio-page input[type=file] {display:block;max-width:100%;min-width:0;width:100%;font-size:.8rem;overflow:hidden;text-overflow:ellipsis}
+.studio-page input::file-selector-button {background:var(--secondary);color:var(--secondary-foreground);padding:.45rem .65rem;border-radius:.4rem;margin-right:.4rem}
+.studio-model {display:grid;gap:.35rem;max-width:30rem;min-width:0}
+.studio-page select,.studio-page input:not([type=file]),.studio-page textarea {background:var(--background);color:var(--foreground);border:1px solid var(--border);border-radius:.5rem;max-width:100%;min-width:0;padding:.45rem .65rem}
+.studio-page select {text-overflow:ellipsis}
+.studio-links {display:flex;flex-wrap:wrap;gap:.5rem 1.25rem;color:var(--muted-foreground);font-size:.875rem}
+.studio-links a:hover {text-decoration:underline}
+.studio-page details {overflow-wrap:anywhere}
+
+/* Shared media workspace proportions, including the standalone artwork grids. */
+:root{--radius:.75rem}
+html{font-family:Inter,'Segoe UI','PingFang SC','Microsoft YaHei',sans-serif}
+main h1{font-size:clamp(22px,2vw,26px);line-height:1.25;letter-spacing:-.025em;font-weight:620}
+main h2, main h3{font-size:16px;font-weight:600}
+main [data-slot=button]:not([data-size^=icon]){min-height:40px;border-radius:8px;box-shadow:none}
+main [data-slot=card],.studio-page section{border-radius:14px;box-shadow:none}
+.studio-page>section,.studio-slots>section{background:var(--muted);border-color:transparent}
+.studio-page{display:grid;gap:24px}.studio-page>*{margin-block:0}
+.studio-preview{position:relative;overflow:hidden;border-radius:12px}.studio-preview .empty-caption{position:absolute;left:8px;bottom:8px;padding:3px 7px;font-size:12px;background:#202426;color:white;border-radius:4px}
+svg.lucide{stroke-width:1.65}
+
+body{font-family:var(--ws-font)}

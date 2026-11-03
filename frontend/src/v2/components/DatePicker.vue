@@ -92,9 +92,9 @@ function clearDate() {
     <div v-if="open" class="cal-overlay" @click.self="emit('close')">
       <div class="cal-panel">
         <header class="cal-header">
-          <button class="cal-nav" @click="prevMonth">‹</button>
+          <button class="cal-nav" @click="prevMonth" aria-label="上一项"><StudioIcon name="back"/></button>
           <span class="cal-title">{{ currentMonthLabel }}</span>
-          <button class="cal-nav" @click="nextMonth">›</button>
+          <button class="cal-nav" @click="nextMonth" aria-label="下一项"><StudioIcon name="chevron"/></button>
         </header>
         <div class="cal-weekdays">
           <span v-for="w in weekDays" :key="w" class="cal-weekday">{{ w }}</span>
@@ -126,8 +126,8 @@ function clearDate() {
 }
 .cal-panel {
   width: min(360px, 92vw);
-  background: #1a2238;
-  border: 1px solid rgba(130, 149, 255, 0.25);
+  background: var(--ws-surface-soft);
+  border: 1px solid color-mix(in srgb, var(--ws-border) 25%, transparent);
   border-radius: 16px;
   overflow: hidden;
   box-shadow: 0 12px 40px rgba(0, 0, 0, 0.4);
@@ -135,24 +135,24 @@ function clearDate() {
 .cal-header {
   padding: 14px 16px;
   display: flex; align-items: center; justify-content: space-between;
-  border-bottom: 1px solid rgba(130, 149, 255, 0.12);
+  border-bottom: 1px solid color-mix(in srgb, var(--ws-border) 12%, transparent);
 }
-.cal-title { font-size: 15px; color: #e8edff; font-weight: 600; }
+.cal-title { font-size: 15px; color: var(--ws-text); font-weight: 600; }
 .cal-nav {
   width: 36px; height: 36px;
-  font-size: 20px; color: #c8d0ee;
-  background: rgba(130, 149, 255, 0.08);
-  border: 1px solid rgba(130, 149, 255, 0.18);
+  font-size: 20px; color: var(--ws-text);
+  background: color-mix(in srgb, var(--ws-surface-soft) 8%, transparent);
+  border: 1px solid color-mix(in srgb, var(--ws-border) 18%, transparent);
   border-radius: 10px; cursor: pointer;
   display: grid; place-items: center;
 }
-.cal-nav:hover { background: rgba(130, 149, 255, 0.16); }
+.cal-nav:hover { background: color-mix(in srgb, var(--ws-selected) 16%, transparent); }
 .cal-weekdays {
   display: grid; grid-template-columns: repeat(7, 1fr);
   padding: 8px 8px 4px;
 }
 .cal-weekday {
-  text-align: center; font-size: 11px; color: #7a85a8;
+  text-align: center; font-size: 11px; color: var(--ws-text-muted);
   padding: 4px 0;
 }
 .cal-grid {
@@ -162,7 +162,7 @@ function clearDate() {
 .cal-day {
   aspect-ratio: 1;
   display: grid; place-items: center;
-  font-size: 14px; color: #c8d0ee;
+  font-size: 14px; color: var(--ws-text);
   background: transparent;
   border: 1px solid transparent;
   border-radius: 10px;
@@ -170,31 +170,31 @@ function clearDate() {
   transition: 0.12s;
   min-height: 40px;
 }
-.cal-day:hover { background: rgba(130, 149, 255, 0.1); }
-.cal-day.out-month { color: #4a5680; opacity: 0.5; }
+.cal-day:hover { background: color-mix(in srgb, var(--ws-selected) 10%, transparent); }
+.cal-day.out-month { color: var(--ws-text-muted); opacity: 0.5; }
 .cal-day.today {
-  border-color: rgba(130, 149, 255, 0.4);
-  color: #8295ff;
+  border-color: color-mix(in srgb, var(--ws-border) 40%, transparent);
+  color: var(--ws-text-muted);
 }
 .cal-day.selected {
-  background: linear-gradient(135deg, #8295ff, #865fee);
-  color: #fff;
+  background:var(--ws-selected);
+  color: var(--ws-primary);
   border-color: transparent;
   font-weight: 700;
 }
 .cal-footer {
   padding: 10px 16px;
   display: flex; gap: 8px;
-  border-top: 1px solid rgba(130, 149, 255, 0.12);
+  border-top: 1px solid color-mix(in srgb, var(--ws-border) 12%, transparent);
 }
 .cal-action {
   flex: 1; padding: 10px 0;
-  font-size: 13px; color: #c8d0ee;
-  background: rgba(130, 149, 255, 0.08);
-  border: 1px solid rgba(130, 149, 255, 0.18);
+  font-size: 13px; color: var(--ws-text);
+  background: color-mix(in srgb, var(--ws-surface-soft) 8%, transparent);
+  border: 1px solid color-mix(in srgb, var(--ws-border) 18%, transparent);
   border-radius: 10px; cursor: pointer;
 }
-.cal-action:hover { background: rgba(130, 149, 255, 0.16); }
+.cal-action:hover { background: color-mix(in srgb, var(--ws-selected) 16%, transparent); }
 
 @media (max-width: 700px) {
   .cal-panel { width: 92vw; }

@@ -119,7 +119,7 @@
                     @click="openOutput(row.inputPreviews[p.key])"
                   >
                     <img :src="row.inputPreviews[p.key].url" class="w-full h-full object-contain" />
-                    <span class="absolute inset-0 flex items-center justify-center text-white text-xl bg-black/20">▶</span>
+                    <span class="absolute inset-0 flex items-center justify-center text-white text-xl bg-black/20"><StudioIcon name="play"/></span>
                   </button>
                   <audio v-else-if="row.inputPreviews[p.key]?.media_type === 'audio'" :src="row.inputPreviews[p.key].url" controls class="w-40 max-w-full" />
                 </div>
@@ -175,7 +175,7 @@
                       @click="openOutput(output)"
                     >
                       <img :src="output.url" :alt="output.filename" class="w-full h-full object-contain" />
-                      <span class="absolute inset-0 flex items-center justify-center text-white text-xl bg-black/20">▶</span>
+                      <span class="absolute inset-0 flex items-center justify-center text-white text-xl bg-black/20"><StudioIcon name="play"/></span>
                     </button>
                     <audio v-else-if="output.media_type === 'audio'" :src="output.url" controls class="w-40" />
                   </template>
@@ -217,7 +217,7 @@
             <img v-if="row.inputPreviews[p.key]?.media_type === 'image'" :src="row.inputPreviews[p.key].url" class="w-full max-h-40 object-contain bg-gray-100 rounded" @click="openOutput(row.inputPreviews[p.key])" />
             <button v-else-if="row.inputPreviews[p.key]?.media_type === 'video'" class="relative w-full h-36 bg-gray-100 rounded overflow-hidden" @click="openOutput(row.inputPreviews[p.key])">
               <img :src="row.inputPreviews[p.key].url" class="w-full h-full object-contain" />
-              <span class="absolute inset-0 flex items-center justify-center text-white text-3xl bg-black/20">▶</span>
+              <span class="absolute inset-0 flex items-center justify-center text-white text-3xl bg-black/20"><StudioIcon name="play"/></span>
             </button>
             <audio v-else-if="row.inputPreviews[p.key]?.media_type === 'audio'" :src="row.inputPreviews[p.key].url" controls class="w-full" />
           </div>
@@ -250,7 +250,7 @@
               <img v-if="output.media_type === 'image' || output.mime.startsWith('image/')" :src="output.url" class="w-full max-h-48 object-contain rounded" @click="openOutput(output)" />
               <button v-else-if="output.media_type === 'video'" class="relative w-full h-40 bg-gray-100 rounded overflow-hidden" @click="openOutput(output)">
                 <img :src="output.url" :alt="output.filename" class="w-full h-full object-contain" />
-                <span class="absolute inset-0 flex items-center justify-center text-white text-3xl bg-black/20">▶</span>
+                <span class="absolute inset-0 flex items-center justify-center text-white text-3xl bg-black/20"><StudioIcon name="play"/></span>
               </button>
               <audio v-else-if="output.media_type === 'audio'" :src="output.url" controls class="w-full col-span-2" />
             </template>
@@ -280,8 +280,8 @@
             :class="{ 'bg-green-50 text-green-700 font-medium': pickerFolderId === folder.id }"
             :style="{ paddingLeft: `${8 + folder.depth * 18}px` }"
           >
-            <button class="w-5 h-8 shrink-0 text-xs text-gray-500" @click.stop="togglePickerFolder(folder)">{{ folder.children?.length ? (pickerExpandedIds.has(folder.id) ? '▼' : '▶') : '' }}</button>
-            <button class="flex-1 text-left py-2 pr-2 truncate" @click="selectPickerFolder(folder.id)">📁 {{ folder.name }} <span class="text-xs text-gray-400">({{ folder.resource_count }})</span></button>
+            <button class="w-5 h-8 shrink-0 text-xs text-gray-500" @click.stop="togglePickerFolder(folder)"><StudioIcon :name="folder.children?.length ? (pickerExpandedIds.has(folder.id) ? 'down' : 'play') : ''"/></button>
+            <button class="flex-1 text-left py-2 pr-2 truncate" @click="selectPickerFolder(folder.id)"><StudioIcon name="assets"/>  {{ folder.name }} <span class="text-xs text-gray-400">({{ folder.resource_count }})</span></button>
           </div>
         </aside>
         <NSpin :show="pickerLoading">
@@ -296,7 +296,7 @@
           >
             <div v-if="['image', 'video'].includes(resource.media_type) && pickerBlobs[resource.id]" class="relative w-full h-28 bg-gray-100">
               <img :src="pickerBlobs[resource.id]" class="w-full h-full object-contain" />
-              <span v-if="resource.media_type === 'video'" class="absolute inset-0 flex items-center justify-center text-white text-2xl bg-black/20">▶</span>
+              <span v-if="resource.media_type === 'video'" class="absolute inset-0 flex items-center justify-center text-white text-2xl bg-black/20"><StudioIcon name="play"/></span>
             </div>
             <div v-else class="w-full h-28 bg-gray-100 flex items-center justify-center text-gray-500">
               {{ resource.media_type === 'video' ? '视频' : resource.media_type === 'audio' ? '音频' : '图片' }}

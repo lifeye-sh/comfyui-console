@@ -97,7 +97,7 @@ watch(() => props.projectId, load)
           </div>
           <div class="dep-downstreams">
             <div v-for="d in downstreams" :key="d.id" class="dep-edge">
-              <span class="dep-arrow">→</span>
+              <span class="dep-arrow"><StudioIcon name="chevron"/></span>
               <code>{{ d.downstream_type }}:{{ d.downstream_ref }}</code>
               <small class="dep-type">{{ depTypeLabel[d.dependency_type] || d.dependency_type }}</small>
             </div>
@@ -135,9 +135,9 @@ watch(() => props.projectId, load)
 </template>
 
 <style scoped>
-.wb-error{padding:10px;color:#ffdce1;background:rgba(255,127,145,.1);border-radius:10px;font-size:12px;margin-bottom:10px}
+.wb-error{padding:10px;color:var(--ws-danger);background:color-mix(in srgb, var(--ws-danger) 10%, transparent);border-radius:10px;font-size:12px;margin-bottom:10px}
 .empty-tip{color:var(--v2-text-subtle);font-size:12px;padding:12px 0}
-.section-title{margin:0 0 10px;font-size:13px;color:#e8edff}
+.section-title{margin:0 0 10px;font-size:13px;color:var(--ws-text)}
 .dep-section{margin-bottom:20px}
 .dep-tree{display:grid;gap:10px}
 .dep-node{display:grid;gap:6px}
@@ -147,15 +147,15 @@ watch(() => props.projectId, load)
 .dep-edge{display:flex;align-items:center;gap:8px;font-size:11px;color:var(--v2-text-muted)}
 .dep-edge code{color:var(--v2-primary);font-size:10px}
 .dep-arrow{color:var(--v2-text-subtle)}
-.dep-type{padding:1px 6px;background:rgba(130,149,255,.1);border-radius:4px;font-size:9px;color:var(--v2-primary)}
+.dep-type{padding:1px 6px;background:color-mix(in srgb, var(--ws-surface-soft) 10%, transparent);border-radius:4px;font-size:9px;color:var(--v2-primary)}
 .stale-section{margin-top:16px;border-top:1px solid var(--v2-border);padding-top:16px}
 .stale-list{display:grid;gap:8px}
 .stale-card{padding:12px;background:var(--v2-surface-soft);border:1px solid var(--v2-border);border-radius:10px;display:grid;gap:8px}
-.stale-card.stale-open{border-color:rgba(255,183,77,.3)}
+.stale-card.stale-open{border-color:color-mix(in srgb, var(--ws-border) 30%, transparent)}
 .stale-card header{display:flex;align-items:center;justify-content:space-between;gap:8px}
 .stale-card header code{color:var(--v2-primary);font-size:11px}
 .stale-meta{display:flex;gap:12px;flex-wrap:wrap}
 .stale-meta small{color:var(--v2-text-subtle);font-size:10px}
-.stale-resolution{font-size:11px;color:var(--v2-success);padding:4px 8px;background:rgba(79,209,165,.06);border-radius:6px}
+.stale-resolution{font-size:11px;color:var(--v2-success);padding:4px 8px;background:color-mix(in srgb, var(--ws-success) 6%, transparent);border-radius:6px}
 .stale-actions{display:flex;justify-content:flex-end}
 </style>

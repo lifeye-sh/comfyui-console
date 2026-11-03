@@ -272,8 +272,8 @@ const cursorStyle = () => spacePressed.value || moveMode.value ? 'grab' : pannin
               <input type="range" min="0" max="100" :value="Math.round(brush.opacity*100)" @input="brush.opacity=Number(($event.target as HTMLInputElement).value)/100" />
             </div>
             <div class="mt-actions">
-              <button @click="undo" :disabled="!canUndo">↶</button>
-              <button @click="redo" :disabled="!canRedo">↷</button>
+              <button @click="undo" :disabled="!canUndo" aria-label="旋转"><StudioIcon name="rotate"/></button>
+              <button @click="redo" :disabled="!canRedo" aria-label="旋转"><StudioIcon name="rotate"/></button>
               <button @click="clearMask">清空</button>
               <button @click="resetView">重置</button>
             </div>
@@ -345,11 +345,11 @@ const cursorStyle = () => spacePressed.value || moveMode.value ? 'grab' : pannin
 }
 .me-actions :deep(.v2-button.primary) {
   color: #fff;
-  background: linear-gradient(135deg, #8295ff, #865fee);
+  background:#456d68;
   border-color: transparent;
 }
 .me-actions :deep(.v2-button.primary:hover:not(:disabled)) {
-  background: linear-gradient(135deg, #92a5ff, #966fee);
+  background:#456d68;
 }
 
 .me-error {

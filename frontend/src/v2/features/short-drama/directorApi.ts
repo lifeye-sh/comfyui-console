@@ -21,7 +21,7 @@ export const directorApi={
   shot:(p:number,s:number)=>http.get(`${base(p)}/shots/${s}`,options).then(r=>r.data as DirectorShot),
   workflows:(p:number)=>http.get(`${base(p)}/workflows`,options).then(r=>r.data as DirectorWorkflow[]),
   bind:(p:number,w:number,mapping:Record<string,string>)=>http.put(`${base(p)}/workflows/${w}/binding`,{mapping},options),
-  save:(p:number,s:number,revision:number,draft:DirectorDraft)=>http.put(`${base(p)}/shots/${s}`,{revision,draft},options).then(r=>r.data as DirectorShot),
+  save:(p:number,s:number,revision:number,draft:DirectorDraft)=>http.put(`${base(p)}/shots/${s}`,{revision,draft},{...options,params:{compact:true}}).then(r=>r.data as {revision:number}),
   updateDetails:(p:number,s:number,body:DirectorShotDetails)=>http.put(`${base(p)}/shots/${s}/details`,body,options).then(r=>r.data as DirectorShot),
   updateRefs:(p:number,s:number,body:{character_ids:number[];bindings:Record<string,number|null>;location_id:number|null;prop_ids:number[]})=>http.put(`${base(p)}/shots/${s}/refs`,body,options).then(r=>r.data as DirectorShot),
   compile:(p:number,s:number,body:any)=>http.post(`${base(p)}/shots/${s}/compile`,body,options).then(r=>r.data),

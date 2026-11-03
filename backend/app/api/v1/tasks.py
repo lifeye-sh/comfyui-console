@@ -24,12 +24,13 @@ def list_(
     created_from: datetime | None = None,
     created_to: datetime | None = None,
     keyword: str | None = None,
+    source: str | None = None,
     limit: int = 100,
     offset: int = 0,
 ) -> list[TaskOut]:
     items, _ = task_service.list_tasks(
         db, status, batch_id, generation_type_id, active, created_from, created_to, limit, offset,
-        None if user.role == "admin" else user.id, keyword,
+        None if user.role == "admin" else user.id, keyword, source,
     )
     # 批量查询工作流名称
     wv_ids = {t.workflow_version_id for t in items if t.workflow_version_id}
@@ -128,8 +129,6 @@ def output_summaries(task_ids: str, user: CurrentUser, db: DBSession) -> dict[in
         .all()
     )
     for task_id, resource in rows:
-        if len(result[task_id]) >= 3:
-            continue
         result[task_id].append({
             "id": resource.id,
             "filename": resource.filename,
@@ -154,10 +153,11 @@ def count_tasks(
     created_from: datetime | None = None,
     created_to: datetime | None = None,
     keyword: str | None = None,
+    source: str | None = None,
 ) -> dict[str, int]:
     _, total = task_service.list_tasks(
         db, status, batch_id, generation_type_id, active, created_from, created_to, 1, 0,
-        None if user.role == "admin" else user.id, keyword,
+        None if user.role == "admin" else user.id, keyword, source,
     )
     return {"total": total}
 
@@ -170,6 +170,8 @@ def get_one(tid: int, user: CurrentUser, db: DBSession) -> TaskOut:
     if t.user_id != user.id and user.role != "admin":
         raise HTTPException(status.HTTP_403_FORBIDDEN, "无权访问")
     result = TaskOut.model_validate(t)
+    if t.batch and t.batch.source == "gallery":
+        result.gallery_recipe = t.batch.global_params.get("gallery_recipe")
     if t.workflow_version_id:
         from app.models import WorkflowVersion
         version = db.get(WorkflowVersion, t.workflow_version_id)

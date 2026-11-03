@@ -109,6 +109,8 @@ app.include_router(_gt.router, prefix=api_prefix)
 app.include_router(_batches.router, prefix=api_prefix)
 app.include_router(_tasks.router, prefix=api_prefix)
 app.include_router(_resources.router, prefix=api_prefix)
+from app.api.v2 import gallery
+app.include_router(gallery.router, prefix="/api/v2")
 app.include_router(_resource_folders.router, prefix=api_prefix)
 app.include_router(_settings.router, prefix=api_prefix)
 app.include_router(_prompts.router, prefix=api_prefix)

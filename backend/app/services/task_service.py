@@ -7,7 +7,7 @@ from typing import Optional
 from sqlalchemy import String, cast, or_
 from sqlalchemy.orm import Session
 
-from app.models import GenerationType, Task, TaskEvent, TaskResource, WorkflowVersion
+from app.models import Batch, GenerationType, Task, TaskEvent, TaskResource, WorkflowVersion
 from app.services.generation_type_service import normalize_param_template
 
 
@@ -30,10 +30,13 @@ def list_tasks(
     offset: int = 0,
     user_id: Optional[int] = None,
     keyword: Optional[str] = None,
+    source: Optional[str] = None,
 ) -> tuple[list[Task], int]:
     q = db.query(Task)
     if user_id is not None:
         q = q.filter(Task.user_id == user_id)
+    if source:
+        q = q.filter(Task.batch.has(Batch.source == source))
     if status_:
         q = q.filter(Task.status == status_)
     if batch_id:

@@ -26,8 +26,9 @@ def test_build_image_thumbnail() -> None:
     assert (width, height) == (1200, 800)
     with Image.open(io.BytesIO(thumbnail)) as image:
         assert image.format == "JPEG"
-        assert image.width <= 256
-        assert image.height <= 256
+        assert max(image.size) == 1024
+        assert image.width <= 1024
+        assert image.height <= 1024
 
 
 def test_video_mime_or_extension_overrides_comfy_image_bucket() -> None:
@@ -63,6 +64,41 @@ def test_ensure_thumbnail_backfills_existing_resource(tmp_path, monkeypatch) -> 
         assert resource.thumb_key is not None
         assert storage.exists(resource.thumb_key)
         assert (resource.width, resource.height) == (1200, 800)
+
+
+def test_ensure_thumbnail_upgrades_legacy_low_resolution_thumbnail(tmp_path, monkeypatch) -> None:
+    engine = create_engine("sqlite:///:memory:")
+    Base.metadata.create_all(engine)
+    storage = LocalFSStorage(str(tmp_path))
+    monkeypatch.setattr(resource_service, "get_storage", lambda: storage)
+
+    original_key = "resources/2026-08/example/legacy.png"
+    legacy_thumb_key = "resources/2026-08/example/legacy.thumb.jpg"
+    storage.save_bytes(_png_bytes(), original_key)
+    legacy = io.BytesIO()
+    Image.new("RGB", (256, 171), "#336699").save(legacy, format="JPEG")
+    storage.save_bytes(legacy.getvalue(), legacy_thumb_key)
+
+    with Session(engine) as db:
+        resource = Resource(
+            media_type="image",
+            direction="output",
+            filename="legacy.png",
+            mime="image/png",
+            size=1,
+            storage_key=original_key,
+            thumb_key=legacy_thumb_key,
+            visibility="private",
+        )
+        db.add(resource)
+        db.commit()
+        db.refresh(resource)
+
+        assert resource_service.ensure_thumbnail(db, resource) is True
+        assert resource.thumb_key == resource_service.thumbnail_storage_key(original_key)
+        assert resource.thumb_key != legacy_thumb_key
+        with Image.open(storage.abs_path(resource.thumb_key)) as upgraded:
+            assert max(upgraded.size) == 1024
 
 
 def test_ensure_thumbnail_extracts_and_caches_video_first_frame(tmp_path, monkeypatch) -> None:

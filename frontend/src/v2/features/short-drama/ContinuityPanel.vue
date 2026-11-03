@@ -209,12 +209,12 @@ watch(() => props.projectId, load)
 </template>
 
 <style scoped>
-.wb-error{padding:10px;color:#ffdce1;background:rgba(255,127,145,.1);border-radius:10px;font-size:12px;margin-bottom:10px}
+.wb-error{padding:10px;color:var(--ws-danger);background:color-mix(in srgb, var(--ws-danger) 10%, transparent);border-radius:10px;font-size:12px;margin-bottom:10px}
 .empty-tip{color:var(--v2-text-subtle);font-size:12px;padding:20px 0}
 .audit-section{display:grid;gap:14px}
 .run-tabs{display:flex;gap:6px;flex-wrap:wrap}
 .run-tab{display:flex;align-items:center;gap:6px;padding:7px 12px;color:var(--v2-text-muted);background:transparent;border:1px solid var(--v2-border);border-radius:9px;cursor:pointer;font-size:12px}
-.run-tab.active{color:var(--v2-text);background:rgba(130,149,255,.1);border-color:rgba(130,149,255,.35)}
+.run-tab.active{color:var(--v2-text);background:color-mix(in srgb, var(--ws-selected) 10%, transparent);border-color:color-mix(in srgb, var(--ws-border) 35%, transparent)}
 .run-detail{display:grid;gap:14px}
 .summary-box{display:flex;gap:14px;flex-wrap:wrap;padding:14px;background:var(--v2-surface-soft);border:1px solid var(--v2-border);border-radius:10px;align-items:center}
 .summary-item{display:flex;align-items:center;gap:6px;font-size:12px}
@@ -223,16 +223,16 @@ watch(() => props.projectId, load)
 .conclusion{width:100%;font-size:12px;color:var(--v2-text-muted);padding-top:8px;border-top:1px solid var(--v2-border)}
 .conclusion.has-blocker{color:var(--v2-danger)}
 .action-row{display:flex;gap:8px;flex-wrap:wrap}
-.severity-group-title{display:flex;align-items:center;gap:8px;margin:16px 0 8px;font-size:13px;color:#e8edff}
+.severity-group-title{display:flex;align-items:center;gap:8px;margin:16px 0 8px;font-size:13px;color:var(--ws-text)}
 .severity-group-title span{color:var(--v2-text-subtle);font-size:11px}
 .issue-list{display:grid;gap:8px}
 .issue-card{padding:12px;background:var(--v2-surface-soft);border:1px solid var(--v2-border);border-radius:10px;display:grid;gap:8px}
-.issue-card.sev-blocker{border-color:rgba(255,127,145,.3);background:rgba(255,127,145,.05)}
-.issue-card.sev-conflict{border-color:rgba(255,183,77,.25)}
-.issue-card.sev-risk{border-color:rgba(255,183,77,.15)}
+.issue-card.sev-blocker{border-color:color-mix(in srgb, var(--ws-danger) 30%, transparent);background:color-mix(in srgb, var(--ws-danger) 5%, transparent)}
+.issue-card.sev-conflict{border-color:color-mix(in srgb, var(--ws-border) 25%, transparent)}
+.issue-card.sev-risk{border-color:color-mix(in srgb, var(--ws-border) 15%, transparent)}
 .issue-card header{display:flex;align-items:center;gap:8px}
-.dim-badge{padding:2px 8px;background:rgba(130,149,255,.12);border-radius:6px;font-size:10px;color:var(--v2-primary)}
-.waived-tag{padding:2px 8px;background:rgba(255,183,77,.12);border-radius:6px;font-size:10px;color:#ffb347}
+.dim-badge{padding:2px 8px;background:color-mix(in srgb, var(--ws-surface-soft) 12%, transparent);border-radius:6px;font-size:10px;color:var(--v2-primary)}
+.waived-tag{padding:2px 8px;background:color-mix(in srgb, var(--ws-surface-soft) 12%, transparent);border-radius:6px;font-size:10px;color:var(--ws-text-muted)}
 .issue-desc{margin:0;font-size:12px;color:var(--v2-text);line-height:1.5}
 .issue-targets{display:flex;gap:6px;flex-wrap:wrap}
 .target-tag{padding:2px 6px;background:rgba(0,0,0,.2);border-radius:4px;font-size:10px;color:var(--v2-text-muted)}

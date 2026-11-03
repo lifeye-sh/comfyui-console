@@ -195,18 +195,23 @@ def delete(db: Session, owner_id: int, folder_id: int) -> int:
     folder = owned_folder(db, owner_id, folder_id)
     if folder.folder_type != "normal":
         raise ValueError("系统文件夹不能删除")
-    folder_ids = {folder.id, *_descendant_ids(db, owner_id, folder.id)}
-    resources = db.query(Resource).filter(
-        Resource.owner_id == owner_id, Resource.folder_id.in_(folder_ids), Resource.deleted_at.is_(None)
-    ).all()
-    for resource in resources:
-        resource.folder_id = ensure_upload_folder(db, owner_id).id
-    now = datetime.now(CHINA_TIMEZONE)
-    db.query(ResourceFolder).filter(ResourceFolder.id.in_(folder_ids)).update(
-        {ResourceFolder.deleted_at: now}, synchronize_session=False
-    )
+    resource_exists = db.query(Resource.id).filter(
+        Resource.owner_id == owner_id,
+        Resource.folder_id == folder.id,
+        Resource.deleted_at.is_(None),
+    ).first()
+    if resource_exists:
+        raise ValueError("目录中存在素材，请先移出素材后再删除")
+    child_exists = db.query(ResourceFolder.id).filter(
+        ResourceFolder.owner_id == owner_id,
+        ResourceFolder.parent_id == folder.id,
+        ResourceFolder.deleted_at.is_(None),
+    ).first()
+    if child_exists:
+        raise ValueError("目录中存在子目录，请先移出或删除子目录")
+    folder.deleted_at = datetime.now(CHINA_TIMEZONE)
     db.commit()
-    return len(resources)
+    return 0
 
 
 def archive_existing(db: Session) -> int:

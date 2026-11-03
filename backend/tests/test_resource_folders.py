@@ -38,6 +38,21 @@ def test_unlimited_folder_tree_and_cycle_guard() -> None:
         db.close()
 
 
+def test_normal_folder_can_move_to_another_folder_and_back_to_root() -> None:
+    db, owner_id = _db()
+    try:
+        source = resource_folder_service.create(db, owner_id, "待移动", None)
+        target = resource_folder_service.create(db, owner_id, "目标目录", None)
+
+        moved = resource_folder_service.update(db, owner_id, source.id, None, target.id, True)
+        assert moved.parent_id == target.id
+
+        moved = resource_folder_service.update(db, owner_id, source.id, None, None, True)
+        assert moved.parent_id is None
+    finally:
+        db.close()
+
+
 def test_generated_folder_stops_at_date_level() -> None:
     db, owner_id = _db()
     try:
@@ -95,5 +110,59 @@ def test_move_resources_is_owner_scoped() -> None:
         db.add(resource); db.commit(); db.refresh(resource)
         assert resource_folder_service.move_resources(db, owner_id, [resource.id], target.id) == 1
         assert db.get(Resource, resource.id).folder_id == target.id
+    finally:
+        db.close()
+
+
+def test_delete_rejects_folder_containing_resources() -> None:
+    db, owner_id = _db()
+    try:
+        folder = resource_folder_service.create(db, owner_id, "有素材", None)
+        resource = Resource(
+            owner_id=owner_id,
+            folder_id=folder.id,
+            media_type="image",
+            direction="input",
+            filename="kept.png",
+            storage_key="kept.png",
+        )
+        db.add(resource); db.commit()
+
+        with pytest.raises(ValueError, match="目录中存在素材"):
+            resource_folder_service.delete(db, owner_id, folder.id)
+
+        db.refresh(folder); db.refresh(resource)
+        assert folder.deleted_at is None
+        assert resource.folder_id == folder.id
+        assert resource.deleted_at is None
+    finally:
+        db.close()
+
+
+def test_delete_rejects_folder_containing_child_folder() -> None:
+    db, owner_id = _db()
+    try:
+        parent = resource_folder_service.create(db, owner_id, "父目录", None)
+        child = resource_folder_service.create(db, owner_id, "子目录", parent.id)
+
+        with pytest.raises(ValueError, match="目录中存在子目录"):
+            resource_folder_service.delete(db, owner_id, parent.id)
+
+        db.refresh(parent); db.refresh(child)
+        assert parent.deleted_at is None
+        assert child.deleted_at is None
+    finally:
+        db.close()
+
+
+def test_delete_allows_empty_leaf_folder() -> None:
+    db, owner_id = _db()
+    try:
+        folder = resource_folder_service.create(db, owner_id, "空目录", None)
+
+        assert resource_folder_service.delete(db, owner_id, folder.id) == 0
+
+        db.refresh(folder)
+        assert folder.deleted_at is not None
     finally:
         db.close()

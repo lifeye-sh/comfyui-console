@@ -1,4 +1,5 @@
 export type TaskItem = {
+  gallery_recipe?: {selection?: Record<string,string>; refs?: Record<string,number[]>; prompt?:string}|null
   id: number; batch_id: number; row_no: number; generation_type_id: number | null; workflow_version_id: number | null
   params: Record<string, unknown>; status: string; priority: number; node_id: number | null; prompt_id: string | null
   retries: number; error: string | null; started_at: string | null; finished_at: string | null; created_at: string

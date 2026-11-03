@@ -168,6 +168,7 @@ class BatchOut(BaseModel):
     submitted_at: Optional[datetime]
 
 class TaskOut(BaseModel):
+    gallery_recipe: Optional[dict] = None
     model_config = ConfigDict(from_attributes=True)
     id: int
     batch_id: int

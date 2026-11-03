@@ -79,10 +79,10 @@ watch(() => props.code, () => { if (props.visible) { void load(); editing.value 
       <div class="ptm-dialog">
         <div class="ptm-head">
           <div>
-            <b>📝 提示词管理</b>
+            <b><StudioIcon name="edit"/>  提示词管理</b>
             <small>{{ title || CODE_LABELS[code] || code }}</small>
           </div>
-          <button class="ptm-close" @click="emit('close')">✕</button>
+          <button class="ptm-close" @click="emit('close')" aria-label="关闭"><StudioIcon name="close"/></button>
         </div>
 
         <div v-if="error" class="ptm-error">{{ error }}</div>
@@ -142,20 +142,20 @@ export default { components: { StatusBadge } }
 
 <style scoped>
 .ptm-overlay{position:fixed;inset:0;z-index:100;background:rgba(4,10,22,.72);backdrop-filter:blur(4px);display:flex;align-items:flex-start;justify-content:center;padding:60px 20px;overflow-y:auto}
-.ptm-dialog{width:min(720px,94vw);background:#0c1930;border:1px solid var(--v2-border-strong);border-radius:16px;box-shadow:0 16px 48px rgba(0,0,0,.5);overflow:hidden}
+.ptm-dialog{width:min(720px,94vw);background:var(--ws-surface-soft);border:1px solid var(--v2-border-strong);border-radius:16px;box-shadow:0 16px 48px rgba(0,0,0,.5);overflow:hidden}
 .ptm-head{display:flex;align-items:center;justify-content:space-between;padding:14px 18px;border-bottom:1px solid var(--v2-border)}
 .ptm-head b{font-size:14px;color:var(--v2-text)}
 .ptm-head small{margin-left:8px;color:var(--v2-text-subtle);font-size:11px}
 .ptm-close{width:28px;height:28px;display:grid;place-items:center;color:var(--v2-text-muted);background:transparent;border:1px solid var(--v2-border);border-radius:8px;cursor:pointer;font-size:14px}
 .ptm-close:hover{color:var(--v2-text);border-color:var(--v2-primary)}
-.ptm-error{padding:10px 18px;color:#ffdce1;background:rgba(255,127,145,.1);font-size:12px}
+.ptm-error{padding:10px 18px;color:var(--ws-danger);background:color-mix(in srgb, var(--ws-danger) 10%, transparent);font-size:12px}
 .ptm-empty{padding:30px 18px;text-align:center;color:var(--v2-text-subtle);font-size:12px}
 .ptm-body{padding:16px 18px;display:grid;gap:14px}
 .ptm-meta{display:flex;gap:12px;flex-wrap:wrap;font-size:11px;color:var(--v2-text-muted);align-items:center}
-.ptm-meta code{color:var(--v2-primary);font-size:10px;background:rgba(130,149,255,.08);padding:2px 6px;border-radius:4px}
+.ptm-meta code{color:var(--v2-primary);font-size:10px;background:color-mix(in srgb, var(--ws-surface-soft) 8%, transparent);padding:2px 6px;border-radius:4px}
 .ptm-field{display:grid;gap:5px}
 .ptm-field label{font-size:11px;color:var(--v2-text-subtle);font-weight:600;text-transform:uppercase;letter-spacing:.5px}
-.ptm-textarea{width:100%;padding:10px 12px;color:#eaf0ff;background:#0a1526;border:1px solid var(--v2-border);border-radius:10px;font-size:13px;line-height:1.7;font-family:inherit;resize:vertical}
+.ptm-textarea{width:100%;padding:10px 12px;color:var(--ws-text);background:var(--ws-surface);border:1px solid var(--v2-border);border-radius:10px;font-size:13px;line-height:1.7;font-family:inherit;resize:vertical}
 .ptm-textarea:focus{border-color:var(--v2-primary);outline:none}
 .ptm-textarea[readonly]{opacity:.95;cursor:default}
 .ptm-system{min-height:80px}

@@ -45,9 +45,18 @@ async function purgeAll() {
   try {
     const ids = items.value.map(v => v.id)
     const result = await resourceApi.batchPurge(ids)
-    alert(`已永久删除 ${result.deleted} 项${result.failed?.length ? `，${result.failed.length} 项失败` : ''}`)
-    items.value = []
-    thumbs.value = {}
+    const failedIds = new Set(result.failed.map(item => item.resource_id))
+    for (const id of ids) {
+      if (failedIds.has(id) || !thumbs.value[id]) continue
+      URL.revokeObjectURL(thumbs.value[id])
+      delete thumbs.value[id]
+    }
+    items.value = items.value.filter(item => failedIds.has(item.id))
+    const summary = [`已永久删除 ${result.deleted} 项`]
+    if (result.restored.length) summary.push(`${result.restored.length} 项仍在使用，已自动恢复`)
+    if (result.failed.length) summary.push(`${result.failed.length} 项失败`)
+    const details = [...result.restored, ...result.failed].map(item => `#${item.resource_id}：${item.reason}`).join('\n')
+    alert(`${summary.join('，')}${details ? `\n\n${details}` : ''}`)
   } catch (e: any) {
     alert(e?.response?.data?.detail || e?.message || '清理失败')
   } finally { purging.value = false }
@@ -56,9 +65,11 @@ async function purgeAll() {
 async function purgeOne(item: ResourceItem) {
   if (!confirm(`确认永久删除「${item.filename}」？\n此操作将删除物理文件，无法恢复。`)) return
   try {
-    await resourceApi.batchPurge([item.id])
+    const result = await resourceApi.batchPurge([item.id])
+    if (result.failed.length) { alert(result.failed[0].reason); return }
     items.value = items.value.filter(v => v.id !== item.id)
     if (thumbs.value[item.id]) { URL.revokeObjectURL(thumbs.value[item.id]); delete thumbs.value[item.id] }
+    if (result.restored.length) alert(result.restored[0].reason)
   } catch (e: any) {
     alert(e?.response?.data?.detail || e?.message || '删除失败')
   }
@@ -88,8 +99,8 @@ onMounted(load)
       <GlassCard v-for="item in items" :key="item.id" padding="none" class="recycle-card">
         <button class="card-media" @click="openPreview(item)">
           <img v-if="thumbs[item.id]" :src="thumbs[item.id]" :alt="item.filename" />
-          <span v-else class="media-icon">{{ item.media_type === 'audio' ? '♪' : '▭' }}</span>
-          <i v-if="item.media_type === 'video'" class="play">▶</i>
+          <span v-else class="media-icon"><StudioIcon :name="item.media_type === 'audio' ? 'audio' : 'file'"/></span>
+          <i v-if="item.media_type === 'video'" class="play"><StudioIcon name="play"/></i>
         </button>
         <div class="card-info">
           <b :title="item.filename">{{ item.filename }}</b>
@@ -115,14 +126,14 @@ onMounted(load)
 .card-media { width: 100%; aspect-ratio: 4/3; position: relative; display: grid; place-items: center; background: rgba(0,0,0,.25); border: 0; cursor: pointer; overflow: hidden }
 .card-media img { width: 100%; height: 100%; object-fit: contain }
 .media-icon { font-size: 32px; color: var(--v2-text-muted) }
-.play { position: absolute; width: 40px; height: 40px; display: grid; place-items: center; color: #fff; background: rgba(0,0,0,.45); border-radius: 50%; font-style: normal }
+.play { position: absolute; width: 40px; height: 40px; display: grid; place-items: center; color: var(--ws-text); background: rgba(0,0,0,.45); border-radius: 50%; font-style: normal }
 .card-info { padding: 10px 12px; display: grid; gap: 6px }
 .card-info b { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 12px }
 .card-info small { color: var(--v2-text-subtle); font-size: 11px }
 .card-actions { display: flex; gap: 6px; margin-top: 4px }
 .card-actions button { flex: 1; padding: 6px 0; font-size: 11px; color: var(--v2-text-muted); background: var(--v2-surface-soft); border: 1px solid var(--v2-border); border-radius: 7px; cursor: pointer }
-.card-actions button:hover { background: rgba(130,149,255,.1) }
+.card-actions button:hover { background: color-mix(in srgb, var(--ws-selected) 10%, transparent) }
 .card-actions .danger { color: var(--v2-danger) }
-.card-actions .danger:hover { background: rgba(255,127,145,.08) }
+.card-actions .danger:hover { background: color-mix(in srgb, var(--ws-danger) 8%, transparent) }
 .empty { grid-column: 1/-1; padding: 70px; text-align: center; color: var(--v2-text-muted) }
 </style>

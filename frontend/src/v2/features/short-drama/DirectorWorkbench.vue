@@ -658,7 +658,7 @@ onMounted(() => { void load(); void loadActiveJobs(); scheduleJobPoll() })
       </div>
       <div class="heading-actions">
         <V2Button :variant="aiPanelOpen ? 'primary' : 'ghost'" @click="aiPanelOpen = !aiPanelOpen">
-          🤖 AI 助手
+          <StudioIcon name="robot"/>  AI 助手
         </V2Button>
         <V2Button variant="ghost" @click="load">刷新</V2Button>
         <V2Button variant="ghost" @click="router.push(`/v2/drama/projects/${projectId}`)">返回项目</V2Button>
@@ -710,8 +710,8 @@ onMounted(() => { void load(); void loadActiveJobs(); scheduleJobPoll() })
       <!-- 中栏：当前步骤工作区 -->
       <main class="workspace">
         <!-- 全局操作反馈 -->
-        <div v-if="error" class="wb-error global-feedback">{{ error }} <button class="fb-close" @click="error = ''">✕</button></div>
-        <div v-if="notice" class="wb-success global-feedback">{{ notice }} <button class="fb-close" @click="notice = ''">✕</button></div>
+        <div v-if="error" class="wb-error global-feedback">{{ error }} <button class="fb-close" @click="error = ''" aria-label="关闭"><StudioIcon name="close"/></button></div>
+        <div v-if="notice" class="wb-success global-feedback">{{ notice }} <button class="fb-close" @click="notice = ''" aria-label="关闭"><StudioIcon name="close"/></button></div>
 
         <!-- 回看提示 -->
         <div v-if="isReadOnly" class="readonly-banner">
@@ -735,7 +735,7 @@ onMounted(() => { void load(); void loadActiveJobs(); scheduleJobPoll() })
                 </option>
               </select>
               <V2Button variant="primary" :disabled="generating||!selectedAnalysisId" @click="generateLedger">{{ generating ? '生成中…' : 'AI 生成台账' }}</V2Button>
-              <V2Button variant="ghost" @click="promptEditorCode = 'director_story_ledger'; promptEditorTitle = '故事台账生成'; promptEditorVisible = true">📝</V2Button>
+              <V2Button variant="ghost" @click="promptEditorCode = 'director_story_ledger'; promptEditorTitle = '故事台账生成'; promptEditorVisible = true" aria-label="编辑"><StudioIcon name="edit"/></V2Button>
             </template>
             <div v-if="error" class="wb-error">{{ error }}</div>
             <div v-if="decided" class="wb-success">{{ decided }}</div>
@@ -758,18 +758,18 @@ onMounted(() => { void load(); void loadActiveJobs(); scheduleJobPoll() })
               </div>
 
               <!-- 情感曲线（强制首反馈） -->
-              <h4 class="section-title">📈 情感曲线</h4>
+              <h4 class="section-title"><StudioIcon name="chart"/>  情感曲线</h4>
               <EmotionCurveChart v-if="ledgerDetail.emotion_curve?.length" :curve="ledgerDetail.emotion_curve" />
               <p v-else class="empty-tip">暂无节拍数据。</p>
               <div v-if="ledgerDetail.curve_summary" class="curve-summary-boxes">
-                <span v-if="ledgerDetail.curve_summary.rhythm_risk">⚠️ {{ ledgerDetail.curve_summary.rhythm_risk }}</span>
+                <span v-if="ledgerDetail.curve_summary.rhythm_risk"><StudioIcon name="alert"/>  {{ ledgerDetail.curve_summary.rhythm_risk }}</span>
                 <span v-if="ledgerDetail.curve_summary.turning_points?.length">
                   主要转折：{{ ledgerDetail.curve_summary.turning_points.map((p: any) => p.stable_key).join('、') }}
                 </span>
               </div>
 
               <!-- 节拍表 -->
-              <h4 class="section-title">🥁 节拍表（{{ ledgerDetail.beats?.length || 0 }}）</h4>
+              <h4 class="section-title"><StudioIcon name="audio"/>  节拍表（{{ ledgerDetail.beats?.length || 0 }}）</h4>
               <div v-if="ledgerDetail.beats?.length" class="beat-table">
                 <table>
                   <thead><tr><th>键</th><th>事件</th><th>冲突</th><th>强度</th><th>效价</th><th>情绪</th><th>证据</th><th>来源</th></tr></thead>
@@ -789,7 +789,7 @@ onMounted(() => { void load(); void loadActiveJobs(); scheduleJobPoll() })
               </div>
 
               <!-- Checkpoint A 决策 -->
-              <h4 class="section-title">⚖️ 检查点 A · 源材料矛盾决策</h4>
+              <h4 class="section-title"><StudioIcon name="system"/>  检查点 A · 源材料矛盾决策</h4>
               <div v-if="ledgerDetail.decisions?.length" class="decisions">
                 <div v-for="d in ledgerDetail.decisions" :key="d.id" class="decision-item">
                   <b>{{ d.question }}</b>
@@ -811,7 +811,7 @@ onMounted(() => { void load(); void loadActiveJobs(); scheduleJobPoll() })
               <!-- 批准按钮 -->
               <div class="approve-row">
                 <V2Button variant="primary" :disabled="ledgerDetail.status !== 'candidate'" @click="approveLedger">
-                  ✅ 批准台账并通过检查点 A
+                  <StudioIcon name="check"/>  批准台账并通过检查点 A
                 </V2Button>
                 <small>批准前必须处理所有矛盾决策并消除校验错误。</small>
               </div>
@@ -899,7 +899,7 @@ onMounted(() => { void load(); void loadActiveJobs(); scheduleJobPoll() })
               <V2Button variant="primary" :disabled="creatingStyle" @click="createStyleFromBrief">{{ creatingStyle ? '创建中…' : '从创作简报生成候选' }}</V2Button>
             </template>
             <div v-if="checkpointB" class="cpb-banner" :class="checkpointB.passed ? 'wb-success' : 'wb-error'">
-              Checkpoint B：{{ checkpointB.passed ? '✅ 已通过（风格 v' + checkpointB.style_version + ' + 色卡已关联）' : '❌ 未通过 — ' + (checkpointB.reason || '') }}
+              Checkpoint B：{{ checkpointB.passed ? ' 已通过（风格 v' + checkpointB.style_version + ' + 色卡已关联）' : ' 未通过 — ' + (checkpointB.reason || '') }}
             </div>
             <div v-if="!styleBibles.length" class="empty-tip">暂无风格候选。点击「从创作简报生成候选」开始。</div>
             <div v-else class="style-grid">
@@ -934,14 +934,14 @@ onMounted(() => { void load(); void loadActiveJobs(); scheduleJobPoll() })
             <div v-if="error" class="wb-error">{{ error }}</div>
             <div v-if="sceneSyncResult" class="wb-success">{{ sceneSyncResult }}</div>
             <div v-if="checkpointC" class="cpb-banner" :class="checkpointC.passed ? 'wb-success' : 'wb-error'">
-              Checkpoint C：{{ checkpointC.passed ? '✅ 已通过（所有锚点逐实体批准）' : `❌ 未通过 — ${checkpointC.reason}` }}
+              Checkpoint C：{{ checkpointC.passed ? ' 已通过（所有锚点逐实体批准）' : ` 未通过 — ${checkpointC.reason}` }}
             </div>
             <div v-if="!charAnchors.length && !propAnchors.length" class="empty-tip">
               暂无锚点。确认已批准风格圣经后，点击「从世界设定生成候选」。
             </div>
 
             <!-- 角色锚点 -->
-            <h4 class="section-title">👤 角色锚点（{{ checkpointC?.character_approved || 0 }}/{{ checkpointC?.character_total || 0 }} 已批准）</h4>
+            <h4 class="section-title"><StudioIcon name="user"/>  角色锚点（{{ checkpointC?.character_approved || 0 }}/{{ checkpointC?.character_total || 0 }} 已批准）</h4>
             <div v-if="charAnchors.length" class="anchor-list">
               <div v-for="a in charAnchors" :key="a.id" class="anchor-card">
                 <header>
@@ -1072,7 +1072,7 @@ onMounted(() => { void load(); void loadActiveJobs(); scheduleJobPoll() })
     <div v-if="aiPanelOpen" class="ai-drawer">
       <div class="ai-drawer-head">
         <b>AI 导演助手</b>
-        <button class="ai-drawer-close" @click="aiPanelOpen = false">✕</button>
+        <button class="ai-drawer-close" @click="aiPanelOpen = false" aria-label="关闭"><StudioIcon name="close"/></button>
       </div>
       <div class="ai-drawer-body">
         <GuidancePanel :project-id="projectId" @edit-prompt="(code: string, title: string) => { promptEditorCode = code; promptEditorTitle = title; promptEditorVisible = true }" />
@@ -1094,20 +1094,20 @@ onMounted(() => { void load(); void loadActiveJobs(); scheduleJobPoll() })
 <style scoped>
 .heading{display:flex;align-items:flex-end;justify-content:space-between;gap:16px}.heading h1{margin-top:14px}.heading-actions{display:flex;gap:8px}
 .loading{min-height:50vh;display:grid;place-items:center;color:var(--v2-text-muted)}
-.load-error{margin-top:16px;padding:16px;display:flex;align-items:center;justify-content:space-between;color:var(--v2-danger);background:rgba(255,127,145,.08);border-radius:12px}
+.load-error{margin-top:16px;padding:16px;display:flex;align-items:center;justify-content:space-between;color:var(--v2-danger);background:color-mix(in srgb, var(--ws-danger) 8%, transparent);border-radius:12px}
 .empty-state{margin-top:40px;display:grid;place-items:center;gap:16px;color:var(--v2-text-muted)}
 .workbench{display:grid;grid-template-columns:300px minmax(0,1fr);gap:16px;margin-top:16px;align-items:start}
 .job-status-bar{grid-column:1/-1;display:flex;gap:10px;flex-wrap:wrap;padding:10px 14px;background:var(--v2-surface);border:1px solid var(--v2-border);border-radius:12px;margin-bottom:4px}
 .job-status-item{display:flex;align-items:center;gap:8px;padding:6px 12px;background:var(--v2-surface-soft);border:1px solid var(--v2-border);border-radius:9px;font-size:11px}
 .job-name{color:var(--v2-text);max-width:280px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:500}
-.job-mini-bar{width:60px;height:3px;background:rgba(255,255,255,.08);border-radius:99px;overflow:hidden}
-.job-mini-bar span{display:block;height:100%;background:linear-gradient(90deg,#6f86ff,#aa70e8);transition:width .3s}
+.job-mini-bar{width:60px;height:3px;background:color-mix(in srgb, var(--ws-surface) 8%, transparent);border-radius:99px;overflow:hidden}
+.job-mini-bar span{display:block;height:100%;background:var(--ws-surface-soft);transition:width .3s}
 .job-error-text{color:var(--v2-danger);font-size:10px;max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .step-nav{padding:14px;display:grid;gap:6px;background:var(--v2-surface);border:1px solid var(--v2-border);border-radius:16px;position:sticky;top:90px}
 .step-nav-head{display:flex;align-items:center;justify-content:space-between;padding:4px 4px 10px;border-bottom:1px solid var(--v2-border)}
 .step-nav-head b{font-size:13px}.step-nav-head small{color:var(--v2-text-muted)}
 .step-item{min-height:44px;padding:8px 10px;display:flex;align-items:center;gap:10px;color:var(--v2-text-muted);background:transparent;border:1px solid transparent;border-radius:10px;cursor:pointer;text-align:left}
-.step-item.current{color:var(--v2-text);background:rgba(130,149,255,.08);border-color:rgba(130,149,255,.2)}
+.step-item.current{color:var(--v2-text);background:color-mix(in srgb, var(--ws-selected) 8%, transparent);border-color:color-mix(in srgb, var(--ws-border) 20%, transparent)}
 .step-item.done{color:var(--v2-success);opacity:.85}
 .step-item.done i{border-color:var(--v2-success);color:var(--v2-success)}
 .step-item:disabled{opacity:.45;cursor:not-allowed}
@@ -1117,28 +1117,28 @@ onMounted(() => { void load(); void loadActiveJobs(); scheduleJobPoll() })
 .step-item .step-label small{font-size:10px;color:var(--v2-text-subtle)}
 .advance-btn{margin-top:8px}
 .step-nav-actions{display:flex;gap:6px;margin-top:8px}
-.readonly-banner{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:8px 14px;margin-bottom:12px;background:rgba(255,183,77,.08);border:1px solid rgba(255,183,77,.2);border-radius:10px;color:#ffb347;font-size:12px}
+.readonly-banner{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:8px 14px;margin-bottom:12px;background:color-mix(in srgb, var(--ws-surface-soft) 8%, transparent);border:1px solid color-mix(in srgb, var(--ws-border) 20%, transparent);border-radius:10px;color:var(--ws-text-muted);font-size:12px}
 .readonly-hint{color:var(--v2-text-subtle);font-size:11px}
 .placeholder{padding:20px;display:grid;gap:12px;color:var(--v2-text-muted)}
 .placeholder b{color:var(--v2-text)}
 .gate-actions{display:flex;gap:8px;flex-wrap:wrap}
 .analysis-select{min-height:36px;padding:6px 10px;color:var(--v2-text);background:var(--v2-surface-soft);border:1px solid var(--v2-border);border-radius:9px;font-size:12px}
-.wb-error{padding:10px;color:#ffdce1;background:rgba(255,127,145,.1);border-radius:10px;font-size:12px}
-.wb-success{padding:10px;color:#a7f3d0;background:rgba(79,209,165,.1);border-radius:10px;font-size:12px}
+.wb-error{padding:10px;color:var(--ws-danger);background:color-mix(in srgb, var(--ws-danger) 10%, transparent);border-radius:10px;font-size:12px}
+.wb-success{padding:10px;color:var(--ws-success);background:color-mix(in srgb, var(--ws-success) 10%, transparent);border-radius:10px;font-size:12px}
 .global-feedback{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:12px}
-.fb-close{padding:0 6px;color:inherit;background:transparent;border:1px solid rgba(255,255,255,.2);border-radius:6px;cursor:pointer;font-size:12px;flex-shrink:0}
+.fb-close{padding:0 6px;color:inherit;background:transparent;border:1px solid color-mix(in srgb, var(--ws-border) 20%, transparent);border-radius:6px;cursor:pointer;font-size:12px;flex-shrink:0}
 .fb-close:hover{opacity:.8}
 .ledger-tabs{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px}
 .ledger-tab{display:flex;align-items:center;gap:6px;padding:7px 12px;color:var(--v2-text-muted);background:transparent;border:1px solid var(--v2-border);border-radius:9px;cursor:pointer;font-size:12px}
-.ledger-tab.active{color:var(--v2-text);background:rgba(130,149,255,.1);border-color:rgba(130,149,255,.35)}
+.ledger-tab.active{color:var(--v2-text);background:color-mix(in srgb, var(--ws-selected) 10%, transparent);border-color:color-mix(in srgb, var(--ws-border) 35%, transparent)}
 .ledger-summary{margin:0 0 14px;padding:11px 13px;color:var(--v2-text-muted);background:var(--v2-surface-soft);border-radius:10px;font-size:13px;line-height:1.7}
-.section-title{margin:20px 0 10px;font-size:14px;color:#e8edff}
+.section-title{margin:20px 0 10px;font-size:14px;color:var(--ws-text)}
 .empty-tip{color:var(--v2-text-subtle);font-size:12px}
 .scene-empty{display:grid;gap:8px;padding:16px 0}
 .scene-empty p{margin:0}
 .scene-empty-hint{color:var(--v2-text-muted);line-height:1.6}
 .scene-empty-actions{display:flex;gap:8px;margin-top:4px}
-.manual-create-box{display:grid;gap:10px;padding:12px 14px;margin-bottom:12px;background:rgba(130,149,255,.04);border:1px solid var(--v2-border);border-radius:10px}
+.manual-create-box{display:grid;gap:10px;padding:12px 14px;margin-bottom:12px;background:color-mix(in srgb, var(--ws-surface-soft) 4%, transparent);border:1px solid var(--v2-border);border-radius:10px}
 .manual-create-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
 .manual-create-grid label{display:grid;gap:5px}
 .manual-create-grid span{font-size:11px;color:var(--v2-text-subtle)}
@@ -1148,21 +1148,21 @@ onMounted(() => { void load(); void loadActiveJobs(); scheduleJobPoll() })
 .manual-create-actions small{color:var(--v2-text-subtle);font-size:10px}
 @media(max-width:650px){.manual-create-grid{grid-template-columns:1fr}}
 details pre{margin-top:6px;max-height:200px;overflow:auto;font-size:11px;background:rgba(0,0,0,.3);padding:8px;border-radius:8px}
-.curve-summary-boxes{display:flex;flex-direction:column;gap:5px;margin-top:8px;color:#ffb347;font-size:12px}
+.curve-summary-boxes{display:flex;flex-direction:column;gap:5px;margin-top:8px;color:var(--ws-text-muted);font-size:12px}
 .beat-table{overflow-x:auto;border:1px solid var(--v2-border);border-radius:10px}
 .beat-table table{width:100%;border-collapse:collapse;font-size:11px}
 .beat-table th{position:sticky;top:0;padding:8px 10px;text-align:left;color:var(--v2-text-subtle);background:var(--v2-surface-soft);white-space:nowrap;border-bottom:1px solid var(--v2-border)}
-.beat-table td{padding:8px 10px;color:var(--v2-text-muted);vertical-align:top;border-bottom:1px solid rgba(130,149,255,.06)}
+.beat-table td{padding:8px 10px;color:var(--v2-text-muted);vertical-align:top;border-bottom:1px solid color-mix(in srgb, var(--ws-border) 6%, transparent)}
 .beat-table code{color:var(--v2-primary);font-size:11px}
 .wrap-cell{max-width:220px;line-height:1.5}
 .loc-cell{max-width:100px}
-small.assumed{color:#ffb347}
+small.assumed{color:var(--ws-text-muted)}
 .decisions{display:grid;gap:10px}
-.decision-item{padding:12px;display:grid;gap:8px;background:var(--v2-surface-soft);border:1px solid rgba(255,183,77,.18);border-radius:10px}
-.decision-item b{font-size:12px;color:#e8edff}
+.decision-item{padding:12px;display:grid;gap:8px;background:var(--v2-surface-soft);border:1px solid color-mix(in srgb, var(--ws-border) 18%, transparent);border-radius:10px}
+.decision-item b{font-size:12px;color:var(--ws-text)}
 .decision-options{display:flex;gap:6px;flex-wrap:wrap}
-.decision-options button{padding:6px 12px;color:#c8d0ee;background:rgba(130,149,255,.08);border:1px solid rgba(130,149,255,.18);border-radius:8px;cursor:pointer;font-size:11px;text-align:left}
-.decision-options button:hover:not(:disabled){background:rgba(130,149,255,.16)}
+.decision-options button{padding:6px 12px;color:var(--ws-text);background:color-mix(in srgb, var(--ws-surface-soft) 8%, transparent);border:1px solid color-mix(in srgb, var(--ws-border) 18%, transparent);border-radius:8px;cursor:pointer;font-size:11px;text-align:left}
+.decision-options button:hover:not(:disabled){background:color-mix(in srgb, var(--ws-selected) 16%, transparent)}
 .decision-options button:disabled{opacity:.45;cursor:not-allowed}
 .decision-actions{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
 .custom-input{flex:1;min-width:160px;padding:6px 10px;color:var(--v2-text);background:rgba(3,8,17,.72);border:1px solid var(--v2-border);border-radius:8px;font-size:11px}
@@ -1179,8 +1179,8 @@ small.assumed{color:#ffb347}
 .facts-panel{margin-top:16px}
 .facts-list{display:grid;gap:8px}
 .fact-item{padding:11px;display:flex;align-items:flex-start;gap:10px;background:var(--v2-surface-soft);border:1px solid var(--v2-border);border-radius:10px}
-.fact-item.fact-blocker{border-color:rgba(255,127,145,.3);background:rgba(255,127,145,.06)}
-.fact-item.fact-risk{border-color:rgba(255,183,77,.25)}
+.fact-item.fact-blocker{border-color:color-mix(in srgb, var(--ws-danger) 30%, transparent);background:color-mix(in srgb, var(--ws-danger) 6%, transparent)}
+.fact-item.fact-risk{border-color:color-mix(in srgb, var(--ws-border) 25%, transparent)}
 .fact-body{flex:1;min-width:0;display:grid;gap:4px}
 .fact-body b{font-size:12px;color:var(--v2-primary)}
 .fact-body p{margin:0;font-size:12px;color:var(--v2-text);line-height:1.5}
@@ -1189,7 +1189,7 @@ small.assumed{color:#ffb347}
 .cpb-banner{margin-bottom:14px}
 .style-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:12px}
 .style-card{padding:14px;display:grid;gap:9px;background:var(--v2-surface-soft);border:1px solid var(--v2-border);border-radius:12px;cursor:pointer;transition:.15s}
-.style-card:hover{border-color:rgba(130,149,255,.35)}
+.style-card:hover{border-color:color-mix(in srgb, var(--ws-border) 35%, transparent)}
 .style-card.selected{border-color:var(--v2-primary);box-shadow:0 0 0 1px var(--v2-primary)}
 .style-card header{display:flex;align-items:center;justify-content:space-between;gap:8px}
 .style-card header b{font-size:13px;color:var(--v2-text)}
@@ -1198,7 +1198,7 @@ small.assumed{color:#ffb347}
 .palette-strip{display:grid;gap:5px}
 .palette-row{display:flex;align-items:center;gap:5px}
 .palette-row small{color:var(--v2-text-subtle);font-size:10px;margin-left:4px}
-.color-dot{width:16px;height:16px;border-radius:4px;border:1px solid rgba(255,255,255,.15);display:inline-block}
+.color-dot{width:16px;height:16px;border-radius:4px;border:1px solid color-mix(in srgb, var(--ws-border) 15%, transparent);display:inline-block}
 .style-actions{display:flex;align-items:center;gap:8px;margin-top:4px}
 .style-actions small{color:var(--v2-text-subtle)}
 .anchor-list{display:grid;gap:12px}
@@ -1220,7 +1220,7 @@ small.assumed{color:#ffb347}
 .anchor-actions small{color:var(--v2-success)}
 .spatial-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:12px}
 .spatial-card{padding:14px;display:grid;gap:9px;background:var(--v2-surface-soft);border:1px solid var(--v2-border);border-radius:12px}
-.spatial-card.invalid{border-color:rgba(255,127,145,.3)}
+.spatial-card.invalid{border-color:color-mix(in srgb, var(--ws-danger) 30%, transparent)}
 .spatial-card header{display:flex;align-items:center;justify-content:space-between;gap:8px}
 .spatial-card header code{color:var(--v2-primary);font-size:11px}
 .spatial-card b{font-size:12px;color:var(--v2-text)}

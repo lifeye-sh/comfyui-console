@@ -123,7 +123,7 @@ watch(() => props.projectId, () => void load())
         <V2Button variant="primary" :disabled="generating || !confirmedAnalysis" @click="generateAdaptation">
           {{ generating ? 'AI 生成中…' : 'AI 生成改编方案' }}
         </V2Button>
-        <V2Button variant="ghost" @click="emit('edit-prompt', 'novel_adaptation', '改编方案生成')">📝</V2Button>
+        <V2Button variant="ghost" @click="emit('edit-prompt', 'novel_adaptation', '改编方案生成')" aria-label="编辑"><StudioIcon name="edit"/></V2Button>
       </div>
     </template>
 
@@ -157,7 +157,7 @@ watch(() => props.projectId, () => void load())
 
         <!-- 校验错误 -->
         <div v-if="c.validation_errors?.length" class="adapt-errors">
-          <small v-for="(err, i) in c.validation_errors" :key="i" class="danger">⚠ {{ err.message || JSON.stringify(err) }}</small>
+          <small v-for="(err, i) in c.validation_errors" :key="i" class="danger"><StudioIcon name="alert"/>  {{ err.message || JSON.stringify(err) }}</small>
         </div>
 
         <!-- 展开详情：完整方案 -->
@@ -242,15 +242,15 @@ watch(() => props.projectId, () => void load())
 </template>
 
 <style scoped>
-.adapt-error{padding:10px 12px;color:#ffdce1;background:rgba(255,127,145,.1);border-radius:10px;font-size:12px;margin-bottom:10px}
+.adapt-error{padding:10px 12px;color:var(--ws-danger);background:color-mix(in srgb, var(--ws-danger) 10%, transparent);border-radius:10px;font-size:12px;margin-bottom:10px}
 .adapt-actions-row{display:flex;gap:8px;align-items:center}
-.adapt-skip-box{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px 14px;margin-bottom:12px;background:rgba(255,183,77,.06);border:1px solid rgba(255,183,77,.15);border-radius:10px}
+.adapt-skip-box{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px 14px;margin-bottom:12px;background:color-mix(in srgb, var(--ws-surface-soft) 6%, transparent);border:1px solid color-mix(in srgb, var(--ws-border) 15%, transparent);border-radius:10px}
 .adapt-skip-box p{margin:0;color:var(--v2-text-subtle);font-size:11px}
 .adapt-empty{color:var(--v2-text-subtle);font-size:12px;padding:16px 0;text-align:center}
 .adapt-list{display:grid;gap:12px}
-.adapt-card{background:rgba(130,149,255,.04);border:1px solid var(--v2-border);border-radius:12px;overflow:hidden}
+.adapt-card{background:color-mix(in srgb, var(--ws-surface-soft) 4%, transparent);border:1px solid var(--v2-border);border-radius:12px;overflow:hidden}
 .adapt-head{display:flex;align-items:center;gap:10px;padding:12px 14px;cursor:pointer;user-select:none}
-.adapt-head:hover{background:rgba(130,149,255,.06)}
+.adapt-head:hover{background:color-mix(in srgb, var(--ws-selected) 6%, transparent)}
 .adapt-meta{display:grid;gap:2px;flex-shrink:0;min-width:110px}
 .adapt-meta strong{font-size:12px;color:var(--v2-text)}
 .adapt-meta small{color:var(--v2-text-muted);font-size:10px}
@@ -272,7 +272,7 @@ watch(() => props.projectId, () => void load())
 .episodes-full{display:grid;gap:8px}
 .episode-card{background:rgba(0,0,0,.15);border:1px solid var(--v2-border);border-radius:9px;overflow:hidden}
 .episode-head{display:flex;align-items:center;gap:8px;padding:9px 12px;cursor:pointer;user-select:none}
-.episode-head:hover{background:rgba(130,149,255,.05)}
+.episode-head:hover{background:color-mix(in srgb, var(--ws-selected) 5%, transparent)}
 .episode-no{font-size:10px;color:var(--v2-primary);font-weight:600;white-space:nowrap}
 .episode-title{flex:1;min-width:0;font-size:12px;color:var(--v2-text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .episode-duration{font-size:10px;color:var(--v2-text-subtle);white-space:nowrap}
@@ -291,10 +291,10 @@ watch(() => props.projectId, () => void load())
 .scene-content{margin:0;font-size:11px;color:var(--v2-text-muted);line-height:1.6}
 .elements-list{display:grid;gap:3px}
 .element-row{display:flex;gap:8px;font-size:11px;line-height:1.5;padding:3px 6px;border-radius:5px;background:rgba(0,0,0,.1)}
-.element-type{flex-shrink:0;font-size:9px;color:var(--v2-primary);font-weight:600;padding:1px 5px;border:1px solid rgba(130,149,255,.2);border-radius:4px}
+.element-type{flex-shrink:0;font-size:9px;color:var(--v2-primary);font-weight:600;padding:1px 5px;border:1px solid color-mix(in srgb, var(--ws-border) 20%, transparent);border-radius:4px}
 .element-text{color:var(--v2-text-muted)}
-.element-row.el-dialogue .element-text{color:#a8c7ff}
-.element-row.el-narration .element-text{color:#c9b8ff}
+.element-row.el-dialogue .element-text{color:var(--ws-text)}
+.element-row.el-narration .element-text{color:var(--ws-text)}
 .no-scenes{font-size:11px;color:var(--v2-text-subtle);padding:4px 0}
 
 .option-actions{display:flex;align-items:center;gap:8px}

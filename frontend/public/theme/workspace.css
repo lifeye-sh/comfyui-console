@@ -1,0 +1,25 @@
+:root {
+  --ws-bg: #151719;
+  --ws-bg-elevated: #1c1f21;
+  --ws-surface: #202325;
+  --ws-surface-strong: #292d30;
+  --ws-surface-soft: #282c2e;
+  --ws-border: #363b3e;
+  --ws-border-strong: #535b60;
+  --ws-text: #f1f3f3;
+  --ws-text-muted: #bdc4c7;
+  --ws-text-subtle: #99a3a8;
+  --ws-primary: #a7d8d1;
+  --ws-primary-strong: #97c9c2;
+  --ws-success: #56d6a1;
+  --ws-warning: #f2bd62;
+  --ws-danger: #ff7f91;
+  --ws-info: #69c7ff;
+  --ws-sidebar: #191c1e;
+  --ws-selected: #303c3b;
+  --ws-on-primary: #142825;
+  --ws-card-radius: 14px;
+  --ws-button-radius: 8px;
+  --ws-font: Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+  color-scheme: dark;
+}

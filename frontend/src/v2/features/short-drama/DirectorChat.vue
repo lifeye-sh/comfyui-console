@@ -204,7 +204,7 @@ watch(() => props.projectId, (id) => {
           <V2Button variant="ghost" size="sm" :disabled="generatingProposals" @click="generateProposals">
             {{ generatingProposals ? '生成中…' : 'AI 生成提案' }}
           </V2Button>
-          <V2Button variant="ghost" size="sm" @click="emit('edit-prompt', 'proposal', 'AI 提案生成')">📝</V2Button>
+          <V2Button variant="ghost" size="sm" @click="emit('edit-prompt', 'proposal', 'AI 提案生成')" aria-label="编辑"><StudioIcon name="edit"/></V2Button>
         </div>
       </div>
       <div v-if="!proposals.length" class="empty-tip">暂无待确认提案。</div>
@@ -219,7 +219,7 @@ watch(() => props.projectId, (id) => {
             <div v-for="(c, ci) in p.changes" :key="ci" class="diff-row">
               <code>{{ c.field }}</code>
               <span class="diff-before">{{ c.before || '（空）' }}</span>
-              <span class="diff-arrow">→</span>
+              <span class="diff-arrow"><StudioIcon name="chevron"/></span>
               <span class="diff-after">{{ c.after || '（空）' }}</span>
             </div>
           </div>
@@ -236,17 +236,17 @@ watch(() => props.projectId, (id) => {
 </template>
 
 <style scoped>
-.dc-error{padding:10px;color:#ffdce1;background:rgba(255,127,145,.1);border-radius:10px;font-size:12px;margin-bottom:8px}
+.dc-error{padding:10px;color:var(--ws-danger);background:color-mix(in srgb, var(--ws-danger) 10%, transparent);border-radius:10px;font-size:12px;margin-bottom:8px}
 .empty-tip{color:var(--v2-text-subtle);font-size:12px;padding:12px 0}
 .conv-tabs{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px}
 .conv-tab{padding:6px 12px;color:var(--v2-text-muted);background:transparent;border:1px solid var(--v2-border);border-radius:9px;cursor:pointer;font-size:12px}
-.conv-tab.active{color:var(--v2-text);background:rgba(130,149,255,.1);border-color:rgba(130,149,255,.35)}
+.conv-tab.active{color:var(--v2-text);background:color-mix(in srgb, var(--ws-selected) 10%, transparent);border-color:color-mix(in srgb, var(--ws-border) 35%, transparent)}
 .messages{max-height:260px;overflow-y:auto;display:grid;gap:8px;padding:8px;background:rgba(0,0,0,.15);border-radius:10px;margin-bottom:10px}
 .msg{display:flex}
 .msg-user{justify-content:flex-end}
 .msg-assistant{justify-content:flex-start}
 .msg-bubble{max-width:80%;padding:9px 12px;border-radius:12px;display:grid;gap:4px}
-.msg-user .msg-bubble{background:rgba(130,149,255,.18);border:1px solid rgba(130,149,255,.25)}
+.msg-user .msg-bubble{background:color-mix(in srgb, var(--ws-surface-soft) 18%, transparent);border:1px solid color-mix(in srgb, var(--ws-border) 25%, transparent)}
 .msg-assistant .msg-bubble{background:var(--v2-surface-soft);border:1px solid var(--v2-border)}
 .msg-bubble p{margin:0;font-size:12px;color:var(--v2-text);line-height:1.6;white-space:pre-wrap}
 .msg-rev{color:var(--v2-text-subtle);font-size:9px}
@@ -255,7 +255,7 @@ watch(() => props.projectId, (id) => {
 .proposals-section{margin-top:14px;border-top:1px solid var(--v2-border);padding-top:12px}
 .proposals-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px}
 .dc-prompt-actions{display:flex;gap:6px;align-items:center}
-.section-title{margin:0;font-size:13px;color:#e8edff}
+.section-title{margin:0;font-size:13px;color:var(--ws-text)}
 .proposal-list{display:grid;gap:8px}
 .proposal-card{padding:12px;background:var(--v2-surface-soft);border:1px solid var(--v2-border);border-radius:10px;display:grid;gap:8px}
 .proposal-card header{display:flex;align-items:center;gap:8px;justify-content:space-between;flex-wrap:wrap}

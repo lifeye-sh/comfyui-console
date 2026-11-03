@@ -37,6 +37,7 @@ const router = createRouter({
       component: () => import('@/views/ShareView.vue'),
     },
     v2Routes,
+    { path: '/gallery-resource-picker', component: () => import('@/v2/features/assets/GalleryResourcePicker.vue') },
   ],
 })
 

@@ -55,7 +55,7 @@ watch(() => props.projectId, load)
         <V2Button variant="ghost" size="sm" :disabled="loading" @click="load">
           {{ loading ? '分析中…' : '刷新建议' }}
         </V2Button>
-        <V2Button variant="ghost" size="sm" @click="emit('edit-prompt', 'guidance', 'AI 导演建议')">📝</V2Button>
+        <V2Button variant="ghost" size="sm" @click="emit('edit-prompt', 'guidance', 'AI 导演建议')" aria-label="编辑"><StudioIcon name="edit"/></V2Button>
       </div>
     </template>
 
@@ -87,14 +87,14 @@ watch(() => props.projectId, load)
 </template>
 
 <style scoped>
-.gp-error{padding:10px;color:#ffdce1;background:rgba(255,127,145,.1);border-radius:10px;font-size:12px;margin-bottom:8px}
+.gp-error{padding:10px;color:var(--ws-danger);background:color-mix(in srgb, var(--ws-danger) 10%, transparent);border-radius:10px;font-size:12px;margin-bottom:8px}
 .gp-hint{color:var(--v2-text-subtle)}
 .gp-actions-row{display:flex;gap:6px;align-items:center}
 .empty-tip{color:var(--v2-text-subtle);font-size:12px;padding:12px 0}
 .suggestion-list{display:grid;gap:8px}
 .suggestion-card{padding:11px;background:var(--v2-surface-soft);border:1px solid var(--v2-border);border-radius:10px;display:grid;gap:6px}
-.suggestion-card.sev-blocker{border-color:rgba(255,127,145,.3)}
-.suggestion-card.sev-risk{border-color:rgba(255,183,77,.25)}
+.suggestion-card.sev-blocker{border-color:color-mix(in srgb, var(--ws-danger) 30%, transparent)}
+.suggestion-card.sev-risk{border-color:color-mix(in srgb, var(--ws-border) 25%, transparent)}
 .suggestion-card header{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
 .suggestion-title{font-size:12px;color:var(--v2-text)}
 .suggestion-detail{margin:0;font-size:11px;color:var(--v2-text-muted);line-height:1.6}
