@@ -7,6 +7,8 @@ M1 实现：
 from __future__ import annotations
 
 import asyncio
+import hashlib
+from pathlib import PurePosixPath
 import logging
 from typing import Any, AsyncIterator, Optional
 
@@ -34,6 +36,11 @@ class ComfyUIClient:
         return r.json()
 
     async def upload_image(self, data: bytes, filename: str, overwrite: bool = True) -> dict[str, Any]:
+        # Resource display names are not unique (gallery references commonly all
+        # use gallery.webp). Address uploads by their actual bytes so independent
+        # slots and queued tasks cannot overwrite each other's input files.
+        suffix = PurePosixPath(filename.replace("\\", "/")).suffix.lower()
+        filename = f"console-{hashlib.sha256(data).hexdigest()}{suffix}"
         files = {"image": (filename, data, "application/octet-stream")}
         data_form = {"overwrite": "true" if overwrite else "false"}
         r = await self._http.post("/upload/image", files=files, data=data_form)

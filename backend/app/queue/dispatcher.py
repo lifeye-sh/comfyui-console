@@ -503,9 +503,8 @@ class Dispatcher:
             #   3. 插入 LoadImageMask 节点（channel="red"）加载遮罩文件，输出 MASK 张量
             #   4. 扫描 prompt 中所有引用 LoadImage MASK 输出的连接 ["<node_id>", 1]，
             #      改为指向 LoadImageMask 的输出 ["_mask_loader", 0]
-            #   5. 扫描 class_type 含 mask/inpaint/drawmask 且 mask 输入缺失的节点，
-            #      连接到 LoadImageMask 输出
-            #   6. LoadImage 的 IMAGE 输出连接 ["<node_id>", 0] 完全不动
+            #   5. 保留其余连接，不按节点名称猜测或新增输入参数。
+            #      LoadImage 的 IMAGE 输出连接 ["<node_id>", 0] 完全不动
             mask_rid: int | None = None
             if spec.get("type") == "image":
                 mask_raw = t.params.get(f"{spec['key']}__mask")
@@ -551,15 +550,13 @@ class Dispatcher:
 
                 # 扫描 prompt 中所有节点的 inputs：
                 #   - 把引用 LoadImage MASK 输出 ["<id>", 1] 的连接改为 ["_mask_loader", 0]
-                #   - 对 class_type 含 mask/inpaint/drawmask 且 mask 输入缺失的节点，
-                #     连接到 LoadImageMask 输出
+                #   - 保留裁剪后的遮罩等下游连接，不能给拼接节点新增 mask 参数。
                 for nid, nd in prompt.items():
                     if not isinstance(nd, dict) or nid == mask_loader_id:
                         continue
                     nd_inputs = nd.get("inputs")
                     if not isinstance(nd_inputs, dict):
                         continue
-                    nd_class = str(nd.get("class_type", "")).lower()
                     for key, val in list(nd_inputs.items()):
                         # 检查是否为 LoadImage 的 MASK 输出连接 ["<id>", 1]
                         if (
@@ -569,14 +566,6 @@ class Dispatcher:
                         ):
                             # 改为指向 LoadImageMask 的 MASK 输出
                             nd_inputs[key] = [mask_loader_id, 0]
-                    # 对缺失 mask 输入的节点（如 DrawMaskOnImage），补充连接
-                    class_needs_mask = any(
-                        kw in nd_class for kw in ("mask", "inpaint", "drawmask")
-                    )
-                    if class_needs_mask:
-                        mask_val = nd_inputs.get("mask")
-                        if mask_val in (None, "", 0, []):
-                            nd_inputs["mask"] = [mask_loader_id, 0]
 
                 db.add(TaskResource(task_id=t.id, resource_id=r.id, role="input", slot_key=spec["key"]))
                 db.add(TaskResource(task_id=t.id, resource_id=mask_r.id, role="mask", slot_key=spec["key"]))

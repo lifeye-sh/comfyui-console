@@ -3,6 +3,8 @@ from __future__ import annotations
 import asyncio
 import io
 
+import pytest
+
 from PIL import Image
 from sqlalchemy import create_engine
 from sqlalchemy.orm import Session
@@ -242,3 +244,132 @@ def test_task_collects_multiple_image_and_video_outputs(tmp_path, monkeypatch) -
         assert [resource.media_type for resource in resources].count("image") == 2
         assert [resource.media_type for resource in resources].count("video") == 1
         assert next(resource for resource in resources if resource.media_type == "video").mime == "video/mp4"
+
+
+@pytest.mark.parametrize("roles", [
+    ("portrait", "costume", "pose"), ("portrait", "costume"),
+    ("portrait", "pose"), ("references",), ("masked",),
+])
+def test_same_named_uploads_keep_each_reference_bytes(tmp_path, monkeypatch, roles):
+    """Exercise dispatcher -> real HTTP client -> Comfy-like overwrite storage."""
+    from email.parser import BytesParser
+    from email.policy import default
+    import httpx
+    from app.comfy.client import ComfyUIClient
+
+    storage = LocalFSStorage(str(tmp_path))
+    monkeypatch.setattr(dispatcher_module, "get_storage", lambda: storage)
+    remote_files = {}
+
+    def receive(request):
+        message = BytesParser(policy=default).parsebytes(
+            ("Content-Type: " + request.headers["content-type"] + "\r\n\r\n").encode()
+            + request.content
+        )
+        part = next(p for p in message.iter_parts() if p.get_filename())
+        name = part.get_filename()
+        remote_files[name] = part.get_payload(decode=True)
+        return httpx.Response(200, json={"name": name, "subfolder": "", "type": "input"})
+
+    async def submit(db, task, schema, prompt):
+        client = ComfyUIClient(1, "http://comfy.test")
+        await client._http.aclose()
+        client._http = httpx.AsyncClient(base_url=client.base_url, transport=httpx.MockTransport(receive))
+        try:
+            return await Dispatcher()._upload_inputs(db, client, prompt, schema, task)
+        finally:
+            await client.aclose()
+
+    with _session() as db:
+        refs = []
+        contents = []
+        for i, color in enumerate(("red", "green", "blue")):
+            output = io.BytesIO()
+            Image.new("RGB", (8, 8), color).save(output, format="PNG")
+            contents.append(output.getvalue())
+            key = f"inputs/{i}.png"
+            storage.save_bytes(contents[-1], key)
+            ref = Resource(filename="gallery.png", media_type="image", storage_key=key)
+            db.add(ref)
+            refs.append(ref)
+        batch = Batch(name="same filenames")
+        db.add(batch)
+        db.flush()
+        schema, params, prompt = [], {}, {}
+        for i, role in enumerate(roles):
+            node = str(i)
+            multiple = role == "references"
+            params[role] = [r.id for r in refs] if multiple else refs[i].id
+            schema.append({"key": role, "type": "image", "node": node,
+                           "path": "inputs.image", "multiple": multiple})
+            prompt[node] = {"class_type": "LoadImage", "inputs": {"image": [] if multiple else "old.png"}}
+        if roles == ("masked",):
+            params["masked__mask"] = refs[1].id
+        task = Task(batch_id=batch.id, status="PENDING", params=params)
+        db.add(task)
+        db.commit()
+        result = asyncio.run(submit(db, task, schema, prompt))
+        for i, role in enumerate(roles):
+            names = result[str(i)]["inputs"]["image"]
+            if role == "references":
+                assert [remote_files[n] for n in names] == contents
+                assert len(set(names)) == 3
+            else:
+                assert remote_files[names] == contents[i]
+        if roles == ("masked",):
+            name = result["_mask_loader_masked"]["inputs"]["image"]
+            assert remote_files[name] == contents[1]
+        # Later uploads with the same display name must not corrupt queued inputs.
+        before = dict(remote_files)
+        async def later_upload():
+            client = ComfyUIClient(1, "http://comfy.test")
+            await client._http.aclose()
+            client._http = httpx.AsyncClient(base_url=client.base_url, transport=httpx.MockTransport(receive))
+            try:
+                first = await client.upload_image(b"later task", "gallery.png")
+                again = await client.upload_image(b"later task", "gallery.png")
+                assert first == again
+            finally:
+                await client.aclose()
+        asyncio.run(later_upload())
+        assert all(remote_files[k] == v for k, v in before.items())
+
+
+def test_painted_mask_preserves_inpaint_graph_and_other_image_slots(tmp_path, monkeypatch):
+    from copy import deepcopy
+
+    storage = LocalFSStorage(str(tmp_path))
+    monkeypatch.setattr(dispatcher_module, "get_storage", lambda: storage)
+    storage.save_bytes(_png_bytes(), "input.png")
+    storage.save_bytes(_png_bytes(), "mask.png")
+    graph = {
+        "674": {"class_type": "LoadImage", "inputs": {"image": "old.png"}},
+        "other": {"class_type": "LoadImage", "inputs": {"image": "other.png"}},
+        "720": {"class_type": "InpaintCropImproved", "inputs": {
+            "image": ["674", 0], "mask": ["674", 1]}},
+        "698": {"class_type": "SetLatentNoiseMask", "inputs": {
+            "samples": ["697", 0], "mask": ["720", 2]}},
+        "706": {"class_type": "DrawMaskOnImage", "inputs": {
+            "image": ["720", 1], "mask": ["720", 2]}},
+        "668": {"class_type": "InpaintStitchImproved", "inputs": {
+            "stitcher": ["720", 0], "inpainted_image": ["678", 0]}},
+        "preview": {"class_type": "MaskToImage", "inputs": {"mask": ["674", 1]}},
+        "unconnected": {"class_type": "DrawMaskOnImage", "inputs": {"image": ["other", 0]}},
+        "other_mask": {"class_type": "MaskToImage", "inputs": {"mask": ["other", 1]}},
+    }
+    before = deepcopy(graph)
+    with _session() as db:
+        original = Resource(media_type="image", filename="input.png", storage_key="input.png")
+        mask = Resource(media_type="image", filename="mask.png", storage_key="mask.png")
+        batch = Batch(name="painted inpaint")
+        db.add_all([original, mask, batch]); db.flush()
+        task = Task(batch_id=batch.id, params={"image": original.id, "image__mask": mask.id})
+        db.add(task); db.commit()
+        schema = [{"key": "image", "type": "image", "node": "674", "path": "inputs.image"}]
+        result = asyncio.run(Dispatcher()._upload_inputs(db, FakeClient(), graph, schema, task))
+        assert result["720"]["inputs"]["mask"] == ["_mask_loader_image", 0]
+        assert result["preview"]["inputs"]["mask"] == ["_mask_loader_image", 0]
+        assert result["720"]["inputs"]["image"] == ["674", 0]
+        assert result["_mask_loader_image"]["inputs"]["channel"] == "red"
+        for node in ("698", "706", "668", "unconnected", "other_mask", "other"):
+            assert result[node] == before[node]
